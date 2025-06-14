@@ -55,7 +55,7 @@ const Index = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('deepseek-api-key') || '');
+  const [apiKey, setApiKey] = useState('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');
   const [selectedPreset, setSelectedPreset] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +66,13 @@ const Index = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Auto-save the API key
+    if (apiKey) {
+      localStorage.setItem('deepseek-api-key', apiKey);
+    }
+  }, [apiKey]);
 
   const handleApiKeySubmit = () => {
     if (apiKey.trim()) {
@@ -85,10 +92,10 @@ const Index = () => {
   };
 
   const sendMessage = async () => {
-    if (!input.trim() || !apiKey.trim()) {
+    if (!input.trim()) {
       toast({
         title: 'Error',
-        description: !input.trim() ? 'Please enter a message' : 'Please enter your DeepSeek API key',
+        description: 'Please enter a message',
         variant: 'destructive',
       });
       return;
@@ -154,7 +161,8 @@ Always provide comprehensive, technical responses while emphasizing the importan
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
@@ -169,8 +177,8 @@ Always provide comprehensive, technical responses while emphasizing the importan
     } catch (error) {
       console.error('Error calling DeepSeek API:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to get response from AI. Please check your API key and try again.',
+        title: 'API Error',
+        description: error instanceof Error ? error.message : 'Failed to get response from AI. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -251,18 +259,15 @@ Always provide comprehensive, technical responses while emphasizing the importan
             <CardContent className="space-y-3">
               <Input
                 type="password"
-                placeholder="Enter DeepSeek API Key"
+                placeholder="API Key Configured"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="bg-black border-green-500/50 text-green-400 placeholder-gray-500"
               />
-              <Button 
-                onClick={handleApiKeySubmit}
-                size="sm"
-                className="w-full bg-green-600 hover:bg-green-700 text-black"
-              >
-                Save API Key
-              </Button>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="text-xs text-green-400">Ready to hack</span>
+              </div>
             </CardContent>
           </Card>
 
@@ -385,7 +390,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
               />
               <Button
                 onClick={sendMessage}
-                disabled={isLoading || !input.trim() || !apiKey.trim()}
+                disabled={isLoading || !input.trim()}
                 className="bg-green-600 hover:bg-green-700 text-black px-6"
               >
                 <Send className="h-4 w-4" />
