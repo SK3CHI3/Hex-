@@ -113,14 +113,16 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'PentestGPT'
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
+          model: 'deepseek/deepseek-r1',
           messages: [
             {
               role: 'system',
@@ -175,7 +177,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('Error calling DeepSeek API:', error);
+      console.error('Error calling OpenRouter API:', error);
       toast({
         title: 'API Error',
         description: error instanceof Error ? error.message : 'Failed to get response from AI. Please try again.',
