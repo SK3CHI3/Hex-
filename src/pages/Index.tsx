@@ -250,9 +250,9 @@ Always provide comprehensive, technical responses while emphasizing the importan
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 flex gap-8 h-[calc(100vh-140px)]">
+      <div className="container mx-auto px-4 py-6 flex gap-8" style={{ height: 'calc(100vh - 140px)' }}>
         {/* Sidebar */}
-        <div className="w-96 space-y-6">
+        <div className="w-96 space-y-6 flex-shrink-0">
           {/* Preset Prompts */}
           <Card className="bg-gray-900/50 border-green-500/30 backdrop-blur-sm">
             <CardHeader className="pb-4">
@@ -280,9 +280,9 @@ Always provide comprehensive, technical responses while emphasizing the importan
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Messages */}
-          <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm">
+          <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-4">
             <div className="h-full overflow-y-auto p-6 scrollbar-hide">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
@@ -384,7 +384,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
           </div>
 
           {/* Input Area */}
-          <div className="mt-4">
+          <div className="flex-shrink-0">
             <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-3 backdrop-blur-sm">
               <div className="flex gap-3 items-end">
                 <div className="flex-1">
