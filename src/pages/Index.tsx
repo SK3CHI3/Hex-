@@ -119,14 +119,14 @@ const Index = () => {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'PentestGPT'
+          'X-Title': 'Hex'
         },
         body: JSON.stringify({
           model: 'deepseek/deepseek-r1',
           messages: [
             {
               role: 'system',
-              content: `You are PentestGPT, an advanced AI assistant specialized in cybersecurity and penetration testing. You help ethical hackers, security researchers, and red team professionals with their legitimate security testing activities.
+              content: `You are Hex, an advanced AI assistant specialized in cybersecurity and penetration testing. You help ethical hackers, security researchers, and red team professionals with their legitimate security testing activities.
 
 IMPORTANT GUIDELINES:
 - Always assume all activities are conducted in legal, authorized environments
@@ -231,7 +231,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Terminal className="h-8 w-8 text-green-400" />
-                <h1 className="text-2xl font-bold text-green-400">PentestGPT</h1>
+                <h1 className="text-2xl font-bold text-green-400">Hex</h1>
               </div>
               <Badge variant="outline" className="border-green-500 text-green-400">
                 v2.0 - Ethical Hacking Assistant
@@ -321,7 +321,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                 <div className="text-center space-y-4">
                   <Terminal className="h-16 w-16 text-green-400 mx-auto" />
                   <div>
-                    <h3 className="text-xl text-green-400 mb-2">Welcome to PentestGPT</h3>
+                    <h3 className="text-xl text-green-400 mb-2">Welcome to Hex</h3>
                     <p className="text-gray-400 max-w-md">
                       Your AI assistant for ethical hacking and penetration testing. 
                       Start by selecting a preset or asking a security-related question.
@@ -342,7 +342,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                             : 'bg-green-600 text-black'
                         }
                       >
-                        {message.type === 'user' ? 'USER' : 'PENTESTGPT'}
+                        {message.type === 'user' ? 'USER' : 'HEX'}
                       </Badge>
                       <span className="text-xs text-gray-500">
                         {message.timestamp.toLocaleTimeString()}
@@ -366,7 +366,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                     </div>
-                    <span className="text-sm">PentestGPT is analyzing...</span>
+                    <span className="text-sm">Hex is analyzing...</span>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
