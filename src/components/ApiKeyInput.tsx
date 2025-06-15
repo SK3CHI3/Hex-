@@ -9,6 +9,15 @@ interface ApiKeyInputProps {
 
 export function ApiKeyInput({ onApiKeySubmit }: ApiKeyInputProps) {
   const [apiKey, setApiKey] = useState('');
+  const envApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+
+  // If we have an environment variable, use it and don't show the dialog
+  React.useEffect(() => {
+    if (envApiKey) {
+      onApiKeySubmit(envApiKey);
+      localStorage.setItem('openrouter_api_key', envApiKey);
+    }
+  }, [envApiKey, onApiKeySubmit]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,6 +26,8 @@ export function ApiKeyInput({ onApiKeySubmit }: ApiKeyInputProps) {
       localStorage.setItem('openrouter_api_key', apiKey.trim());
     }
   };
+  // Don't show dialog if we have an environment variable
+  if (envApiKey) return null;
 
   return (
     <Dialog open={true}>

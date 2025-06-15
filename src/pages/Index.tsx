@@ -70,25 +70,28 @@ const Index = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
   useEffect(() => {
     // Auto-save the API key
     if (apiKey) {
-      localStorage.setItem('deepseek-api-key', apiKey);
+      localStorage.setItem('openrouter_api_key', apiKey);
     }
   }, [apiKey]);
-
   useEffect(() => {
-    // Try to get API key from environment variable
+    // Try to get API key from environment variable first
     const envApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-    // Try to get API key from localStorage
+    // Try to get API key from localStorage as fallback
     const storedApiKey = localStorage.getItem('openrouter_api_key');
     
     if (envApiKey) {
+      // Environment variable takes precedence
       setApiKey(envApiKey);
+      setShowApiKeyInput(false);
     } else if (storedApiKey) {
+      // Use localStorage as fallback
       setApiKey(storedApiKey);
+      setShowApiKeyInput(false);
     } else {
+      // Only show input if we have no API key from any source
       setShowApiKeyInput(true);
     }
   }, []);
