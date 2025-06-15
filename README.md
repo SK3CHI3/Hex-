@@ -1,73 +1,204 @@
-# Welcome to your Lovable project
 
-## Project info
+# Hex - AI Penetration Testing Assistant
 
-**URL**: https://lovable.dev/projects/e9631ec9-e101-4cd3-a7c6-4ff031a6b90f
+A sophisticated AI-powered cybersecurity assistant built with React, designed to help ethical hackers, security researchers, and red team professionals with their legitimate security testing activities.
 
-## How can I edit this code?
+![Hex Interface](https://img.shields.io/badge/Built%20with-React-61DAFB?style=for-the-badge&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-There are several ways of editing your application.
+## ⚠️ Legal Disclaimer
 
-**Use Lovable**
+**This tool is designed EXCLUSIVELY for authorized security testing.**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e9631ec9-e101-4cd3-a7c6-4ff031a6b90f) and start prompting.
+- Only use in environments you own or have explicit written permission to test
+- Unauthorized access to systems is illegal and punishable by law
+- Always follow responsible disclosure practices
+- Ensure you comply with all applicable laws and regulations
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🎯 Features
 
-**Use your preferred IDE**
+### Core Capabilities
+- **AI-Powered Security Assistant**: Leveraging DeepSeek R1 model for advanced cybersecurity insights
+- **Payload Generation**: Generate XSS, SQLi, CSRF, and other security payloads
+- **Tool Output Analysis**: Analyze results from Nmap, Burp Suite, Nikto, and other security tools
+- **Vulnerability Research**: Research CVEs, exploit techniques, and mitigation strategies
+- **Code Security Review**: Review code for security vulnerabilities
+- **Network Enumeration**: Strategies and techniques for network reconnaissance
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Preset Prompts
+- **Payload Generation**: Quick generation of various attack payloads
+- **Tool Analysis**: Analyze security tool outputs
+- **Vulnerability Research**: Research known vulnerabilities
+- **Privilege Escalation**: Escalation techniques for different operating systems
+- **Network Enumeration**: Network reconnaissance strategies
+- **Security Code Review**: Automated security code analysis
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### UI/UX Features
+- **Dark Theme**: Cyberpunk-inspired interface with terminal aesthetics
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Real-time Chat**: Interactive AI assistant with message history
+- **Markdown Support**: Rich text formatting for code blocks and documentation
+- **Glass Morphism**: Modern minimal header with glass effects
 
-Follow these steps:
+## 🚀 Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Node.js 18+ and npm
+- OpenRouter API key with access to DeepSeek R1 model
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. **Clone the repository**
+   ```bash
+   git clone <YOUR_GIT_URL>
+   cd <YOUR_PROJECT_NAME>
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure API Key**
+   - The application uses OpenRouter API with DeepSeek R1 model
+   - You'll be prompted to enter your API key when first using the application
+   - API key is stored locally in your browser's localStorage
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:8080`
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 18**: Modern React with hooks and functional components
+- **TypeScript**: Type-safe development
+- **Vite**: Fast build tool and development server
+- **Tailwind CSS**: Utility-first CSS framework
+- **Shadcn/ui**: High-quality React components
+
+### AI Integration
+- **OpenRouter API**: Access to various AI models
+- **DeepSeek R1**: Advanced reasoning model for cybersecurity tasks
+- **React Markdown**: Rich text rendering for AI responses
+
+### Styling & UI
+- **Lucide React**: Beautiful icons
+- **Class Variance Authority**: Component variant management
+- **Tailwind Merge**: Efficient CSS class merging
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   └── ui/           # Shadcn/ui components
+├── hooks/            # Custom React hooks
+├── lib/              # Utility functions
+├── pages/
+│   └── Index.tsx     # Main application component
+├── index.css         # Global styles and Tailwind config
+└── main.tsx          # Application entry point
 ```
 
-**Edit a file directly in GitHub**
+## 🔧 Configuration
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### API Configuration
+The application uses OpenRouter API to access the DeepSeek R1 model. Configure your API key through the application interface.
 
-**Use GitHub Codespaces**
+### Environment Variables
+No environment variables are required for basic functionality. All configuration is handled through the UI.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🎨 Customization
 
-## What technologies are used for this project?
+### Themes
+The application uses a dark cyberpunk theme with green accents. Colors can be customized in `src/index.css`:
 
-This project is built with:
+```css
+:root {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  /* ... other color variables */
+}
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Presets
+Add custom security testing presets by modifying the `PROMPT_PRESETS` object in `src/pages/Index.tsx`.
 
-## How can I deploy this project?
+## 🔒 Security Considerations
 
-Simply open [Lovable](https://lovable.dev/projects/e9631ec9-e101-4cd3-a7c6-4ff031a6b90f) and click on Share -> Publish.
+### Data Privacy
+- All conversations are processed through OpenRouter API
+- API keys are stored locally in browser localStorage
+- No conversation data is permanently stored on external servers
 
-## Can I connect a custom domain to my Lovable project?
+### Responsible Use
+- Always obtain proper authorization before testing
+- Follow responsible disclosure practices
+- Comply with local and international laws
+- Use only in authorized testing environments
 
-Yes, you can!
+## 🤝 Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Development Guidelines
+- Follow TypeScript best practices
+- Use Tailwind CSS for styling
+- Maintain responsive design principles
+- Test on multiple devices and browsers
+
+## 📚 Usage Examples
+
+### Generating SQL Injection Payloads
+```
+Generate SQL injection payloads for MySQL targeting a login form with username and password parameters. Include time-based and union-based techniques.
+```
+
+### Analyzing Nmap Output
+```
+Analyze this Nmap output and identify potential vulnerabilities and attack vectors: [paste your nmap results]
+```
+
+### Code Security Review
+```
+Review this PHP authentication function for security vulnerabilities: [paste your code]
+```
+
+## 🔄 Updates and Versioning
+
+- Version 2.0: Current release with DeepSeek R1 integration
+- Regular updates for security enhancements and new features
+- Check the repository for latest releases and changelogs
+
+## 📞 Support
+
+For support, questions, or feature requests:
+- Open an issue on the GitHub repository
+- Follow responsible disclosure for any security issues
+- Join cybersecurity communities for discussions
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- OpenRouter for API access
+- DeepSeek for the advanced AI model
+- Shadcn for the beautiful UI components
+- The cybersecurity community for inspiration and feedback
+
+---
+
+**Remember**: Always use this tool ethically and legally. Happy ethical hacking! 🔒
