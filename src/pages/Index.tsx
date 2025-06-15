@@ -225,89 +225,56 @@ Always provide comprehensive, technical responses while emphasizing the importan
       </Dialog>
 
       {/* Header */}
-      <div className="border-b border-green-500/30 bg-gray-900/50">
-        <div className="container mx-auto px-4 py-4">
+      <div className="border-b border-green-500/30 bg-gray-900/50 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Terminal className="h-8 w-8 text-green-400" />
-                <h1 className="text-2xl font-bold text-green-400">Hex</h1>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <Terminal className="h-10 w-10 text-green-400" />
+                <div>
+                  <h1 className="text-3xl font-bold text-green-400">Hex</h1>
+                  <p className="text-sm text-gray-400">AI Penetration Testing Assistant</p>
+                </div>
               </div>
-              <Badge variant="outline" className="border-green-500 text-green-400">
+              <Badge variant="outline" className="border-green-500 text-green-400 px-3 py-1">
                 v2.0 - Ethical Hacking Assistant
               </Badge>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Status:</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-400 text-sm">Online</span>
-                </div>
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400">Online</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 flex gap-6 h-[calc(100vh-120px)]">
+      <div className="container mx-auto px-4 py-6 flex gap-8 h-[calc(100vh-140px)]">
         {/* Sidebar */}
-        <div className="w-80 space-y-4">
-          {/* API Key Input */}
-          <Card className="bg-gray-900 border-green-500/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-green-400 text-sm">DeepSeek API Configuration</CardTitle>
+        <div className="w-96 space-y-6">
+          {/* Preset Prompts */}
+          <Card className="bg-gray-900/50 border-green-500/30 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-green-400 text-lg flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Penetration Testing Presets
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Input
-                type="password"
-                placeholder="API Key Configured"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="bg-black border-green-500/50 text-green-400 placeholder-gray-500"
-              />
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span className="text-xs text-green-400">Ready to hack</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Preset Prompts */}
-          <Card className="bg-gray-900 border-green-500/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-green-400 text-sm">Penetration Testing Presets</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
               {Object.entries(PROMPT_PRESETS).map(([key, preset]) => (
                 <Button
                   key={key}
                   variant="outline"
-                  size="sm"
                   onClick={() => applyPreset(key)}
-                  className="w-full justify-start gap-2 border-green-500/30 text-green-400 hover:bg-green-500/10"
+                  className="w-full justify-start gap-3 border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-500/50 py-3 h-auto"
                 >
-                  <preset.icon className="h-4 w-4" />
-                  {preset.name}
+                  <preset.icon className="h-5 w-5" />
+                  <div className="text-left">
+                    <div className="font-medium">{preset.name}</div>
+                  </div>
                 </Button>
               ))}
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="bg-gray-900 border-green-500/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-green-400 text-sm">Session Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Messages:</span>
-                <span className="text-green-400">{messages.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Memory:</span>
-                <span className="text-green-400">Active</span>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -315,14 +282,14 @@ Always provide comprehensive, technical responses while emphasizing the importan
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col">
           {/* Messages */}
-          <div className="flex-1 bg-gray-900/30 border border-green-500/30 rounded-lg p-4 overflow-y-auto">
+          <div className="flex-1 bg-gray-900/30 border border-green-500/30 rounded-lg p-6 overflow-y-auto backdrop-blur-sm">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <Terminal className="h-16 w-16 text-green-400 mx-auto" />
+                <div className="text-center space-y-6">
+                  <Terminal className="h-20 w-20 text-green-400 mx-auto" />
                   <div>
-                    <h3 className="text-xl text-green-400 mb-2">Welcome to Hex</h3>
-                    <p className="text-gray-400 max-w-md">
+                    <h3 className="text-2xl text-green-400 mb-3">Welcome to Hex</h3>
+                    <p className="text-gray-400 max-w-lg mx-auto text-lg">
                       Your AI assistant for ethical hacking and penetration testing. 
                       Start by selecting a preset or asking a security-related question.
                     </p>
@@ -330,16 +297,16 @@ Always provide comprehensive, technical responses while emphasizing the importan
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {messages.map((message) => (
-                  <div key={message.id} className="space-y-2">
-                    <div className="flex items-center gap-2">
+                  <div key={message.id} className="space-y-3">
+                    <div className="flex items-center gap-3">
                       <Badge 
                         variant={message.type === 'user' ? 'default' : 'secondary'}
                         className={
                           message.type === 'user' 
-                            ? 'bg-blue-600 text-white' 
-                            : 'bg-green-600 text-black'
+                            ? 'bg-blue-600 text-white px-3 py-1' 
+                            : 'bg-green-600 text-black px-3 py-1'
                         }
                       >
                         {message.type === 'user' ? 'USER' : 'HEX'}
@@ -348,19 +315,19 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         {message.timestamp.toLocaleTimeString()}
                       </span>
                     </div>
-                    <div className={`p-3 rounded-lg ${
+                    <div className={`p-4 rounded-lg ${
                       message.type === 'user' 
                         ? 'bg-blue-900/20 border border-blue-500/30' 
                         : 'bg-green-900/20 border border-green-500/30'
                     }`}>
-                      <pre className="whitespace-pre-wrap text-sm font-mono">
+                      <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
                         {message.content}
                       </pre>
                     </div>
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex items-center gap-2 text-green-400">
+                  <div className="flex items-center gap-3 text-green-400">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -375,8 +342,8 @@ Always provide comprehensive, technical responses while emphasizing the importan
           </div>
 
           {/* Input Area */}
-          <div className="mt-4 space-y-3">
-            <div className="flex gap-2">
+          <div className="mt-6 space-y-4">
+            <div className="flex gap-3">
               <Textarea
                 placeholder="Ask about vulnerabilities, request payloads, analyze tool output, or get penetration testing guidance..."
                 value={input}
@@ -387,15 +354,15 @@ Always provide comprehensive, technical responses while emphasizing the importan
                     sendMessage();
                   }
                 }}
-                className="bg-black border-green-500/50 text-green-400 placeholder-gray-500 resize-none min-h-[80px]"
-                rows={3}
+                className="bg-black border-green-500/50 text-green-400 placeholder-gray-500 resize-none min-h-[100px] text-base"
+                rows={4}
               />
               <Button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim()}
-                className="bg-green-600 hover:bg-green-700 text-black px-6"
+                className="bg-green-600 hover:bg-green-700 text-black px-8 py-4 h-auto"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
               </Button>
             </div>
             <div className="text-xs text-gray-500 text-center">
