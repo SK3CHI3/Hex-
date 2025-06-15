@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
 
 const PROMPT_PRESETS = {
   'payload-generation': {
@@ -331,9 +332,32 @@ Always provide comprehensive, technical responses while emphasizing the importan
                           message.type === 'user' ? 'bg-blue-400' : 'bg-green-400'
                         }`}></div>
                         <div className="prose prose-invert max-w-none">
-                          <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed text-gray-200 bg-transparent border-none p-0 m-0">
+                          <ReactMarkdown 
+                            className="text-sm leading-relaxed text-gray-200"
+                            components={{
+                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                              code: ({ inline, children }) => 
+                                inline ? (
+                                  <code className="bg-gray-800 px-1.5 py-0.5 rounded text-green-300 font-mono text-xs">
+                                    {children}
+                                  </code>
+                                ) : (
+                                  <pre className="bg-gray-800 p-4 rounded-lg overflow-x-auto mb-3">
+                                    <code className="text-green-300 font-mono text-sm">{children}</code>
+                                  </pre>
+                                ),
+                              strong: ({ children }) => <strong className="text-green-300 font-semibold">{children}</strong>,
+                              em: ({ children }) => <em className="text-blue-300 italic">{children}</em>,
+                              ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
+                              li: ({ children }) => <li className="text-gray-200">{children}</li>,
+                              h1: ({ children }) => <h1 className="text-xl font-bold text-green-300 mb-3">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-lg font-bold text-green-300 mb-2">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-base font-bold text-green-300 mb-2">{children}</h3>,
+                            }}
+                          >
                             {message.content}
-                          </pre>
+                          </ReactMarkdown>
                         </div>
                       </div>
                     </div>
