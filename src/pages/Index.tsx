@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -384,13 +383,13 @@ Always provide comprehensive, technical responses while emphasizing the importan
             </div>
           </div>
 
-          {/* Enhanced Input Area */}
-          <div className="mt-6">
-            <div className="bg-gray-900/70 border border-green-500/30 rounded-xl p-6 backdrop-blur-sm shadow-2xl">
-              <div className="flex gap-4">
-                <div className="flex-1 relative">
+          {/* Minimal Input Area */}
+          <div className="mt-4">
+            <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-3 backdrop-blur-sm">
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
                   <Textarea
-                    placeholder="Describe your penetration testing scenario, request specific payloads, or ask for security analysis..."
+                    placeholder="Ask about penetration testing, request payloads, or security analysis..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -399,38 +398,27 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         sendMessage();
                       }
                     }}
-                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none min-h-[120px] text-base leading-relaxed focus:border-green-400 focus:ring-2 focus:ring-green-400/20 rounded-lg transition-all duration-200"
-                    rows={5}
+                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none min-h-[44px] max-h-[120px] text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200"
+                    rows={1}
+                    style={{ 
+                      height: 'auto',
+                      minHeight: '44px',
+                      maxHeight: '120px'
+                    }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                    }}
                   />
-                  <div className="absolute bottom-3 right-3 text-xs text-gray-500">
-                    {input.length}/2000
-                  </div>
                 </div>
-                <div className="flex flex-col gap-3">
-                  <Button
-                    onClick={sendMessage}
-                    disabled={isLoading || !input.trim()}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-black font-semibold px-8 py-6 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Send className="h-5 w-5 mr-2" />
-                    Send
-                  </Button>
-                  <Button
-                    onClick={() => setInput('')}
-                    variant="outline"
-                    className="border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-gray-200 px-4 py-2 rounded-lg transition-all duration-200"
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-green-500/20">
-                <div className="text-xs text-gray-400">
-                  <kbd className="px-2 py-1 bg-gray-800 rounded text-xs">Shift + Enter</kbd> for new line • <kbd className="px-2 py-1 bg-gray-800 rounded text-xs">Enter</kbd> to send
-                </div>
-                <div className="text-xs text-gray-500">
-                  Always ensure you have proper authorization before testing
-                </div>
+                <Button
+                  onClick={sendMessage}
+                  disabled={isLoading || !input.trim()}
+                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
