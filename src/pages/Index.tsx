@@ -224,33 +224,67 @@ Always provide comprehensive, technical responses while emphasizing the importan
         </DialogContent>
       </Dialog>
 
-      {/* Header */}
-      <div className="border-b border-green-500/30 bg-gray-900/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Terminal className="h-10 w-10 text-green-400" />
-                <div>
-                  <h1 className="text-3xl font-bold text-green-400">Hex</h1>
-                  <p className="text-sm text-gray-400">AI Penetration Testing Assistant</p>
+      {/* Header - Hanging Glass Metamorphosis */}
+      <div className="relative">
+        {/* Glass Background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-green-400/10 to-teal-500/5 backdrop-blur-xl"></div>
+        
+        {/* Hanging Elements */}
+        <div className="absolute top-0 left-1/4 w-px h-16 bg-gradient-to-b from-green-400/60 to-transparent"></div>
+        <div className="absolute top-0 right-1/3 w-px h-12 bg-gradient-to-b from-green-300/40 to-transparent"></div>
+        <div className="absolute top-0 left-3/4 w-px h-20 bg-gradient-to-b from-emerald-400/50 to-transparent"></div>
+        
+        {/* Main Header Content */}
+        <div className="relative border-b border-green-500/20 bg-black/40 backdrop-blur-lg">
+          <div className="container mx-auto px-8 py-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6">
+                {/* Logo with Glass Effect */}
+                <div className="relative group">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-green-400/20 to-emerald-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                  <div className="relative flex items-center gap-4 bg-black/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-green-500/30">
+                    <div className="relative">
+                      <Terminal className="h-8 w-8 text-green-400" />
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full opacity-60 animate-pulse"></div>
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-light text-green-400 tracking-wide">Hex</h1>
+                      <p className="text-xs text-gray-400/80 font-light">AI Penetration Testing</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Floating Badge */}
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-green-400/30 to-transparent rounded-full blur-sm"></div>
+                  <Badge variant="outline" className="relative border-green-500/40 text-green-300/90 px-4 py-2 bg-black/50 backdrop-blur-sm font-light">
+                    v2.0 • Ethical Assistant
+                  </Badge>
                 </div>
               </div>
-              <Badge variant="outline" className="border-green-500 text-green-400 px-3 py-1">
-                v2.0 - Ethical Hacking Assistant
-              </Badge>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-400">Online</span>
+              
+              {/* Status Indicator */}
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-green-400/20 rounded-full blur-md opacity-50"></div>
+                  <div className="relative flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-green-500/30">
+                    <div className="relative">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-40"></div>
+                    </div>
+                    <span className="text-green-300/90 text-sm font-light">Online</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+          
+          {/* Subtle Bottom Glow */}
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-green-400/40 to-transparent"></div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 flex gap-8" style={{ height: 'calc(100vh - 140px)' }}>
+      <div className="container mx-auto px-4 py-6 flex gap-8" style={{ height: 'calc(100vh - 180px)' }}>
         {/* Sidebar */}
         <div className="w-96 space-y-6 flex-shrink-0">
           {/* Preset Prompts */}
