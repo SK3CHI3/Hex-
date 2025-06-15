@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -282,91 +281,127 @@ Always provide comprehensive, technical responses while emphasizing the importan
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col">
           {/* Messages */}
-          <div className="flex-1 bg-gray-900/30 border border-green-500/30 rounded-lg p-6 overflow-y-auto backdrop-blur-sm">
-            {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center space-y-6">
-                  <Terminal className="h-20 w-20 text-green-400 mx-auto" />
-                  <div>
-                    <h3 className="text-2xl text-green-400 mb-3">Welcome to Hex</h3>
-                    <p className="text-gray-400 max-w-lg mx-auto text-lg">
-                      Your AI assistant for ethical hacking and penetration testing. 
-                      Start by selecting a preset or asking a security-related question.
-                    </p>
+          <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm">
+            <div className="h-full overflow-y-auto p-6">
+              {messages.length === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center space-y-6">
+                    <Terminal className="h-20 w-20 text-green-400 mx-auto" />
+                    <div>
+                      <h3 className="text-2xl text-green-400 mb-3">Welcome to Hex</h3>
+                      <p className="text-gray-400 max-w-lg mx-auto text-lg">
+                        Your AI assistant for ethical hacking and penetration testing. 
+                        Start by selecting a preset or asking a security-related question.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {messages.map((message) => (
-                  <div key={message.id} className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        variant={message.type === 'user' ? 'default' : 'secondary'}
-                        className={
+              ) : (
+                <div className="space-y-6">
+                  {messages.map((message) => (
+                    <div key={message.id} className="group">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
                           message.type === 'user' 
-                            ? 'bg-blue-600 text-white px-3 py-1' 
-                            : 'bg-green-600 text-black px-3 py-1'
-                        }
-                      >
-                        {message.type === 'user' ? 'USER' : 'HEX'}
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        {message.timestamp.toLocaleTimeString()}
-                      </span>
+                            ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300' 
+                            : 'bg-green-500/20 border border-green-500/50 text-green-300'
+                        }`}>
+                          {message.type === 'user' ? (
+                            <>
+                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                              USER
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                              HEX
+                            </>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500 opacity-70 group-hover:opacity-100 transition-opacity">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div className={`relative rounded-xl p-6 shadow-lg transition-all duration-200 hover:shadow-xl ${
+                        message.type === 'user' 
+                          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 ml-4' 
+                          : 'bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 mr-4'
+                      }`}>
+                        <div className={`absolute top-0 left-0 w-1 h-full rounded-l-xl ${
+                          message.type === 'user' ? 'bg-blue-400' : 'bg-green-400'
+                        }`}></div>
+                        <div className="prose prose-invert max-w-none">
+                          <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed text-gray-200 bg-transparent border-none p-0 m-0">
+                            {message.content}
+                          </pre>
+                        </div>
+                      </div>
                     </div>
-                    <div className={`p-4 rounded-lg ${
-                      message.type === 'user' 
-                        ? 'bg-blue-900/20 border border-blue-500/30' 
-                        : 'bg-green-900/20 border border-green-500/30'
-                    }`}>
-                      <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed">
-                        {message.content}
-                      </pre>
+                  ))}
+                  {isLoading && (
+                    <div className="flex items-center gap-4 p-6 bg-green-900/20 border border-green-500/30 rounded-xl mr-4">
+                      <div className="flex space-x-2">
+                        <div className="w-3 h-3 bg-green-400 rounded-full animate-bounce"></div>
+                        <div className="w-3 h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                        <div className="w-3 h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      </div>
+                      <span className="text-green-400 font-mono">Hex is analyzing your request...</span>
                     </div>
-                  </div>
-                ))}
-                {isLoading && (
-                  <div className="flex items-center gap-3 text-green-400">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    </div>
-                    <span className="text-sm">Hex is analyzing...</span>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Input Area */}
-          <div className="mt-6 space-y-4">
-            <div className="flex gap-3">
-              <Textarea
-                placeholder="Ask about vulnerabilities, request payloads, analyze tool output, or get penetration testing guidance..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                className="bg-black border-green-500/50 text-green-400 placeholder-gray-500 resize-none min-h-[100px] text-base"
-                rows={4}
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={isLoading || !input.trim()}
-                className="bg-green-600 hover:bg-green-700 text-black px-8 py-4 h-auto"
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="text-xs text-gray-500 text-center">
-              Press Shift+Enter for new line, Enter to send. Always ensure you have authorization before testing.
+          {/* Enhanced Input Area */}
+          <div className="mt-6">
+            <div className="bg-gray-900/70 border border-green-500/30 rounded-xl p-6 backdrop-blur-sm shadow-2xl">
+              <div className="flex gap-4">
+                <div className="flex-1 relative">
+                  <Textarea
+                    placeholder="Describe your penetration testing scenario, request specific payloads, or ask for security analysis..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none min-h-[120px] text-base leading-relaxed focus:border-green-400 focus:ring-2 focus:ring-green-400/20 rounded-lg transition-all duration-200"
+                    rows={5}
+                  />
+                  <div className="absolute bottom-3 right-3 text-xs text-gray-500">
+                    {input.length}/2000
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    onClick={sendMessage}
+                    disabled={isLoading || !input.trim()}
+                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-black font-semibold px-8 py-6 h-auto rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-5 w-5 mr-2" />
+                    Send
+                  </Button>
+                  <Button
+                    onClick={() => setInput('')}
+                    variant="outline"
+                    className="border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-gray-200 px-4 py-2 rounded-lg transition-all duration-200"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-green-500/20">
+                <div className="text-xs text-gray-400">
+                  <kbd className="px-2 py-1 bg-gray-800 rounded text-xs">Shift + Enter</kbd> for new line • <kbd className="px-2 py-1 bg-gray-800 rounded text-xs">Enter</kbd> to send
+                </div>
+                <div className="text-xs text-gray-500">
+                  Always ensure you have proper authorization before testing
+                </div>
+              </div>
             </div>
           </div>
         </div>
