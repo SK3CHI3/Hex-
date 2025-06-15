@@ -175,24 +175,6 @@ Analyze this Nmap output and identify potential vulnerabilities and attack vecto
 Review this PHP authentication function for security vulnerabilities: [paste your code]
 ```
 
-## 🔄 Updates and Versioning
-
-- Version 2.0: Current release with DeepSeek R1 integration
-- Regular updates for security enhancements and new features
-- Check the repository for latest releases and changelogs
-
-## 📞 Support
-
-For support, questions, or feature requests:
-- Open an issue on the GitHub repository
-- Follow responsible disclosure for any security issues
-- Join cybersecurity communities for discussions
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
 
 - OpenRouter for API access
 - DeepSeek for the advanced AI model
