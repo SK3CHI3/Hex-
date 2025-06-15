@@ -283,7 +283,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
         <div className="flex-1 flex flex-col">
           {/* Messages */}
           <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm">
-            <div className="h-full overflow-y-auto p-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="h-full overflow-y-auto p-6 scrollbar-hide">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center space-y-6">
@@ -383,7 +383,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
             </div>
           </div>
 
-          {/* Minimal Input Area */}
+          {/* Input Area */}
           <div className="mt-4">
             <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-3 backdrop-blur-sm">
               <div className="flex gap-3 items-end">
@@ -398,7 +398,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         sendMessage();
                       }
                     }}
-                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none min-h-[44px] max-h-[120px] text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200"
+                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none min-h-[44px] max-h-[120px] text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide"
                     rows={1}
                     style={{ 
                       height: 'auto',

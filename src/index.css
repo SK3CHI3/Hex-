@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -105,11 +106,20 @@
 
 @layer utilities {
   .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
   
   .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+
+  /* Additional coverage for textarea scrollbars */
+  .scrollbar-hide::-webkit-scrollbar-track {
+    display: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar-thumb {
     display: none;
   }
 }
