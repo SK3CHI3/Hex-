@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -333,27 +334,32 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         }`}></div>
                         <div className="prose prose-invert max-w-none">
                           <ReactMarkdown 
-                            className="text-sm leading-relaxed text-gray-200"
                             components={{
-                              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                              code: ({ inline, children }) => 
-                                inline ? (
-                                  <code className="bg-gray-800 px-1.5 py-0.5 rounded text-green-300 font-mono text-xs">
+                              p: ({ children, ...props }) => <p className="mb-3 last:mb-0 text-sm leading-relaxed text-gray-200" {...props}>{children}</p>,
+                              code: ({ children, ...props }) => {
+                                const { node, ...rest } = props;
+                                const isInline = !node || node.tagName !== 'pre';
+                                return isInline ? (
+                                  <code className="bg-gray-800 px-1.5 py-0.5 rounded text-green-300 font-mono text-xs" {...rest}>
                                     {children}
                                   </code>
                                 ) : (
-                                  <pre className="bg-gray-800 p-4 rounded-lg overflow-x-auto mb-3">
-                                    <code className="text-green-300 font-mono text-sm">{children}</code>
-                                  </pre>
-                                ),
-                              strong: ({ children }) => <strong className="text-green-300 font-semibold">{children}</strong>,
-                              em: ({ children }) => <em className="text-blue-300 italic">{children}</em>,
-                              ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                              ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                              li: ({ children }) => <li className="text-gray-200">{children}</li>,
-                              h1: ({ children }) => <h1 className="text-xl font-bold text-green-300 mb-3">{children}</h1>,
-                              h2: ({ children }) => <h2 className="text-lg font-bold text-green-300 mb-2">{children}</h2>,
-                              h3: ({ children }) => <h3 className="text-base font-bold text-green-300 mb-2">{children}</h3>,
+                                  <code className="text-green-300 font-mono text-sm" {...rest}>{children}</code>
+                                );
+                              },
+                              pre: ({ children, ...props }) => (
+                                <pre className="bg-gray-800 p-4 rounded-lg overflow-x-auto mb-3" {...props}>
+                                  {children}
+                                </pre>
+                              ),
+                              strong: ({ children, ...props }) => <strong className="text-green-300 font-semibold" {...props}>{children}</strong>,
+                              em: ({ children, ...props }) => <em className="text-blue-300 italic" {...props}>{children}</em>,
+                              ul: ({ children, ...props }) => <ul className="list-disc list-inside mb-3 space-y-1" {...props}>{children}</ul>,
+                              ol: ({ children, ...props }) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props}>{children}</ol>,
+                              li: ({ children, ...props }) => <li className="text-gray-200" {...props}>{children}</li>,
+                              h1: ({ children, ...props }) => <h1 className="text-xl font-bold text-green-300 mb-3" {...props}>{children}</h1>,
+                              h2: ({ children, ...props }) => <h2 className="text-lg font-bold text-green-300 mb-2" {...props}>{children}</h2>,
+                              h3: ({ children, ...props }) => <h3 className="text-base font-bold text-green-300 mb-2" {...props}>{children}</h3>,
                             }}
                           >
                             {message.content}
