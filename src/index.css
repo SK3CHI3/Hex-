@@ -1,5 +1,3 @@
-
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -114,7 +112,6 @@
     display: none;  /* Chrome, Safari and Opera */
   }
 
-  /* Additional coverage for textarea scrollbars */
   .scrollbar-hide::-webkit-scrollbar-track {
     display: none;
   }
