@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background with slight transparency -->
+  <rect width="32" height="32" rx="6" fill="#000000" fill-opacity="0.9"/>
+  
+  <!-- Terminal prompt symbol with cyberpunk green glow -->
+  <path d="M8 10L13 15L8 20" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <animate attributeName="stroke-opacity" values="1;0.7;1" dur="2s" repeatCount="indefinite"/>
+  </path>
+  
+  <!-- Underscore cursor with blink animation -->
+  <path d="M15 20H22" stroke="#4ade80" stroke-width="2" stroke-linecap="round">
+    <animate attributeName="opacity" values="1;0;1" dur="1.5s" repeatCount="indefinite"/>
+  </path>
+  
+  <!-- Subtle border glow -->
+  <rect x="1" y="1" width="30" height="30" rx="5" stroke="#4ade80" stroke-opacity="0.3" stroke-width="1"/>
+</svg>

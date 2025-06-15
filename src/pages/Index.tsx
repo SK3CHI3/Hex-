@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
+import { ApiKeyInput } from '../components/ApiKeyInput';
 
 const PROMPT_PRESETS = {
   'payload-generation': {
@@ -57,7 +57,8 @@ const Index = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showWarning, setShowWarning] = useState(true);
-  const [apiKey, setApiKey] = useState('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');
+  const [apiKey, setApiKey] = useState<string>('');
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState('');
   const [showMobilePresets, setShowMobilePresets] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -77,14 +78,24 @@ const Index = () => {
     }
   }, [apiKey]);
 
-  const handleApiKeySubmit = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem('deepseek-api-key', apiKey);
-      toast({
-        title: 'API Key Saved',
-        description: 'DeepSeek API key has been stored locally.',
-      });
+  useEffect(() => {
+    // Try to get API key from environment variable
+    const envApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+    // Try to get API key from localStorage
+    const storedApiKey = localStorage.getItem('openrouter_api_key');
+    
+    if (envApiKey) {
+      setApiKey(envApiKey);
+    } else if (storedApiKey) {
+      setApiKey(storedApiKey);
+    } else {
+      setShowApiKeyInput(true);
     }
+  }, []);
+
+  const handleApiKeySubmit = (newApiKey: string) => {
+    setApiKey(newApiKey);
+    setShowApiKeyInput(false);
   };
 
   const applyPreset = (presetKey: string) => {
@@ -102,6 +113,11 @@ const Index = () => {
         description: 'Please enter a message',
         variant: 'destructive',
       });
+      return;
+    }
+
+    if (!apiKey) {
+      setShowApiKeyInput(true);
       return;
     }
 
@@ -168,6 +184,13 @@ Always provide comprehensive, technical responses while emphasizing the importan
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          // Invalid or expired API key
+          localStorage.removeItem('openrouter_api_key');
+          setApiKey('');
+          setShowApiKeyInput(true);
+          throw new Error('Invalid API key. Please enter a valid OpenRouter API key.');
+        }
         throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
       }
 
@@ -194,6 +217,8 @@ Always provide comprehensive, technical responses while emphasizing the importan
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
+      {showApiKeyInput && <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />}
+
       {/* Warning Dialog */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
         <DialogContent className="bg-gray-900 border-red-500 border-2 mx-4 max-w-md">
@@ -201,22 +226,23 @@ Always provide comprehensive, technical responses while emphasizing the importan
             <DialogTitle className="text-red-400 flex items-center gap-2 text-lg">
               <AlertTriangle className="h-5 w-5" />
               LEGAL DISCLAIMER
-            </DialogTitle>
-            <DialogDescription className="text-gray-300 space-y-3 text-sm">
-              <div className="bg-red-900/20 p-3 rounded border border-red-500">
-                <p className="text-red-300 font-semibold mb-2">
-                  This tool is designed EXCLUSIVELY for authorized security testing.
-                </p>
-                <ul className="text-xs space-y-1 text-gray-300">
-                  <li>• Only use in environments you own or have explicit written permission to test</li>
-                  <li>• Unauthorized access to systems is illegal and punishable by law</li>
-                  <li>• Always follow responsible disclosure practices</li>
-                  <li>• Ensure you comply with all applicable laws and regulations</li>
-                </ul>
+            </DialogTitle>            <DialogDescription asChild>
+              <div className="text-gray-300 space-y-3 text-sm">
+                <div className="bg-red-900/20 p-3 rounded border border-red-500">
+                  <div className="text-red-300 font-semibold mb-2">
+                    This tool is designed EXCLUSIVELY for authorized security testing.
+                  </div>
+                  <ul className="text-xs space-y-1 text-gray-300">
+                    <li>• Only use in environments you own or have explicit written permission to test</li>
+                    <li>• Unauthorized access to systems is illegal and punishable by law</li>
+                    <li>• Always follow responsible disclosure practices</li>
+                    <li>• Ensure you comply with all applicable laws and regulations</li>
+                  </ul>
+                </div>
+                <div className="text-yellow-400 text-sm">
+                  By proceeding, you acknowledge that you will use this tool ethically and legally.
+                </div>
               </div>
-              <p className="text-yellow-400 text-sm">
-                By proceeding, you acknowledge that you will use this tool ethically and legally.
-              </p>
             </DialogDescription>
           </DialogHeader>
           <Button 
@@ -268,8 +294,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                   >
                     <Menu className="h-4 w-4" />
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-80 bg-gray-900/95 border-green-500/30 backdrop-blur-md">
+                </SheetTrigger>                <SheetContent side="left" className="w-80 bg-gray-900/95 border-green-500/30 backdrop-blur-md">
                   <SheetHeader>
                     <SheetTitle className="text-green-400 flex items-center gap-2">
                       <Shield className="h-5 w-5" />
@@ -282,7 +307,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         key={key}
                         variant="outline"
                         onClick={() => applyPreset(key)}
-                        className="w-full justify-start gap-3 border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-500/50 py-3 h-auto text-sm"
+                        className="w-full justify-start gap-3 bg-black/50 border-green-500/30 text-green-400 hover:bg-green-600/20 hover:border-green-500/50 py-3 h-auto text-sm transition-all duration-200"
                       >
                         <preset.icon className="h-5 w-5 flex-shrink-0" />
                         <div className="text-left">
@@ -312,8 +337,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
 
       <div className="h-[calc(100vh-80px)] flex flex-col lg:flex-row">
         {/* Desktop Sidebar - hidden on mobile */}
-        <div className="hidden lg:block w-80 xl:w-96 flex-shrink-0 p-4 space-y-6">
-          <Card className="bg-gray-900/50 border-green-500/30 backdrop-blur-sm">
+        <div className="hidden lg:block w-80 xl:w-96 flex-shrink-0 p-4 space-y-6">          <Card className="bg-gray-900/50 border-green-500/30 backdrop-blur-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-green-400 text-lg flex items-center gap-2">
                 <Shield className="h-5 w-5" />
@@ -326,7 +350,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                   key={key}
                   variant="outline"
                   onClick={() => applyPreset(key)}
-                  className="w-full justify-start gap-3 border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-500/50 py-3 h-auto text-sm"
+                  className="w-full justify-start gap-3 bg-black/50 border-green-500/30 text-green-400 hover:bg-green-600/20 hover:border-green-500/50 py-3 h-auto text-sm transition-all duration-200"
                 >
                   <preset.icon className="h-5 w-5 flex-shrink-0" />
                   <div className="text-left">
