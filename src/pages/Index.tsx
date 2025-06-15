@@ -283,7 +283,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
         <div className="flex-1 flex flex-col">
           {/* Messages */}
           <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm">
-            <div className="h-full overflow-y-auto p-6">
+            <div className="h-full overflow-y-auto p-6 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center space-y-6">
