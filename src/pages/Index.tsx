@@ -224,87 +224,70 @@ Always provide comprehensive, technical responses while emphasizing the importan
         </DialogContent>
       </Dialog>
 
-      {/* Header - Hanging Glass Metamorphosis */}
-      <div className="relative">
-        {/* Glass Background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-green-400/10 to-teal-500/5 backdrop-blur-xl"></div>
+      {/* Minimal Header */}
+      <div className="relative border-b border-green-500/20 bg-black/80 backdrop-blur-md">
+        {/* Hanging glass threads */}
+        <div className="absolute top-0 left-1/4 w-px h-4 bg-gradient-to-b from-green-400/30 to-transparent hidden md:block"></div>
+        <div className="absolute top-0 right-1/3 w-px h-3 bg-gradient-to-b from-green-300/20 to-transparent hidden md:block"></div>
+        <div className="absolute top-0 left-3/4 w-px h-5 bg-gradient-to-b from-emerald-400/25 to-transparent hidden md:block"></div>
         
-        {/* Hanging Elements */}
-        <div className="absolute top-0 left-1/4 w-px h-16 bg-gradient-to-b from-green-400/60 to-transparent"></div>
-        <div className="absolute top-0 right-1/3 w-px h-12 bg-gradient-to-b from-green-300/40 to-transparent"></div>
-        <div className="absolute top-0 left-3/4 w-px h-20 bg-gradient-to-b from-emerald-400/50 to-transparent"></div>
-        
-        {/* Main Header Content */}
-        <div className="relative border-b border-green-500/20 bg-black/40 backdrop-blur-lg">
-          <div className="container mx-auto px-8 py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6">
-                {/* Logo with Glass Effect */}
-                <div className="relative group">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-green-400/20 to-emerald-500/20 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                  <div className="relative flex items-center gap-4 bg-black/60 backdrop-blur-sm rounded-xl px-6 py-4 border border-green-500/30">
-                    <div className="relative">
-                      <Terminal className="h-8 w-8 text-green-400" />
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full opacity-60 animate-pulse"></div>
-                    </div>
-                    <div>
-                      <h1 className="text-2xl font-light text-green-400 tracking-wide">Hex</h1>
-                      <p className="text-xs text-gray-400/80 font-light">AI Penetration Testing</p>
-                    </div>
+        <div className="container mx-auto px-4 md:px-6 py-3 md:py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-green-400/10 rounded-lg blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                <div className="relative flex items-center gap-2 md:gap-3 bg-black/40 backdrop-blur-sm rounded-lg px-3 md:px-4 py-2 border border-green-500/20">
+                  <Terminal className="h-5 w-5 md:h-6 md:w-6 text-green-400" />
+                  <div>
+                    <h1 className="text-lg md:text-xl font-light text-green-400 tracking-wide">Hex</h1>
+                    <p className="text-xs text-gray-400/70 font-light hidden md:block">AI Penetration Testing</p>
                   </div>
-                </div>
-                
-                {/* Floating Badge */}
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-green-400/30 to-transparent rounded-full blur-sm"></div>
-                  <Badge variant="outline" className="relative border-green-500/40 text-green-300/90 px-4 py-2 bg-black/50 backdrop-blur-sm font-light">
-                    v2.0 • Ethical Assistant
-                  </Badge>
                 </div>
               </div>
               
-              {/* Status Indicator */}
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-green-400/20 rounded-full blur-md opacity-50"></div>
-                  <div className="relative flex items-center gap-3 bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-green-500/30">
-                    <div className="relative">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-40"></div>
-                    </div>
-                    <span className="text-green-300/90 text-sm font-light">Online</span>
-                  </div>
-                </div>
+              {/* Compact Badge */}
+              <Badge variant="outline" className="border-green-500/30 text-green-300/80 px-2 md:px-3 py-1 bg-black/30 backdrop-blur-sm font-light text-xs">
+                <span className="hidden md:inline">v2.0 • </span>Ethical
+              </Badge>
+            </div>
+            
+            {/* Status - minimal */}
+            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 border border-green-500/20">
+              <div className="relative">
+                <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                <div className="absolute inset-0 w-1.5 h-1.5 bg-green-400 rounded-full animate-ping opacity-30"></div>
               </div>
+              <span className="text-green-300/80 text-xs font-light">Online</span>
             </div>
           </div>
-          
-          {/* Subtle Bottom Glow */}
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-green-400/40 to-transparent"></div>
         </div>
+        
+        {/* Bottom accent line */}
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/3 md:w-1/2 h-px bg-gradient-to-r from-transparent via-green-400/30 to-transparent"></div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 flex gap-8" style={{ height: 'calc(100vh - 180px)' }}>
+      <div className="container mx-auto px-4 py-4 md:py-6 flex flex-col lg:flex-row gap-4 md:gap-8" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Sidebar */}
-        <div className="w-96 space-y-6 flex-shrink-0">
+        <div className="w-full lg:w-80 xl:w-96 space-y-4 md:space-y-6 flex-shrink-0">
           {/* Preset Prompts */}
           <Card className="bg-gray-900/50 border-green-500/30 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-green-400 text-lg flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Penetration Testing Presets
+            <CardHeader className="pb-3 md:pb-4">
+              <CardTitle className="text-green-400 text-base md:text-lg flex items-center gap-2">
+                <Shield className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="hidden md:inline">Penetration Testing </span>Presets
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 md:space-y-3">
               {Object.entries(PROMPT_PRESETS).map(([key, preset]) => (
                 <Button
                   key={key}
                   variant="outline"
                   onClick={() => applyPreset(key)}
-                  className="w-full justify-start gap-3 border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-500/50 py-3 h-auto"
+                  className="w-full justify-start gap-2 md:gap-3 border-green-500/30 text-green-400 hover:bg-green-500/10 hover:border-green-500/50 py-2 md:py-3 h-auto text-xs md:text-sm"
                 >
-                  <preset.icon className="h-5 w-5" />
-                  <div className="text-left">
+                  <preset.icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                  <div className="text-left truncate">
                     <div className="font-medium">{preset.name}</div>
                   </div>
                 </Button>
@@ -314,10 +297,10 @@ Always provide comprehensive, technical responses while emphasizing the importan
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full lg:h-auto">
           {/* Messages */}
           <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-4">
-            <div className="h-full overflow-y-auto p-6 scrollbar-hide">
+            <div className="h-full overflow-y-auto p-3 md:p-6 scrollbar-hide">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center space-y-6">
@@ -419,8 +402,8 @@ Always provide comprehensive, technical responses while emphasizing the importan
 
           {/* Input Area */}
           <div className="flex-shrink-0">
-            <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-3 backdrop-blur-sm">
-              <div className="flex gap-3 items-end">
+            <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-2 md:p-3 backdrop-blur-sm">
+              <div className="flex gap-2 md:gap-3 items-end">
                 <div className="flex-1">
                   <Textarea
                     placeholder="Ask about penetration testing, request payloads, or security analysis..."
@@ -449,7 +432,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                 <Button
                   onClick={sendMessage}
                   disabled={isLoading || !input.trim()}
-                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-4 py-2 h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-3 md:px-4 py-2 h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
