@@ -1,5 +1,5 @@
 export interface ApiError {
-  type: 'network' | 'auth' | 'rate_limit' | 'server' | 'client' | 'unknown';
+  type: 'network' | 'auth' | 'rate_limit' | 'server' | 'client' | 'payment_required' | 'unknown';
   message: string;
   status?: number;
   retryable: boolean;
@@ -16,6 +16,7 @@ export class ApiErrorHandler {
   private static readonly AUTH_STATUSES = [401, 403];
   private static readonly CLIENT_STATUSES = [400, 422];
   private static readonly RATE_LIMIT_STATUSES = [429];
+  private static readonly PAYMENT_STATUSES = [402];
 
   static async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
     if (response.ok) {
@@ -57,6 +58,15 @@ export class ApiErrorHandler {
       return {
         type: 'auth',
         message: this.getAuthErrorMessage(status, message),
+        status,
+        retryable: false
+      };
+    }
+
+    if (this.PAYMENT_STATUSES.includes(status)) {
+      return {
+        type: 'payment_required',
+        message: this.getPaymentErrorMessage(message),
         status,
         retryable: false
       };
@@ -175,6 +185,13 @@ export class ApiErrorHandler {
 
   private static getUnknownErrorMessage(status: number, originalMessage: string): string {
     return `Unexpected error (${status}): ${originalMessage}`;
+  }
+
+  private static getPaymentErrorMessage(originalMessage: string): string {
+    if (originalMessage.includes('credits') || originalMessage.includes('tokens')) {
+      return 'Insufficient credits. Please upgrade your OpenRouter account or reduce your request length. Visit https://openrouter.ai/settings/credits to add credits.';
+    }
+    return `Payment required: ${originalMessage}`;
   }
 
   static shouldRetry(error: ApiError, attempt: number): boolean {

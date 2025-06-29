@@ -65,6 +65,7 @@ const Index = () => {
   const [showMobilePresets, setShowMobilePresets] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [lastError, setLastError] = useState<ApiError | null>(null);
+  const [maxTokens, setMaxTokens] = useState(2048); // Start with default, reduce if needed
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
@@ -159,6 +160,14 @@ const Index = () => {
         toast({
           title: 'Request Error',
           description: error.message,
+          variant: 'destructive',
+        });
+        break;
+        
+      case 'payment_required':
+        toast({
+          title: 'Insufficient Credits',
+          description: 'Your OpenRouter account needs more credits. Consider upgrading or reducing your request length.',
           variant: 'destructive',
         });
         break;
@@ -260,11 +269,25 @@ Always provide comprehensive, technical responses while emphasizing the importan
             }
           ],
           temperature: 0.7,
-          max_tokens: 2048,
+          max_tokens: maxTokens, // Use dynamic token limit
         }),
       });
 
       if (result.error) {
+        // Handle payment required error by reducing tokens
+        if (result.error.type === 'payment_required' && maxTokens > 512) {
+          const newMaxTokens = Math.floor(maxTokens * 0.7); // Reduce by 30%
+          setMaxTokens(newMaxTokens);
+          toast({
+            title: 'Reducing Token Usage',
+            description: `Reduced max tokens to ${newMaxTokens} due to credit limits. Retrying...`,
+            variant: 'default',
+          });
+          // Retry with reduced tokens
+          setTimeout(() => sendMessage(true), 1000);
+          return;
+        }
+        
         handleApiError(result.error);
         return;
       }
