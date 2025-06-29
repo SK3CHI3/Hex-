@@ -145,9 +145,9 @@ export class ApiErrorHandler {
   private static getAuthErrorMessage(status: number, originalMessage: string): string {
     switch (status) {
       case 401:
-        return 'Invalid API key. Please check your OpenRouter API key and try again.';
+        return 'Invalid OpenRouter API key. Please check your key and try again.';
       case 403:
-        return 'Access denied. Your API key may not have the required permissions.';
+        return 'Access denied. Your OpenRouter API key may not have the required permissions.';
       default:
         return originalMessage;
     }
@@ -188,8 +188,8 @@ export class ApiErrorHandler {
   }
 
   private static getPaymentErrorMessage(originalMessage: string): string {
-    if (originalMessage.includes('credits') || originalMessage.includes('tokens')) {
-      return 'Insufficient credits. Please upgrade your OpenRouter account or reduce your request length. Visit https://openrouter.ai/settings/credits to add credits.';
+    if (originalMessage.includes('quota') || originalMessage.includes('billing') || originalMessage.includes('payment') || originalMessage.includes('subscription')) {
+      return 'Insufficient quota or subscription issue. Please check your GitHub Marketplace subscription.';
     }
     return `Payment required: ${originalMessage}`;
   }
@@ -212,9 +212,7 @@ export class ApiErrorHandler {
 export const createApiClient = (apiKey: string) => {
   const baseHeaders = {
     'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-    'HTTP-Referer': window.location.origin,
-    'X-Title': 'Hex'
+    'Content-Type': 'application/json'
   };
 
   return {
@@ -222,17 +220,20 @@ export const createApiClient = (apiKey: string) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
+      const finalHeaders = {
+        ...baseHeaders,
+        ...options.headers
+      };
+
       try {
         const response = await fetch(url, {
           ...options,
-          headers: {
-            ...baseHeaders,
-            ...options.headers
-          },
+          headers: finalHeaders,
           signal: controller.signal
         });
 
         clearTimeout(timeoutId);
+        
         return await ApiErrorHandler.handleResponse<T>(response);
       } catch (error) {
         clearTimeout(timeoutId);
@@ -260,7 +261,7 @@ export const createApiClient = (apiKey: string) => {
       let lastError: ApiError | undefined;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        const result = await this.request<T>(url, options);
+        const result = await this.request(url, options);
         
         if (result.data) {
           return result;
