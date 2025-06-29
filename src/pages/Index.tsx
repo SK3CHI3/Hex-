@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle, Menu } from 'lucide-react';
+import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle, Menu, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { ApiKeyInput } from '../components/ApiKeyInput';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { createApiClient, ApiError } from '@/lib/api-error-handler';
 
 const PROMPT_PRESETS = {
   'payload-generation': {
@@ -62,6 +63,8 @@ const Index = () => {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState('');
   const [showMobilePresets, setShowMobilePresets] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastError, setLastError] = useState<ApiError | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
@@ -112,8 +115,81 @@ const Index = () => {
     }
   };
 
-  const sendMessage = async () => {
-    if (!input.trim()) {
+  const handleApiError = (error: ApiError) => {
+    setLastError(error);
+    
+    switch (error.type) {
+      case 'auth':
+        // Clear API key and show input
+        localStorage.removeItem('openrouter_api_key');
+        setApiKey('');
+        setShowApiKeyInput(true);
+        toast({
+          title: 'Authentication Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+        break;
+        
+      case 'rate_limit':
+        toast({
+          title: 'Rate Limit Exceeded',
+          description: error.message,
+          variant: 'destructive',
+        });
+        break;
+        
+      case 'network':
+        toast({
+          title: 'Network Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+        break;
+        
+      case 'server':
+        toast({
+          title: 'Server Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+        break;
+        
+      case 'client':
+        toast({
+          title: 'Request Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+        break;
+        
+      default:
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+    }
+  };
+
+  const retryLastMessage = async () => {
+    if (lastError && messages.length > 0) {
+      const lastUserMessage = messages[messages.length - 1];
+      if (lastUserMessage.type === 'user') {
+        // Remove the last user message and retry
+        setMessages(prev => prev.slice(0, -1));
+        setInput(lastUserMessage.content);
+        setRetryCount(prev => prev + 1);
+        setLastError(null);
+        await sendMessage(true); // true indicates it's a retry
+      }
+    }
+  };
+
+  const sendMessage = async (isRetry: boolean = false) => {
+    const messageToSend = isRetry ? input : input.trim();
+    
+    if (!messageToSend) {
       toast({
         title: 'Error',
         description: 'Please enter a message',
@@ -130,23 +206,23 @@ const Index = () => {
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content: input,
+      content: messageToSend,
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    if (!isRetry) {
+      setMessages(prev => [...prev, userMessage]);
+      setInput('');
+    }
+    
     setIsLoading(true);
+    setLastError(null);
 
+    const apiClient = createApiClient(apiKey);
+    
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const result = await apiClient.requestWithRetry('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'Hex'
-        },
         body: JSON.stringify({
           model: 'deepseek/deepseek-r1',
           messages: [
@@ -180,7 +256,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
             })),
             {
               role: 'user',
-              content: input
+              content: messageToSend
             }
           ],
           temperature: 0.7,
@@ -188,34 +264,30 @@ Always provide comprehensive, technical responses while emphasizing the importan
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          // Invalid or expired API key
-          localStorage.removeItem('openrouter_api_key');
-          setApiKey('');
-          setShowApiKeyInput(true);
-          throw new Error('Invalid API key. Please enter a valid OpenRouter API key.');
-        }
-        throw new Error(`API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      if (result.error) {
+        handleApiError(result.error);
+        return;
       }
 
-      const data = await response.json();
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: data.choices[0].message.content,
-        timestamp: new Date(),
-      };
+      if (result.data) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: result.data.choices[0].message.content,
+          timestamp: new Date(),
+        };
 
-      setMessages(prev => [...prev, assistantMessage]);
+        setMessages(prev => [...prev, assistantMessage]);
+        setRetryCount(0); // Reset retry count on success
+      }
     } catch (error) {
-      console.error('Error calling OpenRouter API:', error);
-      toast({
-        title: 'API Error',
-        description: error instanceof Error ? error.message : 'Failed to get response from AI. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('Unexpected error:', error);
+      const unexpectedError: ApiError = {
+        type: 'unknown',
+        message: 'An unexpected error occurred. Please try again.',
+        retryable: false
+      };
+      handleApiError(unexpectedError);
     } finally {
       setIsLoading(false);
     }
@@ -478,7 +550,38 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                         <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                       </div>
-                      <span className="text-green-400 font-mono text-xs sm:text-sm">Hex is analyzing your request...</span>
+                      <span className="text-green-400 font-mono text-xs sm:text-sm">
+                        {retryCount > 0 ? `Retrying... (${retryCount}/3)` : 'Hex is analyzing your request...'}
+                      </span>
+                    </div>
+                  )}
+                  {/* Error State with Retry Option */}
+                  {lastError && !isLoading && (
+                    <div className="flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 md:p-6 bg-red-900/20 border border-red-500/30 rounded-xl mr-1 sm:mr-2 md:mr-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className="h-4 w-4 text-red-400" />
+                          <span className="text-red-400 font-semibold text-sm">
+                            {lastError.type === 'auth' ? 'Authentication Error' :
+                             lastError.type === 'rate_limit' ? 'Rate Limit Exceeded' :
+                             lastError.type === 'network' ? 'Network Error' :
+                             lastError.type === 'server' ? 'Server Error' :
+                             lastError.type === 'client' ? 'Request Error' : 'Error'}
+                          </span>
+                        </div>
+                        <p className="text-red-300 text-xs sm:text-sm">{lastError.message}</p>
+                      </div>
+                      {lastError.retryable && retryCount < 3 && (
+                        <Button
+                          onClick={retryLastMessage}
+                          variant="outline"
+                          size="sm"
+                          className="border-red-500/50 text-red-400 hover:bg-red-500/20 hover:border-red-500/70 flex-shrink-0"
+                        >
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Retry
+                        </Button>
+                      )}
                     </div>
                   )}
                   <div ref={messagesEndRef} />
