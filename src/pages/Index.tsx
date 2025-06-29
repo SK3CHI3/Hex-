@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { ApiKeyInput } from '../components/ApiKeyInput';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const PROMPT_PRESETS = {
   'payload-generation': {
@@ -62,6 +63,8 @@ const Index = () => {
   const [selectedPreset, setSelectedPreset] = useState('');
   const [showMobilePresets, setShowMobilePresets] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -218,20 +221,34 @@ Always provide comprehensive, technical responses while emphasizing the importan
     }
   };
 
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.style.height = 'auto';
+      const maxHeight = isMobile ? 100 : 120;
+      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input, isMobile]);
+
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
       {showApiKeyInput && <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />}
 
-      {/* Warning Dialog */}
+      {/* Warning Dialog - Improved mobile responsiveness */}
       <Dialog open={showWarning} onOpenChange={setShowWarning}>
-        <DialogContent className="bg-gray-900 border-red-500 border-2 mx-4 max-w-md">
+        <DialogContent className="bg-gray-900 border-red-500 border-2 mx-2 sm:mx-4 max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-red-400 flex items-center gap-2 text-lg">
-              <AlertTriangle className="h-5 w-5" />
+            <DialogTitle className="text-red-400 flex items-center gap-2 text-base sm:text-lg">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
               LEGAL DISCLAIMER
-            </DialogTitle>            <DialogDescription asChild>
-              <div className="text-gray-300 space-y-3 text-sm">
-                <div className="bg-red-900/20 p-3 rounded border border-red-500">
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-gray-300 space-y-3 text-xs sm:text-sm">
+                <div className="bg-red-900/20 p-2 sm:p-3 rounded border border-red-500">
                   <div className="text-red-300 font-semibold mb-2">
                     This tool is designed EXCLUSIVELY for authorized security testing.
                   </div>
@@ -242,7 +259,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                     <li>• Ensure you comply with all applicable laws and regulations</li>
                   </ul>
                 </div>
-                <div className="text-yellow-400 text-sm">
+                <div className="text-yellow-400 text-xs sm:text-sm">
                   By proceeding, you acknowledge that you will use this tool ethically and legally.
                 </div>
               </div>
@@ -250,7 +267,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
           </DialogHeader>
           <Button 
             onClick={() => setShowWarning(false)}
-            className="bg-green-600 hover:bg-green-700 text-black font-semibold mt-4"
+            className="bg-green-600 hover:bg-green-700 text-black font-semibold mt-4 w-full sm:w-auto"
           >
             I Understand - Proceed Responsibly
           </Button>
@@ -297,22 +314,23 @@ Always provide comprehensive, technical responses while emphasizing the importan
                   >
                     <Menu className="h-4 w-4" />
                   </Button>
-                </SheetTrigger>                <SheetContent side="left" className="w-80 bg-gray-900/95 border-green-500/30 backdrop-blur-md">
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[85vw] max-w-80 bg-gray-900/95 border-green-500/30 backdrop-blur-md">
                   <SheetHeader>
-                    <SheetTitle className="text-green-400 flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
+                    <SheetTitle className="text-green-400 flex items-center gap-2 text-sm sm:text-base">
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
                       Penetration Testing Presets
                     </SheetTitle>
                   </SheetHeader>
-                  <div className="space-y-3 mt-6">
+                  <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
                     {Object.entries(PROMPT_PRESETS).map(([key, preset]) => (
                       <Button
                         key={key}
                         variant="outline"
                         onClick={() => applyPreset(key)}
-                        className="w-full justify-start gap-3 bg-black/50 border-green-500/30 text-green-400 hover:bg-green-600/20 hover:border-green-500/50 py-3 h-auto text-sm transition-all duration-200"
+                        className="w-full justify-start gap-2 sm:gap-3 bg-black/50 border-green-500/30 text-green-400 hover:bg-green-600/20 hover:border-green-500/50 py-2 sm:py-3 h-auto text-xs sm:text-sm transition-all duration-200"
                       >
-                        <preset.icon className="h-5 w-5 flex-shrink-0" />
+                        <preset.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                         <div className="text-left">
                           <div className="font-medium">{preset.name}</div>
                         </div>
@@ -366,17 +384,17 @@ Always provide comprehensive, technical responses while emphasizing the importan
         </div>
 
         {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-w-0 p-3 sm:p-4">
+        <div className="flex-1 flex flex-col min-w-0 p-2 sm:p-3 md:p-4">
           {/* Messages */}
-          <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-3 sm:mb-4">
-            <div className="h-full overflow-y-auto p-3 sm:p-4 md:p-6">
+          <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-2 sm:mb-3 md:mb-4">
+            <div className="h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-center space-y-4 sm:space-y-6 px-4">
-                    <Terminal className="h-16 w-16 sm:h-20 sm:w-20 text-green-400 mx-auto" />
+                  <div className="text-center space-y-3 sm:space-y-4 md:space-y-6 px-2 sm:px-4">
+                    <Terminal className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 text-green-400 mx-auto" />
                     <div>
-                      <h3 className="text-xl sm:text-2xl text-green-400 mb-2 sm:mb-3">Welcome to Hex</h3>
-                      <p className="text-gray-400 text-sm sm:text-base lg:text-lg max-w-lg mx-auto">
+                      <h3 className="text-lg sm:text-xl md:text-2xl text-green-400 mb-2 sm:mb-3">Welcome to Hex</h3>
+                      <p className="text-gray-400 text-xs sm:text-sm md:text-base lg:text-lg max-w-lg mx-auto">
                         Your AI assistant for ethical hacking and penetration testing. 
                         Start by selecting a preset or asking a security-related question.
                       </p>
@@ -384,7 +402,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-3 sm:space-y-4 md:space-y-6">
                   {messages.map((message) => (
                     <div key={message.id} className="group">
                       <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -409,10 +427,10 @@ Always provide comprehensive, technical responses while emphasizing the importan
                           {message.timestamp.toLocaleTimeString()}
                         </span>
                       </div>
-                      <div className={`relative rounded-xl p-3 sm:p-4 md:p-6 shadow-lg transition-all duration-200 hover:shadow-xl ${
+                      <div className={`relative rounded-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-lg transition-all duration-200 hover:shadow-xl ${
                         message.type === 'user' 
-                          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 ml-2 sm:ml-4' 
-                          : 'bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 mr-2 sm:mr-4'
+                          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 ml-1 sm:ml-2 md:ml-4' 
+                          : 'bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 mr-1 sm:mr-2 md:mr-4'
                       }`}>
                         <div className={`absolute top-0 left-0 w-1 h-full rounded-l-xl ${
                           message.type === 'user' ? 'bg-blue-400' : 'bg-green-400'
@@ -442,9 +460,9 @@ Always provide comprehensive, technical responses while emphasizing the importan
                               ul: ({ children, ...props }) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ul>,
                               ol: ({ children, ...props }) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ol>,
                               li: ({ children, ...props }) => <li className="text-gray-200 text-xs sm:text-sm" {...props}>{children}</li>,
-                              h1: ({ children, ...props }) => <h1 className="text-base sm:text-lg md:text-xl font-bold text-green-300 mb-2 sm:mb-3" {...props}>{children}</h1>,
-                              h2: ({ children, ...props }) => <h2 className="text-sm sm:text-base md:text-lg font-bold text-green-300 mb-2" {...props}>{children}</h2>,
-                              h3: ({ children, ...props }) => <h3 className="text-sm sm:text-base font-bold text-green-300 mb-2" {...props}>{children}</h3>,
+                              h1: ({ children, ...props }) => <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-green-300 mb-2 sm:mb-3" {...props}>{children}</h1>,
+                              h2: ({ children, ...props }) => <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-green-300 mb-2" {...props}>{children}</h2>,
+                              h3: ({ children, ...props }) => <h3 className="text-xs sm:text-sm md:text-base font-bold text-green-300 mb-2" {...props}>{children}</h3>,
                             }}
                           >
                             {message.content}
@@ -454,7 +472,7 @@ Always provide comprehensive, technical responses while emphasizing the importan
                     </div>
                   ))}
                   {isLoading && (
-                    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 md:p-6 bg-green-900/20 border border-green-500/30 rounded-xl mr-2 sm:mr-4">
+                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 lg:p-6 bg-green-900/20 border border-green-500/30 rounded-xl mr-1 sm:mr-2 md:mr-4">
                       <div className="flex space-x-1 sm:space-x-2">
                         <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce"></div>
                         <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -469,12 +487,13 @@ Always provide comprehensive, technical responses while emphasizing the importan
             </div>
           </div>
 
-          {/* Input Area */}
+          {/* Input Area - Improved mobile responsiveness */}
           <div className="flex-shrink-0">
             <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-2 sm:p-3 backdrop-blur-sm">
               <div className="flex gap-2 sm:gap-3 items-end">
                 <div className="flex-1">
                   <Textarea
+                    ref={textareaRef}
                     placeholder="Ask about penetration testing, request payloads, or security analysis..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -484,25 +503,18 @@ Always provide comprehensive, technical responses while emphasizing the importan
                         sendMessage();
                       }
                     }}
-                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none min-h-[40px] sm:min-h-[44px] max-h-[100px] sm:max-h-[120px] text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide"
+                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide"
                     rows={1}
                     style={{ 
-                      height: 'auto',
-                      minHeight: window.innerWidth < 640 ? '40px' : '44px',
-                      maxHeight: window.innerWidth < 640 ? '100px' : '120px'
-                    }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      const maxHeight = window.innerWidth < 640 ? 100 : 120;
-                      target.style.height = Math.min(target.scrollHeight, maxHeight) + 'px';
+                      minHeight: isMobile ? '40px' : '44px',
+                      maxHeight: isMobile ? '100px' : '120px'
                     }}
                   />
                 </div>
                 <Button
                   onClick={sendMessage}
                   disabled={isLoading || !input.trim()}
-                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-3 sm:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 sm:px-3 md:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
