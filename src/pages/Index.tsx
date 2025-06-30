@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle, Menu, RefreshCw } from 'lucide-react';
+import { Send, Terminal, Shield, Zap, Database, Code, Lock, AlertTriangle, Menu, RefreshCw, Copy as CopyIcon, Check as CheckIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +52,57 @@ interface Message {
   timestamp: Date;
   isError?: boolean;
 }
+
+const CopyablePreBlock = (props: React.HTMLAttributes<HTMLPreElement>) => {
+  const isMobile = useIsMobile();
+  const codeElement = React.Children.toArray(props.children)[0];
+  const codeString = codeElement && typeof codeElement === 'object' && 'props' in codeElement ? String(codeElement.props.children).replace(/\n$/, '') : '';
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(codeString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch (e) {
+      setCopied(false);
+    }
+  };
+  if (isMobile) {
+    return (
+      <div className="relative mb-2 sm:mb-3">
+        <button
+          onClick={handleCopy}
+          className="z-10 text-green-300 p-1 rounded opacity-80 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-green-400 bg-transparent border-none shadow-none absolute top-0 right-0 translate-x-1/2 -translate-y-1/2"
+          title={copied ? 'Copied!' : 'Copy'}
+          aria-label="Copy code block"
+          tabIndex={0}
+          type="button"
+        >
+          {copied ? <CheckIcon className="w-4 h-4" /> : <CopyIcon className="w-4 h-4" />}
+        </button>
+        <pre className="bg-gray-800 p-2 rounded-lg overflow-x-auto text-xs relative">
+          {props.children}
+        </pre>
+      </div>
+    );
+  }
+  // Desktop: keep button inside <pre>
+  return (
+    <pre className="bg-gray-800 p-2 sm:p-3 md:p-4 rounded-lg overflow-x-auto mb-2 sm:mb-3 text-xs sm:text-sm relative" {...props}>
+      <button
+        onClick={handleCopy}
+        className="z-10 text-green-300 p-1 rounded opacity-80 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-green-400 sm:absolute sm:top-2 sm:right-2 bg-transparent border-none shadow-none"
+        title={copied ? 'Copied!' : 'Copy'}
+        aria-label="Copy code block"
+        tabIndex={0}
+        type="button"
+      >
+        {copied ? <CheckIcon className="w-4 h-4" /> : <CopyIcon className="w-4 h-4" />}
+      </button>
+      {props.children}
+    </pre>
+  );
+};
 
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -306,6 +357,19 @@ const Index = () => {
     adjustTextareaHeight();
   }, [input, isMobile]);
 
+  // Scroll input into view on focus (mobile)
+  const handleInputFocus = () => {
+    if (isMobile && textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
+    }
+  };
+
+  // Short placeholder for mobile
+  const mobilePlaceholder = "Ask about hacking...";
+  const desktopPlaceholder = "Ask about penetration testing, request payloads, or security analysis...";
+
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
       {/* Minimal Header */}
@@ -420,8 +484,12 @@ const Index = () => {
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col min-w-0 p-2 sm:p-3 md:p-4">
           {/* Messages */}
-          <div className="flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-2 sm:mb-3 md:mb-4">
-            <div className="h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6">
+          <div className={
+            `flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-2 sm:mb-3 md:mb-4 ${isMobile ? 'pb-24' : ''}`
+          }>
+            <div className={
+              `h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 ${isMobile ? 'pb-20' : ''}`
+            }>
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center space-y-3 sm:space-y-4 md:space-y-6 px-2 sm:px-4">
@@ -437,74 +505,74 @@ const Index = () => {
                 </div>
               ) : (
                 <div className="space-y-3 sm:space-y-4 md:space-y-6">
-                  {messages.map((message) => (
-                    <div key={message.id} className="group">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                        <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
+                  {messages.map((message) => {
+                    return (
+                      <div key={message.id} className="group">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                          <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
+                            message.type === 'user' 
+                              ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300' 
+                              : 'bg-green-500/20 border border-green-500/50 text-green-300'
+                          }`}>
+                            {message.type === 'user' ? (
+                              <>
+                                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full"></div>
+                                USER
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full"></div>
+                                HEX
+                              </>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-500 opacity-70 group-hover:opacity-100 transition-opacity">
+                            {message.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className={`relative rounded-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-lg transition-all duration-200 hover:shadow-xl ${
                           message.type === 'user' 
-                            ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300' 
-                            : 'bg-green-500/20 border border-green-500/50 text-green-300'
+                            ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 ml-1 sm:ml-2 md:ml-4' 
+                            : 'bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 mr-1 sm:mr-2 md:mr-4'
                         }`}>
-                          {message.type === 'user' ? (
-                            <>
-                              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full"></div>
-                              USER
-                            </>
-                          ) : (
-                            <>
-                              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full"></div>
-                              HEX
-                            </>
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500 opacity-70 group-hover:opacity-100 transition-opacity">
-                          {message.timestamp.toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className={`relative rounded-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-lg transition-all duration-200 hover:shadow-xl ${
-                        message.type === 'user' 
-                          ? 'bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 ml-1 sm:ml-2 md:ml-4' 
-                          : 'bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 mr-1 sm:mr-2 md:mr-4'
-                      }`}>
-                        <div className={`absolute top-0 left-0 w-1 h-full rounded-l-xl ${
-                          message.type === 'user' ? 'bg-blue-400' : 'bg-green-400'
-                        }`}></div>
-                        <div className="prose prose-invert max-w-none">
-                          <ReactMarkdown 
-                            components={{
-                              p: ({ children, ...props }) => <p className="mb-2 sm:mb-3 last:mb-0 text-xs sm:text-sm leading-relaxed text-gray-200" {...props}>{children}</p>,
-                              code: ({ children, ...props }) => {
-                                const { node, ...rest } = props;
-                                const isInline = !node || node.tagName !== 'pre';
-                                return isInline ? (
-                                  <code className="bg-gray-800 px-1 sm:px-1.5 py-0.5 rounded text-green-300 font-mono text-xs" {...rest}>
-                                    {children}
-                                  </code>
-                                ) : (
-                                  <code className="text-green-300 font-mono text-xs sm:text-sm" {...rest}>{children}</code>
-                                );
-                              },
-                              pre: ({ children, ...props }) => (
-                                <pre className="bg-gray-800 p-2 sm:p-3 md:p-4 rounded-lg overflow-x-auto mb-2 sm:mb-3 text-xs sm:text-sm" {...props}>
-                                  {children}
-                                </pre>
-                              ),
-                              strong: ({ children, ...props }) => <strong className="text-green-300 font-semibold" {...props}>{children}</strong>,
-                              em: ({ children, ...props }) => <em className="text-blue-300 italic" {...props}>{children}</em>,
-                              ul: ({ children, ...props }) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ul>,
-                              ol: ({ children, ...props }) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ol>,
-                              li: ({ children, ...props }) => <li className="text-gray-200 text-xs sm:text-sm" {...props}>{children}</li>,
-                              h1: ({ children, ...props }) => <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-green-300 mb-2 sm:mb-3" {...props}>{children}</h1>,
-                              h2: ({ children, ...props }) => <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-green-300 mb-2" {...props}>{children}</h2>,
-                              h3: ({ children, ...props }) => <h3 className="text-xs sm:text-sm md:text-base font-bold text-green-300 mb-2" {...props}>{children}</h3>,
-                            }}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
+                          <div className={`absolute top-0 left-0 w-1 h-full rounded-l-xl ${
+                            message.type === 'user' ? 'bg-blue-400' : 'bg-green-400'
+                          }`}></div>
+                          <div className="prose prose-invert max-w-none">
+                            <ReactMarkdown 
+                              components={{
+                                p: ({ children, ...props }) => <p className="mb-2 sm:mb-3 last:mb-0 text-xs sm:text-sm leading-relaxed text-gray-200" {...props}>{children}</p>,
+                                code: ({ children, node, ...rest }) => {
+                                  // Treat as inline if node is not present or node.tagName is not 'code'
+                                  const isInline = !node || node.tagName !== 'code';
+                                  if (isInline) {
+                                    return (
+                                      <code className="bg-gray-800 px-1 sm:px-1.5 py-0.5 rounded text-green-300 font-mono text-xs" {...rest}>
+                                        {children}
+                                      </code>
+                                    );
+                                  }
+                                  // For block code, let pre handle it
+                                  return <code {...rest}>{children}</code>;
+                                },
+                                pre: CopyablePreBlock,
+                                strong: ({ children, ...props }) => <strong className="text-green-300 font-semibold" {...props}>{children}</strong>,
+                                em: ({ children, ...props }) => <em className="text-blue-300 italic" {...props}>{children}</em>,
+                                ul: ({ children, ...props }) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ul>,
+                                ol: ({ children, ...props }) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ol>,
+                                li: ({ children, ...props }) => <li className="text-gray-200 text-xs sm:text-sm" {...props}>{children}</li>,
+                                h1: ({ children, ...props }) => <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-green-300 mb-2 sm:mb-3" {...props}>{children}</h1>,
+                                h2: ({ children, ...props }) => <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-green-300 mb-2" {...props}>{children}</h2>,
+                                h3: ({ children, ...props }) => <h3 className="text-xs sm:text-sm md:text-base font-bold text-green-300 mb-2" {...props}>{children}</h3>,
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {isLoading && (
                     <div className="flex items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 lg:p-6 bg-green-900/20 border border-green-500/30 rounded-xl mr-1 sm:mr-2 md:mr-4">
                       <div className="flex space-x-1 sm:space-x-2">
@@ -524,39 +592,74 @@ const Index = () => {
           </div>
 
           {/* Input Area - Improved mobile responsiveness */}
-          <div className="flex-shrink-0">
-            <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-2 sm:p-3 backdrop-blur-sm">
-              <div className="flex gap-2 sm:gap-3 items-end">
+          {isMobile ? (
+            <div
+              className="fixed bottom-0 left-0 w-full z-30 bg-black/95 safe-area-bottom border-t border-green-500/20"
+              style={{ boxShadow: '0 -2px 16px 0 #000a' }}
+            >
+              <div className="px-2 pt-2 pb-2 flex items-end gap-2">
                 <div className="flex-1">
                   <Textarea
                     ref={textareaRef}
-                    placeholder="Ask about penetration testing, request payloads, or security analysis..."
+                    placeholder={isMobile ? mobilePlaceholder : desktopPlaceholder}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onFocus={handleInputFocus}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         sendMessage();
                       }
                     }}
-                    className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide"
+                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide px-2 py-2 min-h-[38px] max-h-[80px]"
                     rows={1}
-                    style={{ 
-                      minHeight: isMobile ? '40px' : '44px',
-                      maxHeight: isMobile ? '100px' : '120px'
-                    }}
+                    style={{ minHeight: '38px', maxHeight: '80px', fontSize: '15px' }}
                   />
                 </div>
                 <Button
                   onClick={() => sendMessage()}
                   disabled={isLoading || !input.trim()}
-                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 sm:px-3 md:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 py-2 h-10 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 min-w-[44px] min-h-[44px]"
+                  style={{ fontSize: '18px' }}
+                  tabIndex={0}
+                  aria-label="Send"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-5 w-5" />
                 </Button>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex-shrink-0">
+              <div className="bg-gray-900/70 border border-green-500/30 rounded-lg p-2 sm:p-3 backdrop-blur-sm">
+                <div className="flex gap-2 sm:gap-3 items-end">
+                  <div className="flex-1">
+                    <Textarea
+                      ref={textareaRef}
+                      placeholder={isMobile ? mobilePlaceholder : desktopPlaceholder}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
+                      className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide"
+                      rows={1}
+                      style={{ minHeight: '44px', maxHeight: '120px' }}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => sendMessage()}
+                    disabled={isLoading || !input.trim()}
+                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 sm:px-3 md:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
