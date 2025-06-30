@@ -116,6 +116,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputBarRef = useRef<HTMLDivElement>(null);
 
   const loadingMessages = [
     "🔍 Scanning for vulnerabilities...",
@@ -366,9 +367,37 @@ const Index = () => {
     }
   };
 
+  const handleInputBlur = () => {
+    if (isMobile) {
+      document.body.classList.remove('keyboard-open');
+    }
+  };
+
   // Short placeholder for mobile
   const mobilePlaceholder = "Ask about hacking...";
   const desktopPlaceholder = "Ask about penetration testing, request payloads, or security analysis...";
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const inputBar = inputBarRef.current;
+    if (!inputBar) return;
+
+    function updateInputBarPosition() {
+      if (window.visualViewport) {
+        const keyboardHeight = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+        inputBar.style.bottom = keyboardHeight > 0 ? `${keyboardHeight}px` : '0px';
+      }
+    }
+
+    updateInputBarPosition();
+    window.visualViewport?.addEventListener('resize', updateInputBarPosition);
+    window.visualViewport?.addEventListener('scroll', updateInputBarPosition);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', updateInputBarPosition);
+      window.visualViewport?.removeEventListener('scroll', updateInputBarPosition);
+      if (inputBar) inputBar.style.bottom = '0px';
+    };
+  }, [isMobile]);
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
@@ -594,7 +623,8 @@ const Index = () => {
           {/* Input Area - Improved mobile responsiveness */}
           {isMobile ? (
             <div
-              className="fixed bottom-0 left-0 w-full z-30 bg-black/95 safe-area-bottom border-t border-green-500/20"
+              ref={inputBarRef}
+              className="fixed-input-bar fixed bottom-0 left-0 w-full z-30 bg-black/95 safe-area-bottom border-t border-green-500/20"
               style={{ boxShadow: '0 -2px 16px 0 #000a' }}
             >
               <div className="px-2 pt-2 pb-2 flex items-end gap-2">
@@ -605,6 +635,7 @@ const Index = () => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
