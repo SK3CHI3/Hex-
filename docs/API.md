@@ -10,7 +10,7 @@ Hex integrates with the OpenRouter API to access advanced AI models for cybersec
 
 ```typescript
 const API_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'deepseek/deepseek-chat:free';
+const MODEL = 'deepseek/deepseek-chat-v3-0324:free';
 ```
 
 ### Authentication
@@ -52,7 +52,7 @@ const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     'X-Title': 'Hex'
   },
   body: JSON.stringify({
-    model: 'deepseek/deepseek-chat:free',
+    model: 'deepseek/deepseek-chat-v3-0324:free',
     messages: [
       {
         role: 'system',
@@ -260,7 +260,7 @@ class HexAPI {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat:free',
+        model: 'deepseek/deepseek-chat-v3-0324:free',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages

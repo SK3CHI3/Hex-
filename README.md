@@ -60,7 +60,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 
 - **Frontend**: React + TypeScript + Vite
 - **UI Components**: shadcn/ui + Tailwind CSS
-- **AI Provider**: OpenRouter API with DeepSeek V3 (free)
+- **AI Provider**: OpenRouter API with DeepSeek V3 0324 (free)
 - **Styling**: Custom cybersecurity-themed design
 
 ## 🔧 Configuration
@@ -75,7 +75,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 ### API Configuration
 
 The app is configured to use:
-- **Model**: `deepseek/deepseek-chat:free` (DeepSeek V3)
+- **Model**: `deepseek/deepseek-chat-v3-0324:free` (DeepSeek V3 0324)
 - **Endpoint**: `https://openrouter.ai/api/v1/chat/completions`
 - **Max Tokens**: 2048 (configurable)
 - **Provider**: OpenRouter (free tier available)

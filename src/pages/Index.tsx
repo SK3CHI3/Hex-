@@ -234,7 +234,7 @@ const Index = () => {
 
     try {
       const requestPayload = {
-        model: 'deepseek/deepseek-chat:free',
+        model: 'deepseek/deepseek-chat-v3-0324:free',
         messages: [
           {
             role: 'system',
