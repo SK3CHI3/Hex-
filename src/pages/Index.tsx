@@ -542,8 +542,8 @@ const Index = () => {
                 </Button>
               )}
 
-              {/* Authentication - Hidden on mobile */}
-              <div className="hidden lg:block">
+              {/* Authentication - Show sign in on mobile when not authenticated */}
+              <div className={isAuthenticated ? "hidden lg:block" : "block"}>
                 <AuthButton />
               </div>
 

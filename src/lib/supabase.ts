@@ -3,11 +3,7 @@ import { createClient, type User } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('🔧 Supabase config:', {
-  url: supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  keyPrefix: supabaseAnonKey?.substring(0, 20) + '...'
-});
+
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
@@ -124,7 +120,7 @@ export const authFunctions = {
         .single();
 
       clearTimeout(timeoutId);
-      console.log('✅ Profile query result:', { data: !!data, error: error?.message });
+
       return { profile: data, error };
     } catch (err) {
       clearTimeout(timeoutId);
