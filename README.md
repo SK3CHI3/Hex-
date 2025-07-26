@@ -61,6 +61,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **Frontend**: React + TypeScript + Vite
 - **UI Components**: shadcn/ui + Tailwind CSS
 - **AI Provider**: OpenRouter API with DeepSeek V3 0324 (free)
+- **Database**: Supabase (PostgreSQL) for conversation persistence
 - **Styling**: Custom cybersecurity-themed design
 
 ## 🔧 Configuration
@@ -71,6 +72,8 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 |----------|-------------|----------|---------|
 | `VITE_OPENROUTER_API_KEY` | Your OpenRouter API Key | Yes | - |
 | `VITE_OPENROUTER_URL` | OpenRouter API endpoint | No | `https://openrouter.ai/api/v1/chat/completions` |
+| `VITE_SUPABASE_URL` | Supabase project URL | Yes | - |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes | - |
 
 ### API Configuration
 
