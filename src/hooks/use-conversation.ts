@@ -17,10 +17,20 @@ export function useConversation() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load conversations (threads) when user is authenticated
+  // Load conversations and restore messages on page load
   useEffect(() => {
     if (isAuthenticated && user) {
       loadConversations();
+      // Load messages from localStorage
+      const savedMessages = localStorage.getItem(`chat_messages_${user.id}`);
+      if (savedMessages) {
+        const parsedMessages = JSON.parse(savedMessages).map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        setMessages(parsedMessages);
+        console.log(`📨 Restored ${parsedMessages.length} messages from localStorage`);
+      }
     } else {
       setConversations([]);
       setMessages([]);
@@ -38,12 +48,31 @@ export function useConversation() {
 
       // If no current conversation and we have conversations, select the most recent
       if (!currentConversationId && convs.length > 0) {
-        setCurrentConversationId(convs[0].id);
+        const mostRecentId = convs[0].id;
+        setCurrentConversationId(mostRecentId);
+
+        // Save to localStorage for persistence
+        const lastConversationKey = `lastConversation_${user.id}`;
+        localStorage.setItem(lastConversationKey, mostRecentId);
+
+        console.log(`🔄 Auto-selected most recent conversation: ${mostRecentId}`);
       }
     } catch (err) {
       console.error('Failed to load conversations:', err);
     }
   }, [user?.id, currentConversationId]);
+
+  // Simple function to save messages to localStorage
+  const saveMessages = useCallback((messages: ConversationMessage[]) => {
+    if (!user) return;
+
+    try {
+      localStorage.setItem(`chat_messages_${user.id}`, JSON.stringify(messages));
+      console.log(`💾 Saved ${messages.length} messages to localStorage`);
+    } catch (err) {
+      console.error('Failed to save messages:', err);
+    }
+  }, [user?.id]);
 
 
 
@@ -79,7 +108,7 @@ export function useConversation() {
       conversationId = newConvId;
     }
 
-    // Add message to UI state only (no database storage for individual messages)
+    // Create new message
     const newMessage: ConversationMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
@@ -88,24 +117,27 @@ export function useConversation() {
       isError
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    // Add to state and save to localStorage
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
+    saveMessages(updatedMessages);
 
-    // Update conversation thread's last activity
+    // Update conversation timestamp in database
     try {
       const manager = new ConversationManager(user.id);
-      // Just update the conversation's updated_at timestamp
       await manager.updateConversationTimestamp(conversationId);
-      await loadConversations(); // Refresh thread list
+      await loadConversations();
     } catch (error) {
-      console.error('Error updating conversation activity:', error);
+      console.error('Error updating conversation timestamp:', error);
     }
 
     return newMessage;
-  }, [user?.id, currentConversationId, createNewConversation]);
+  }, [user?.id, currentConversationId, createNewConversation, messages, saveMessages, loadConversations]);
 
   const switchConversation = useCallback((conversationId: string) => {
     setCurrentConversationId(conversationId);
-    setMessages([]); // Clear messages when switching threads
+    // For now, just clear messages when switching - we can improve this later
+    setMessages([]);
   }, []);
 
   const deleteConversation = useCallback(async (conversationId: string) => {
@@ -188,21 +220,32 @@ export function useConversation() {
       setCurrentConversationId(newConv.id);
       setMessages([]);
 
-      // Add notification message to new chat
+      // Add notification message to new chat and save to localStorage
+      const notificationContent = `🔄 **New conversation started**\n\n${reason}\n\nYour previous conversation has been saved and you can access it from the sidebar. Please continue with your question.`;
+
       const notificationMessage: ConversationMessage = {
         id: `msg_${Date.now()}_notification`,
         type: 'assistant',
-        content: `🔄 **New conversation started**\n\n${reason}\n\nYour previous conversation has been saved and you can access it from the sidebar. Please continue with your question.`,
+        content: notificationContent,
         timestamp: new Date(),
         isError: false
       };
 
       setMessages([notificationMessage]);
+      saveMessages([notificationMessage]);
 
       return newConv.id;
     } catch (err) {
       console.error('Failed to create new conversation with notification:', err);
       return null;
+    }
+  }, [user?.id, saveMessagesToLocalStorage]);
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    if (user) {
+      localStorage.removeItem(`chat_messages_${user.id}`);
+      console.log('🗑️ Cleared all messages from localStorage');
     }
   }, [user?.id]);
 
@@ -219,6 +262,7 @@ export function useConversation() {
     switchConversation,
     deleteConversation,
     clearAllConversations,
+    clearMessages,
     loadConversations,
 
     // Utilities

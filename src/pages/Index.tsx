@@ -2,17 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, Terminal, Copy as CopyIcon, Check as CheckIcon, Shield, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-import { toast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { createApiClient, ApiError } from '@/lib/api-error-handler';
+import { ApiError } from '@/lib/api-error-handler';
 
 import { useAuth } from '@/hooks/use-auth';
 import { AuthButton, AuthCard } from '@/components/AuthButton';
@@ -182,6 +178,10 @@ const Index = () => {
       isError
     };
     setMessages(prev => [...prev, newMessage]);
+
+    // Scroll to bottom immediately after adding message
+    setTimeout(() => scrollToBottom(), 50);
+
     return newMessage;
   };
 
@@ -224,14 +224,19 @@ const Index = () => {
   ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Use setTimeout to ensure DOM has updated before scrolling
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        // Use instant scroll on mobile during loading to prevent shaking
+        const behavior = isMobile && isLoading ? 'instant' : 'smooth';
+        messagesEndRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior });
+      }
+    }, 100);
   };
-
-
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isMobile, isLoading]);
 
 
 
@@ -241,36 +246,17 @@ const Index = () => {
     setLastError(error); // Keep for retry logic
   };
 
-  const retryLastMessage = async () => {
-    if (lastError && messages.length > 0) {
-      // Find the last user message, ignoring error messages and assistant responses
-      let lastUserMessage = null;
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].type === 'user' && !messages[i].isError) {
-          lastUserMessage = messages[i];
-          break;
-        }
-      }
 
-      if (lastUserMessage) {
-        setInput(lastUserMessage.content);
-        setRetryCount(prev => prev + 1);
-        setLastError(null);
-        await sendMessage(true);
-      } else {
-        console.warn('No user message found to retry');
-      }
-    }
-  };
 
   const startLoadingAnimation = () => {
     let index = 0;
     setLoadingMessage(loadingMessages[0]);
-    
+
+    // Reduced frequency to prevent mobile shaking (4 seconds instead of 2)
     const interval = setInterval(() => {
       index = (index + 1) % loadingMessages.length;
       setLoadingMessage(loadingMessages[index]);
-    }, 2000);
+    }, 4000);
 
     return interval;
   };
@@ -329,6 +315,9 @@ const Index = () => {
       // Add user message to chat
       addMessage('user', messageToSend);
 
+      // Clear input immediately after adding user message
+      setInput('');
+
       // Only increment usage after successfully saving the message
       const usageIncremented = await incrementUsage();
       if (!usageIncremented && !isPremium) {
@@ -336,8 +325,6 @@ const Index = () => {
         // For now, we'll log this as a warning but allow the message to proceed
         console.warn('Failed to increment usage count, but message was saved');
       }
-
-      // Don't clear input yet - wait until API call succeeds
     }
 
     setIsLoading(true);
@@ -461,11 +448,6 @@ const Index = () => {
       }
 
       setRetryCount(0); // Reset retry count on success
-
-      // Only clear input after successful API response
-      if (!isRetry) {
-        setInput('');
-      }
     } catch (error) {
       console.error('Unexpected error:', error);
       handleApiError({
@@ -519,17 +501,30 @@ const Index = () => {
     const inputBar = inputBarRef.current;
     if (!inputBar) return;
 
+    let rafId: number | null = null;
+
     function updateInputBarPosition() {
-      if (window.visualViewport) {
-        const keyboardHeight = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-        inputBar.style.bottom = keyboardHeight > 0 ? `${keyboardHeight}px` : '0px';
-      }
+      if (rafId) return; // Prevent multiple rapid updates
+
+      rafId = requestAnimationFrame(() => {
+        if (window.visualViewport && inputBar) {
+          const keyboardHeight = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+          const newBottom = keyboardHeight > 0 ? `${keyboardHeight}px` : '0px';
+
+          // Only update if position actually changed to prevent unnecessary reflows
+          if (inputBar.style.bottom !== newBottom) {
+            inputBar.style.bottom = newBottom;
+          }
+        }
+        rafId = null;
+      });
     }
 
     updateInputBarPosition();
     window.visualViewport?.addEventListener('resize', updateInputBarPosition);
     window.visualViewport?.addEventListener('scroll', updateInputBarPosition);
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       window.visualViewport?.removeEventListener('resize', updateInputBarPosition);
       window.visualViewport?.removeEventListener('scroll', updateInputBarPosition);
       if (inputBar) inputBar.style.bottom = '0px';
@@ -621,7 +616,7 @@ const Index = () => {
           {/* Authentication Card */}
           <AuthCard />
 
-          {/* Presets Card - only show when authenticated, fixed minimal height */}
+          {/* Presets Card - dynamic height but never exceeds input area */}
           {isAuthenticated && (
             <PresetsCard
               onPresetSelect={(prompt) => {
@@ -736,9 +731,12 @@ const Index = () => {
                         <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                         <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                       </div>
-                      <span className="text-green-400 font-mono text-xs sm:text-sm">
-                        {retryCount > 0 ? `Retrying... (${retryCount}/3)` : loadingMessage}
-                      </span>
+                      {/* Fixed width container to prevent layout shifts from text changes */}
+                      <div className="min-w-[200px] sm:min-w-[250px]">
+                        <span className="text-green-400 font-mono text-xs sm:text-sm">
+                          {retryCount > 0 ? `Retrying... (${retryCount}/3)` : loadingMessage}
+                        </span>
+                      </div>
                     </div>
                   )}
                   <div ref={messagesEndRef} />

@@ -3,21 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Github, LogOut, User, MessageCircle, Crown, CreditCard } from 'lucide-react';
+import { Github, LogOut, User, MessageCircle, Crown, CreditCard, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
 export function AuthButton() {
-  const { 
-    user, 
-    profile, 
-    loading, 
-    dailyUsage, 
-    signInWithGitHub, 
-    signOut, 
-    isAuthenticated, 
+  const navigate = useNavigate();
+  const {
+    user,
+    profile,
+    loading,
+    dailyUsage,
+    signInWithGitHub,
+    signOut,
+    isAuthenticated,
     isPremium,
-    canSendMessage 
+    canSendMessage
   } = useAuth();
+
+  // Only ONE admin user allowed
+  const isAdmin = user?.email === 'vomollo101@gmail.com';
 
   if (loading) {
     return (
@@ -72,6 +76,9 @@ export function AuthCard() {
     isPremium,
     canSendMessage
   } = useAuth();
+
+  // Only ONE admin user allowed
+  const isAdmin = user?.email === 'vomollo101@gmail.com';
 
   if (loading) {
     return (
@@ -182,6 +189,18 @@ export function AuthCard() {
               Upgrade Now
             </Button>
           </div>
+        )}
+
+        {/* Admin Dashboard Button */}
+        {isAdmin && (
+          <Button
+            onClick={() => navigate('/admin')}
+            variant="outline"
+            className="w-full border-green-500/30 text-green-400 hover:bg-green-500/10"
+          >
+            <Shield className="h-4 w-4 mr-2" />
+            Admin Dashboard
+          </Button>
         )}
 
         <Button

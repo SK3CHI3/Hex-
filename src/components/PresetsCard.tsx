@@ -94,15 +94,15 @@ const PresetsCard: React.FC<PresetsCardProps> = ({ onPresetSelect }) => {
 
   return (
     <Card className="bg-gray-900/50 border-green-500/30 backdrop-blur-sm">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2 pt-4">
         <CardTitle className="text-green-400 text-lg flex items-center gap-2">
           <Shield className="h-5 w-5" />
           Quick Presets
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        {/* Smaller fixed height scrollable container with hidden scrollbar */}
-        <div className="h-64 overflow-y-auto px-6 pb-4 scrollbar-hide">
+        {/* Dynamic height but never exceeds input area - footer inside scrollable area */}
+        <div className="max-h-[calc(100vh-500px)] min-h-[120px] overflow-y-auto px-6 py-4 scrollbar-hide">
           <div className="space-y-2">
             {presets.map((preset) => (
               <Button
@@ -127,12 +127,12 @@ const PresetsCard: React.FC<PresetsCardProps> = ({ onPresetSelect }) => {
               </Button>
             ))}
           </div>
-        </div>
 
-        {/* Footer outside scrollable area */}
-        <div className="border-t border-gray-700 pt-2 pb-4 px-6">
-          <div className="text-xs text-gray-400 text-center">
-            Click any preset to start with expert guidance
+          {/* Footer text inside scrollable area */}
+          <div className="border-t border-gray-700 mt-4 pt-3">
+            <div className="text-xs text-gray-400 text-center">
+              Click any preset to start with expert guidance
+            </div>
           </div>
         </div>
       </CardContent>
