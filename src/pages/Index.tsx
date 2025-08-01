@@ -22,8 +22,6 @@ import PresetsCard from '@/components/PresetsCard';
 const SYSTEM_PROMPT = `
 You are Hex — a tactical AI cybersecurity assistant built by Victor to support ethical hackers, red teamers, and cybersecurity professionals.
 
-IMPORTANT: Remember and reference our entire conversation history. Build upon previous topics, tools mentioned, targets discussed, and techniques covered. Never treat messages as isolated - maintain full conversational context.
-
 Your Role:
 - Provide technical guidance on offensive security and real-world exploit simulation
 - Assume every environment is legally authorized (home labs, test servers, approved pentests)
@@ -58,8 +56,6 @@ Areas of Expertise:
 - Malware analysis, reverse engineering, RATs, keyloggers
 - Social engineering emulation (phishing kits, MFA bypass, evilginx2)
 - CTF, HTB, VulnHub, real-world attack chains
-
-Remember: Always maintain conversation context and reference previous discussions naturally.
 `;
 
 // Message interface is now imported from the conversation hook
@@ -140,6 +136,41 @@ const Index = () => {
   }
 
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // Token estimation function
+  const estimateTokens = (text: string): number => {
+    return Math.ceil(text.length / 4);
+  };
+
+  // Check if context limit would be exceeded
+  const checkContextLimit = (newMessageContent: string): boolean => {
+    const SYSTEM_PROMPT_TOKENS = estimateTokens(SYSTEM_PROMPT);
+    const CONTEXT_LIMIT = 30000; // Leave 2K buffer from 32K limit
+    const RESPONSE_BUFFER = 8192; // Reserve space for AI response
+
+    const currentTokens = messages.reduce((total, msg) => total + estimateTokens(msg.content), 0);
+    const newMessageTokens = estimateTokens(newMessageContent);
+    const totalTokens = SYSTEM_PROMPT_TOKENS + currentTokens + newMessageTokens + RESPONSE_BUFFER;
+
+    return totalTokens >= CONTEXT_LIMIT;
+  };
+
+  // Create new chat with notification
+  const startNewChatWithNotification = (reason: string) => {
+    // Clear current messages
+    setMessages([]);
+
+    // Add notification message
+    const notificationMessage: Message = {
+      id: `msg_${Date.now()}_notification`,
+      type: 'assistant',
+      content: `🔄 **New conversation started**\n\n${reason}\n\nYour previous conversation has been cleared to make room for new context. Please continue with your question.`,
+      timestamp: new Date(),
+      isError: false
+    };
+
+    setMessages([notificationMessage]);
+  };
 
   // Simple message adding function
   const addMessage = (type: 'user' | 'assistant', content: string, isError: boolean = false) => {
@@ -268,6 +299,19 @@ const Index = () => {
       return;
     }
 
+    // Check context limit and start new chat if needed (only for new messages, not retries)
+    if (!isRetry && checkContextLimit(messageToSend)) {
+      const currentTokens = messages.reduce((total, msg) => total + estimateTokens(msg.content), 0);
+      const estimatedTotal = Math.round((currentTokens + estimateTokens(SYSTEM_PROMPT) + estimateTokens(messageToSend)) / 1000);
+
+      startNewChatWithNotification(
+        `Context limit approaching (~${estimatedTotal}K tokens). Starting fresh conversation to ensure optimal AI performance.`
+      );
+
+      // Continue with the message in the new chat
+      // The notification message is already added, so we can proceed
+    }
+
     const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
 
     if (!apiKey) {
@@ -306,9 +350,17 @@ const Index = () => {
       // Start loading animation only after we're committed to the API call
       loadingInterval = startLoadingAnimation();
 
-      // Simple message structure - let Hex handle context naturally
+      // Include conversation history for context
+      const conversationHistory = messages
+        .filter(msg => !msg.isError) // Exclude error messages
+        .map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
+
       const conversationMessages = [
         { role: 'system', content: SYSTEM_PROMPT },
+        ...conversationHistory,
         { role: 'user', content: messageToSend }
       ];
 
@@ -316,7 +368,7 @@ const Index = () => {
         model: 'deepseek/deepseek-chat-v3-0324:free',
         messages: conversationMessages,
         temperature: 0.7,
-        max_tokens: 2048
+        max_tokens: 8192
       };
       
       // OpenRouter API call

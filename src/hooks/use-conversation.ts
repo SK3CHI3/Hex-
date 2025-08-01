@@ -162,13 +162,57 @@ export function useConversation() {
     return messages.reduce((total, msg) => total + estimateTokens(msg.content), 0);
   }, [messages, estimateTokens]);
 
+  const checkContextLimit = useCallback((newMessageContent: string): boolean => {
+    const SYSTEM_PROMPT_TOKENS = 500; // Approximate system prompt size
+    const CONTEXT_LIMIT = 30000; // Leave 2K buffer from 32K limit
+    const RESPONSE_BUFFER = 8192; // Reserve space for AI response
+
+    const currentTokens = getTotalTokens();
+    const newMessageTokens = estimateTokens(newMessageContent);
+    const totalTokens = SYSTEM_PROMPT_TOKENS + currentTokens + newMessageTokens + RESPONSE_BUFFER;
+
+    return totalTokens >= CONTEXT_LIMIT;
+  }, [getTotalTokens, estimateTokens]);
+
+  const createNewChatWithNotification = useCallback(async (reason: string) => {
+    if (!user) return null;
+
+    try {
+      // Create new conversation with descriptive title
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const title = `Continued Chat ${timestamp}`;
+
+      const manager = new ConversationManager(user.id);
+      const newConv = await manager.createConversation(title);
+      setConversations(prev => [newConv, ...prev]);
+      setCurrentConversationId(newConv.id);
+      setMessages([]);
+
+      // Add notification message to new chat
+      const notificationMessage: ConversationMessage = {
+        id: `msg_${Date.now()}_notification`,
+        type: 'assistant',
+        content: `🔄 **New conversation started**\n\n${reason}\n\nYour previous conversation has been saved and you can access it from the sidebar. Please continue with your question.`,
+        timestamp: new Date(),
+        isError: false
+      };
+
+      setMessages([notificationMessage]);
+
+      return newConv.id;
+    } catch (err) {
+      console.error('Failed to create new conversation with notification:', err);
+      return null;
+    }
+  }, [user?.id]);
+
   return {
     // State
     messages,
     conversations,
     currentConversationId,
     isLoading,
-    
+
     // Actions
     createNewConversation,
     addMessage,
@@ -176,10 +220,12 @@ export function useConversation() {
     deleteConversation,
     clearAllConversations,
     loadConversations,
-    
+
     // Utilities
     getConversationHistory,
     estimateTokens,
     getTotalTokens,
+    checkContextLimit,
+    createNewChatWithNotification,
   };
 }

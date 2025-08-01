@@ -64,7 +64,7 @@ const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       }
     ],
     temperature: 0.7,
-    max_tokens: 2048,
+    max_tokens: 8192,
   }),
 });
 ```
@@ -228,7 +228,7 @@ const loadConversation = (): StoredMessage[] => {
 
 ### Performance
 - Use appropriate temperature settings (0.7 for balanced responses)
-- Set reasonable max_tokens limits (2048 for most use cases)
+- Set reasonable max_tokens limits (8192 for most use cases)
 - Implement request debouncing
 - Show loading indicators
 
@@ -266,7 +266,7 @@ class HexAPI {
           ...messages
         ],
         temperature: 0.7,
-        max_tokens: 2048,
+        max_tokens: 8192,
       }),
     });
     
