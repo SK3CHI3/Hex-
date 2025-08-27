@@ -75,7 +75,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes | - |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes | - |
 
-### API Configuration
+### API Configuration.
 
 The app is configured to use:
 - **Model**: `deepseek/deepseek-chat-v3-0324:free` (DeepSeek V3 0324)
