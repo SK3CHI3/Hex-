@@ -9,7 +9,7 @@
 
 Hex is an advanced AI assistant designed specifically for cybersecurity professionals, ethical hackers, and penetration testers. It provides intelligent guidance for security testing activities while emphasizing responsible and legal practices.
 
-## ✨ Features
+## ✨ Features.
 
 - **🔍 Vulnerability Assessment**: Get detailed analysis of security vulnerabilities
 - **⚡ Payload Generation**: Generate XSS, SQLi, RCE, and other security payloads
