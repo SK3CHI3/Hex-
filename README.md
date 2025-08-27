@@ -100,15 +100,7 @@ The app is configured to use:
 4. **Deploy**
    - Netlify will automatically deploy on git push
 
-### Other Platforms
-
-The app can be deployed to any static hosting platform:
-- Vercel
-- GitHub Pages
-- AWS S3 + CloudFront
-- Any static file server
-
-## 🤝 Contributing
+## 🤝 Contributing.
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
