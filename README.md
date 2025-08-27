@@ -19,7 +19,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **🔐 Privilege Escalation**: Techniques for privilege escalation scenarios
 - **📝 Code Review**: Security-focused code analysis and recommendations
 
-## 🚀 Quick Start
+## 🚀 Quick Start.
 
 1. **Clone the repository**
    ```bash
