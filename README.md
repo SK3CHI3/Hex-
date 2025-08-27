@@ -83,7 +83,7 @@ The app is configured to use:
 - **Max Tokens**: 8192 (configurable)
 - **Provider**: OpenRouter (free tier available)
 
-## 🚀 Deployment
+## 🚀 Deployment.
 
 ### Netlify (Recommended)
 
