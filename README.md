@@ -56,7 +56,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 6. **Open your browser**
    Visit `http://localhost:8080` and enter your OpenRouter API key when prompted.
 
-## 🏗️ Architecture
+## 🏗️ Architecture.
 
 - **Frontend**: React + TypeScript + Vite
 - **UI Components**: shadcn/ui + Tailwind CSS
