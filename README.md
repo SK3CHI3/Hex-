@@ -64,7 +64,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **Database**: Supabase (PostgreSQL) for conversation persistence
 - **Styling**: Custom cybersecurity-themed design
 
-## 🔧 Configuration
+## 🔧 Configuration.
 
 ### Environment Variables
 
