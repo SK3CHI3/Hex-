@@ -134,7 +134,7 @@ This tool is designed **EXCLUSIVELY** for authorized security testing activities
 - No sensitive data is logged or stored
 - Environment variables are properly protected
 
-## 📞 Support
+## 📞 Support.
 
 - **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
