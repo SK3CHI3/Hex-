@@ -116,7 +116,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ⚠️ Legal Disclaimer
+## ⚠️ Legal Disclaimer.
 
 This tool is designed **EXCLUSIVELY** for authorized security testing activities. Users must:
 
