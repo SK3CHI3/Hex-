@@ -11,7 +11,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 
 ## ✨ Features.
 
-- **🔍 Vulnerability Assessment**: Get detailed analysis of security vulnerabilities
+- **🔍 Vulnerability Assessment**: Get detailed analysis of security vulnerabilities 
 - **⚡ Payload Generation**: Generate XSS, SQLi, RCE, and other security payloads
 - **🛠️ Tool Analysis**: Analyze output from Nmap, Burp Suite, Metasploit, and more
 - **🌐 Web Security**: Specialized guidance for web application security testing
