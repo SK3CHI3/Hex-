@@ -127,7 +127,7 @@ This tool is designed **EXCLUSIVELY** for authorized security testing activities
 
 **Unauthorized access to systems is illegal and punishable by law.**
 
-## 🔒 Security
+## 🔒 Security.
 
 - OpenRouter API keys are stored locally and never sent to our servers
 - All communication is encrypted via HTTPS
