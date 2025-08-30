@@ -18,7 +18,6 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **📊 Network Testing**: Network penetration testing methodologies
 - **🔐 Privilege Escalation**: Techniques for privilege escalation scenarios
 - **📝 Code Review**: Security-focused code analysis and recommendations
-- 
 
 ## 🚀 Quick Start.
 
