@@ -131,7 +131,7 @@ This tool is designed **EXCLUSIVELY** for authorized security testing activities
 
 - OpenRouter API keys are stored locally and never sent to our servers
 - All communication is encrypted via HTTPS
-- No sensitive data is logged or stored
+- No sensitive data is logged or stored 
 - Environment variables are properly protected
 
 ## 📞 Support.
