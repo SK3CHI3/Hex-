@@ -122,7 +122,7 @@ const Index = () => {
     signOut
   } = useAuth();
 
-  // Simple message state management (no threading)
+  // Simple message state management
   interface Message {
     id: string;
     type: 'user' | 'assistant';
@@ -132,6 +132,44 @@ const Index = () => {
   }
 
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // Simple localStorage functions
+  const saveMessagesToStorage = (messages: Message[]) => {
+    try {
+      localStorage.setItem('hex_messages', JSON.stringify(messages));
+    } catch (error) {
+      console.warn('Failed to save messages to localStorage:', error);
+    }
+  };
+
+  const loadMessagesFromStorage = (): Message[] => {
+    try {
+      const saved = localStorage.getItem('hex_messages');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      }
+    } catch (error) {
+      console.warn('Failed to load messages from localStorage:', error);
+    }
+    return [];
+  };
+
+  // Load messages on component mount
+  useEffect(() => {
+    const savedMessages = loadMessagesFromStorage();
+    setMessages(savedMessages);
+  }, []);
+
+  // Save messages whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveMessagesToStorage(messages);
+    }
+  }, [messages]);
 
   // Token estimation function
   const estimateTokens = (text: string): number => {
@@ -155,7 +193,7 @@ const Index = () => {
   const startNewChatWithNotification = (reason: string) => {
     // Clear current messages
     setMessages([]);
-
+    
     // Add notification message
     const notificationMessage: Message = {
       id: `msg_${Date.now()}_notification`,
@@ -164,11 +202,11 @@ const Index = () => {
       timestamp: new Date(),
       isError: false
     };
-
+    
     setMessages([notificationMessage]);
   };
 
-  // Simple message adding function
+  // Simple addMessage function
   const addMessage = (type: 'user' | 'assistant', content: string, isError: boolean = false) => {
     const newMessage: Message = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
@@ -177,17 +215,18 @@ const Index = () => {
       timestamp: new Date(),
       isError
     };
+    
     setMessages(prev => [...prev, newMessage]);
-
-    // Scroll to bottom immediately after adding message
+    
+    // Scroll to bottom after adding message
     setTimeout(() => scrollToBottom(), 50);
-
+    
     return newMessage;
   };
 
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('');
+  // Removed isLoading state - now using direct streaming
+  // Removed loadingMessage state - now using streaming text
   const [lastError, setLastError] = useState<ApiError | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [showBillingPopup, setShowBillingPopup] = useState(false);
@@ -200,43 +239,20 @@ const Index = () => {
 
 
 
-  const loadingMessages = [
-    "🔍 Scanning for vulnerabilities...",
-    "💻 Crafting the perfect payload...",
-    "🛡️ Bypassing security measures...",
-    "⚡ Analyzing attack vectors...",
-    "🎯 Preparing penetration strategy...",
-    "🔐 Decrypting security protocols...",
-    "🌐 Mapping network infrastructure...",
-    "📡 Intercepting network traffic...",
-    "🔧 Exploiting system weaknesses...",
-    "🎭 Executing social engineering...",
-    "💣 Deploying zero-day exploits...",
-    "🕵️ Conducting reconnaissance...",
-    "⚔️ Launching cyber offensive...",
-    "🎪 Performing magic tricks...",
-    "🧠 Processing hacker thoughts...",
-    "🔮 Predicting security flaws...",
-    "🎨 Painting the target red...",
-    "🚀 Initiating cyber warfare...",
-    "🎪 Running penetration circus...",
-    "⚡ Charging up the matrix..."
-  ];
+  // Removed loading messages - now using streaming text display
 
   const scrollToBottom = () => {
     // Use setTimeout to ensure DOM has updated before scrolling
     setTimeout(() => {
       if (messagesEndRef.current) {
-        // Use instant scroll on mobile during loading to prevent shaking
-        const behavior = isMobile && isLoading ? 'instant' : 'smooth';
-        messagesEndRef.current.scrollIntoView({ behavior: behavior as ScrollBehavior });
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
       }
     }, 100);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isMobile, isLoading]);
+  }, [messages, isMobile]);
 
 
 
@@ -248,18 +264,7 @@ const Index = () => {
 
 
 
-  const startLoadingAnimation = () => {
-    let index = 0;
-    setLoadingMessage(loadingMessages[0]);
-
-    // Reduced frequency to prevent mobile shaking (4 seconds instead of 2)
-    const interval = setInterval(() => {
-      index = (index + 1) % loadingMessages.length;
-      setLoadingMessage(loadingMessages[index]);
-    }, 4000);
-
-    return interval;
-  };
+  // Removed loading animation - now using streaming text display
 
 
 
@@ -298,19 +303,19 @@ const Index = () => {
       // The notification message is already added, so we can proceed
     }
 
-    const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
     if (!apiKey) {
       handleApiError({
         type: 'client',
-        message: 'OpenRouter API key not found. Please set VITE_OPENROUTER_API_KEY in your .env file.',
+        message: 'DeepSeek API key not found. Please set VITE_DEEPSEEK_API_KEY in your .env file.',
         status: 0,
         retryable: true,
       });
       return;
     }
 
-    // Add user message to database and increment usage (unless it's a retry)
+    // Add user message to chat (unless it's a retry)
     if (!isRetry) {
       // Add user message to chat
       addMessage('user', messageToSend);
@@ -327,15 +332,16 @@ const Index = () => {
       }
     }
 
-    setIsLoading(true);
     setLastError(null);
 
     // Start loading animation - initialize as null to track it properly
-    let loadingInterval: NodeJS.Timeout | null = null;
-
     try {
-      // Start loading animation only after we're committed to the API call
-      loadingInterval = startLoadingAnimation();
+      // Create streaming message immediately so user sees it right away
+      const initialMessage = addMessage('assistant', '', false);
+      let streamingMessageId = '';
+      if (initialMessage) {
+        streamingMessageId = initialMessage.id;
+      }
 
       // Include conversation history for context
       const conversationHistory = messages
@@ -352,20 +358,19 @@ const Index = () => {
       ];
 
       const requestPayload = {
-        model: 'deepseek/deepseek-chat-v3-0324:free',
+        model: 'deepseek-chat',
         messages: conversationMessages,
         temperature: 0.7,
-        max_tokens: 8192
+        max_tokens: 8192,
+        stream: true
       };
       
-      // OpenRouter API call
-      const response = await fetch(import.meta.env.VITE_OPENROUTER_URL || 'https://openrouter.ai/api/v1/chat/completions', {
+      // DeepSeek API call
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'Hex'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestPayload)
       });
@@ -419,35 +424,78 @@ const Index = () => {
         return;
       }
       
-      const responseData = await response.json();
-
-      // Robust validation of API response structure
-      if (!responseData) {
-        throw new Error('Empty response from API');
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
       }
 
-      if (!responseData.choices || !Array.isArray(responseData.choices) || responseData.choices.length === 0) {
-        throw new Error('Invalid response structure: missing choices array');
-      }
+      const decoder = new TextDecoder();
+      let fullContent = '';
 
-      const choice = responseData.choices[0];
-      if (!choice || !choice.message) {
-        throw new Error('Invalid response structure: missing message in choice');
-      }
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-      const content = choice.message.content;
-      if (typeof content !== 'string') {
-        throw new Error('Invalid response structure: message content is not a string');
-      }
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
 
-      if (!content.trim()) {
-        console.warn('API returned empty content, using fallback message');
-        addMessage('assistant', 'I apologize, but I received an empty response. Please try asking your question again.');
-      } else {
-        addMessage('assistant', content);
-      }
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                break;
+              }
 
-      setRetryCount(0); // Reset retry count on success
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.choices?.[0]?.delta?.content) {
+                  const content = parsed.choices[0].delta.content;
+                  fullContent += content;
+
+                  // Streaming content received
+
+                  // Update the streaming message in real-time
+                  setMessages(prevMessages => 
+                    prevMessages.map(msg => 
+                      msg.id === streamingMessageId 
+                        ? { ...msg, content: fullContent }
+                        : msg
+                    )
+                  );
+                }
+              } catch (parseError) {
+                console.warn('Failed to parse streaming chunk:', parseError);
+              }
+            }
+          }
+        }
+
+        // Final validation
+        if (!fullContent.trim()) {
+          console.warn('API returned empty content, using fallback message');
+          setMessages(prevMessages => 
+            prevMessages.map(msg => 
+              msg.id === streamingMessageId 
+                ? { ...msg, content: 'I apologize, but I received an empty response. Please try asking your question again.' }
+                : msg
+            )
+          );
+        }
+
+        setRetryCount(0); // Reset retry count on success
+      } catch (streamError) {
+        console.error('Streaming error:', streamError);
+        // Update the message with error content
+        setMessages(prevMessages => 
+          prevMessages.map(msg => 
+            msg.id === streamingMessageId 
+              ? { ...msg, content: 'An error occurred while receiving the response. Please try again.' }
+              : msg
+          )
+        );
+      }
     } catch (error) {
       console.error('Unexpected error:', error);
       handleApiError({
@@ -457,11 +505,7 @@ const Index = () => {
         retryable: true,
       });
     } finally {
-      // Safely clear loading interval if it was started
-      if (loadingInterval) {
-        clearInterval(loadingInterval);
-      }
-      setIsLoading(false);
+      // Cleanup complete
     }
   };
 
@@ -724,21 +768,7 @@ const Index = () => {
                       </div>
                     );
                   })}
-                  {isLoading && (
-                    <div className="flex items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 lg:p-6 bg-green-900/20 border border-green-500/30 rounded-xl mr-1 sm:mr-2 md:mr-4">
-                      <div className="flex space-x-1 sm:space-x-2">
-                        <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                        <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                      </div>
-                      {/* Fixed width container to prevent layout shifts from text changes */}
-                      <div className="min-w-[200px] sm:min-w-[250px]">
-                        <span className="text-green-400 font-mono text-xs sm:text-sm">
-                          {retryCount > 0 ? `Retrying... (${retryCount}/3)` : loadingMessage}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Removed loading indicator - streaming text will show directly */}
                   <div ref={messagesEndRef} />
                 </div>
               )}
@@ -776,7 +806,7 @@ const Index = () => {
                 </div>
                 <Button
                   onClick={() => sendMessage()}
-                  disabled={isLoading || !input.trim() || !canSendMessage}
+                  disabled={!input.trim() || !canSendMessage}
                   className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 py-2 h-10 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 min-w-[44px] min-h-[44px]"
                   style={{ fontSize: '18px' }}
                   tabIndex={0}
@@ -809,7 +839,7 @@ const Index = () => {
                   </div>
                   <Button
                     onClick={() => sendMessage()}
-                    disabled={isLoading || !input.trim() || !canSendMessage}
+                    disabled={!input.trim() || !canSendMessage}
                     className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 sm:px-3 md:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                   >
                     <Send className="h-4 w-4" />
@@ -971,3 +1001,5 @@ const Index = () => {
 };
 
 export default Index;
+
+    

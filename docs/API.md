@@ -2,15 +2,15 @@
 
 ## Overview
 
-Hex integrates with the OpenRouter API to access advanced AI models for cybersecurity assistance. This document outlines the API integration and usage patterns.
+Hex integrates directly with the DeepSeek API to access advanced AI models for cybersecurity assistance. This document outlines the API integration and usage patterns.
 
-## OpenRouter Integration
+## DeepSeek Integration
 
 ### Base Configuration
 
 ```typescript
-const API_BASE_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'deepseek/deepseek-chat-v3-0324:free';
+const API_BASE_URL = 'https://api.deepseek.com/chat/completions';
+const MODEL = 'deepseek-chat';
 ```
 
 ### Authentication
@@ -18,9 +18,7 @@ const MODEL = 'deepseek/deepseek-chat-v3-0324:free';
 ```typescript
 headers: {
   'Authorization': `Bearer ${apiKey}`,
-  'Content-Type': 'application/json',
-  'HTTP-Referer': window.location.origin,
-  'X-Title': 'Hex'
+  'Content-Type': 'application/json'
 }
 ```
 
@@ -32,6 +30,7 @@ interface ChatRequest {
   messages: Message[];
   temperature: number;
   max_tokens: number;
+  stream: boolean;
 }
 
 interface Message {
@@ -43,16 +42,14 @@ interface Message {
 ### Example Request
 
 ```typescript
-const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+const response = await fetch('https://api.deepseek.com/chat/completions', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-    'HTTP-Referer': window.location.origin,
-    'X-Title': 'Hex'
+    'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    model: 'deepseek/deepseek-chat-v3-0324:free',
+    model: 'deepseek-chat',
     messages: [
       {
         role: 'system',
@@ -65,8 +62,42 @@ const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     ],
     temperature: 0.7,
     max_tokens: 8192,
+    stream: true
   }),
 });
+```
+
+## Streaming Response
+
+Hex uses streaming to provide real-time text display as the AI generates responses. The streaming implementation processes Server-Sent Events (SSE) format:
+
+```typescript
+// Handle streaming response
+const reader = response.body?.getReader();
+const decoder = new TextDecoder();
+let fullContent = '';
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+
+  const chunk = decoder.decode(value, { stream: true });
+  const lines = chunk.split('\n');
+
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = line.slice(6);
+      if (data === '[DONE]') break;
+
+      const parsed = JSON.parse(data);
+      if (parsed.choices?.[0]?.delta?.content) {
+        const content = parsed.choices[0].delta.content;
+        fullContent += content;
+        // Update UI with new content
+      }
+    }
+  }
+}
 ```
 
 ## System Prompt
@@ -249,7 +280,7 @@ const loadConversation = (): StoredMessage[] => {
 ```typescript
 class HexAPI {
   private apiKey: string;
-  private baseURL: string = 'https://openrouter.ai/api/v1/chat/completions';
+  private baseURL: string = 'https://api.deepseek.com/chat/completions';
   
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -260,13 +291,14 @@ class HexAPI {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
-        model: 'deepseek/deepseek-chat-v3-0324:free',
+        model: 'deepseek-chat',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages
         ],
         temperature: 0.7,
         max_tokens: 8192,
+        stream: true
       }),
     });
     
@@ -274,19 +306,41 @@ class HexAPI {
       throw new Error(`API Error: ${response.status}`);
     }
     
-    const data = await response.json();
-    return data.choices[0].message.content;
+    // Handle streaming response
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') break;
+
+          const parsed = JSON.parse(data);
+          if (parsed.choices?.[0]?.delta?.content) {
+            fullContent += parsed.choices[0].delta.content;
+          }
+        }
+      }
+    }
+    
+    return fullContent;
   }
   
   private getHeaders() {
     return {
       'Authorization': `Bearer ${this.apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': window.location.origin,
-      'X-Title': 'Hex'
+      'Content-Type': 'application/json'
     };
   }
 }
 ```
 
-This API documentation provides comprehensive guidance for integrating with OpenRouter and managing the AI interactions within Hex.
+This API documentation provides comprehensive guidance for integrating with DeepSeek and managing the AI interactions within Hex.

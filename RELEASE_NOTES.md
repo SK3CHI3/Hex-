@@ -1,35 +1,42 @@
-# Release v1.1.0: DeepSeek V3 0324 Integration
+# Release v1.2.0: Direct DeepSeek API Integration with Streaming
 
 ## 🚀 What's New
 
-### ⚡ AI Model Upgrade
-- **Upgraded to DeepSeek V3 0324** - Latest and most powerful version of DeepSeek
-- **Enhanced Performance** - Improved response quality and reasoning capabilities
-- **Better Cybersecurity Knowledge** - More accurate and up-to-date security insights
+### ⚡ Direct DeepSeek Integration
+- **Switched to Direct DeepSeek API** - No more OpenRouter dependency
+- **Latest Model**: DeepSeek V3.1-Terminus (`deepseek-chat`)
+- **Real-time Streaming** - Live text display as AI generates responses
+- **Enhanced Performance** - Faster response times and better reliability
 
 ### 🔧 Technical Improvements
-- Updated model identifier: `deepseek/deepseek-chat-v3-0324:free`
-- Maintained OpenRouter API integration for reliability
-- Updated all documentation to reflect new model version
+- Updated model identifier: `deepseek-chat` (V3.1-Terminus)
+- Direct API integration with `https://api.deepseek.com/chat/completions`
+- Implemented Server-Sent Events (SSE) streaming
+- Updated environment variable: `VITE_DEEPSEEK_API_KEY`
+- Simplified authentication headers
 
 ## 📋 Changes
 
 ### Modified Files
-- `src/pages/Index.tsx` - Updated main application to use DeepSeek V3 0324
-- `docs/API.md` - Updated API documentation with new model references
-- `README.md` - Updated project documentation and configuration details
+- `src/pages/Index.tsx` - Implemented streaming and direct DeepSeek API integration
+- `docs/API.md` - Updated API documentation with streaming examples
+- `README.md` - Updated configuration and deployment instructions
+- `RELEASE_NOTES.md` - Updated release notes
 
 ### Configuration
-- Model: `deepseek/deepseek-chat-v3-0324:free` (previously `deepseek/deepseek-chat:free`)
-- API Provider: OpenRouter (unchanged)
-- Endpoint: `https://openrouter.ai/api/v1/chat/completions` (unchanged)
+- Model: `deepseek-chat` (DeepSeek V3.1-Terminus)
+- API Provider: Direct DeepSeek API (previously OpenRouter)
+- Endpoint: `https://api.deepseek.com/chat/completions`
+- Environment Variable: `VITE_DEEPSEEK_API_KEY` (previously `VITE_OPENROUTER_API_KEY`)
+- Streaming: Enabled (`stream: true`)
 
 ## 🎯 Benefits
 
-- **Improved AI Responses** - More accurate and contextual cybersecurity assistance
-- **Better Code Generation** - Enhanced payload and script generation capabilities
-- **Updated Knowledge Base** - Latest security techniques and methodologies
-- **Maintained Free Tier** - Still using the free tier of DeepSeek V3 0324
+- **Real-time Streaming** - See AI responses as they're generated
+- **Direct API Access** - No third-party dependencies, faster and more reliable
+- **Latest Model** - DeepSeek V3.1-Terminus with enhanced capabilities
+- **Better Performance** - Reduced latency and improved response quality
+- **Simplified Setup** - Direct API key from DeepSeek platform
 
 ## 🔧 Installation & Usage
 
@@ -46,7 +53,7 @@
 
 3. **Set up environment:**
    ```bash
-   echo "VITE_OPENROUTER_API_KEY=your_api_key_here" > .env
+   echo "VITE_DEEPSEEK_API_KEY=your_api_key_here" > .env
    ```
 
 4. **Start development server:**
@@ -60,8 +67,9 @@
 ## 🔒 Security Notes
 
 - API keys are stored locally in `.env` file (not committed to repository)
-- All AI interactions go through OpenRouter's secure API
+- All AI interactions go through DeepSeek's secure API
 - No server-side data persistence - everything runs client-side
+- Streaming responses are processed securely in the browser
 
 ## 🤝 Contributing
 

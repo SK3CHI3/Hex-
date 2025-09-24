@@ -32,21 +32,21 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
    npm install
    ```
 
-3. **Set up your OpenRouter API key**
+3. **Set up your DeepSeek API key**
    
    **Option A: Environment Variable (Recommended)**
    ```bash
    # Create .env file
-   echo "VITE_OPENROUTER_API_KEY=your_openrouter_api_key_here" > .env
+   echo "VITE_DEEPSEEK_API_KEY=your_deepseek_api_key_here" > .env
    ```
    
    **Option B: UI Input**
-   - Start the app and enter your OpenRouter API key when prompted
+   - Start the app and enter your DeepSeek API key when prompted
 
-4. **Get your OpenRouter API Key**
-   - Visit [openrouter.ai/keys](https://openrouter.ai/keys)
+4. **Get your DeepSeek API Key**
+   - Visit [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys)
    - Create a new API key
-   - Copy the key (starts with `sk-`)
+   - Copy the key
 
 5. **Start the development server**
    ```bash
@@ -70,18 +70,18 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
-| `VITE_OPENROUTER_API_KEY` | Your OpenRouter API Key | Yes | - |
-| `VITE_OPENROUTER_URL` | OpenRouter API endpoint | No | `https://openrouter.ai/api/v1/chat/completions` |
+| `VITE_DEEPSEEK_API_KEY` | Your DeepSeek API Key | Yes | - |
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes | - |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes | - |
 
 ### API Configuration
 
 The app is configured to use:
-- **Model**: `deepseek/deepseek-chat-v3-0324:free` (DeepSeek V3 0324)
-- **Endpoint**: `https://openrouter.ai/api/v1/chat/completions`
+- **Model**: `deepseek-chat` (DeepSeek V3.1-Terminus)
+- **Endpoint**: `https://api.deepseek.com/chat/completions`
 - **Max Tokens**: 8192 (configurable)
-- **Provider**: OpenRouter (free tier available)
+- **Streaming**: Enabled for real-time responses
+- **Provider**: DeepSeek (direct API integration)
 
 ## 🚀 Deployment
 
@@ -95,7 +95,7 @@ The app is configured to use:
    - Publish directory: `dist`
 
 3. **Set environment variables**
-   - Add `VITE_OPENROUTER_API_KEY` in Netlify dashboard
+   - Add `VITE_DEEPSEEK_API_KEY` in Netlify dashboard
 
 4. **Deploy**
    - Netlify will automatically deploy on git push

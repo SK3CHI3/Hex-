@@ -134,6 +134,15 @@ export function useConversation() {
     return newMessage;
   }, [user?.id, currentConversationId, createNewConversation, messages, saveMessages, loadConversations]);
 
+  // Update message content (for streaming)
+  const updateMessage = useCallback((messageId: string, content: string) => {
+    const updatedMessages = messages.map(msg => 
+      msg.id === messageId ? { ...msg, content } : msg
+    );
+    setMessages(updatedMessages);
+    saveMessages(updatedMessages);
+  }, [messages, saveMessages]);
+
   const switchConversation = useCallback((conversationId: string) => {
     setCurrentConversationId(conversationId);
     // For now, just clear messages when switching - we can improve this later
@@ -239,7 +248,7 @@ export function useConversation() {
       console.error('Failed to create new conversation with notification:', err);
       return null;
     }
-  }, [user?.id, saveMessagesToLocalStorage]);
+  }, [user?.id, saveMessages]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -259,6 +268,7 @@ export function useConversation() {
     // Actions
     createNewConversation,
     addMessage,
+    updateMessage,
     switchConversation,
     deleteConversation,
     clearAllConversations,
