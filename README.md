@@ -1,4 +1,4 @@
-# Hex - AI-Powered Penetration Testing Assistant
+# Hex - AI-Powered Penetration Testing Assistant.
 
 [![Built with React](https://img.shields.io/badge/Built%20with-React-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -9,9 +9,9 @@
 
 Hex is an advanced AI assistant designed specifically for cybersecurity professionals, ethical hackers, and penetration testers. It provides intelligent guidance for security testing activities while emphasizing responsible and legal practices.
 
-## ✨ Features
+## ✨ Features.
 
-- **🔍 Vulnerability Assessment**: Get detailed analysis of security vulnerabilities
+- **🔍 Vulnerability Assessment**: Get detailed analysis of security vulnerabilities 
 - **⚡ Payload Generation**: Generate XSS, SQLi, RCE, and other security payloads
 - **🛠️ Tool Analysis**: Analyze output from Nmap, Burp Suite, Metasploit, and more
 - **🌐 Web Security**: Specialized guidance for web application security testing
@@ -19,7 +19,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **🔐 Privilege Escalation**: Techniques for privilege escalation scenarios
 - **📝 Code Review**: Security-focused code analysis and recommendations
 
-## 🚀 Quick Start
+## 🚀 Quick Start.
 
 1. **Clone the repository**
    ```bash
@@ -56,7 +56,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 6. **Open your browser**
    Visit `http://localhost:8080` and enter your OpenRouter API key when prompted.
 
-## 🏗️ Architecture
+## 🏗️ Architecture.
 
 - **Frontend**: React + TypeScript + Vite
 - **UI Components**: shadcn/ui + Tailwind CSS
@@ -64,7 +64,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **Database**: Supabase (PostgreSQL) for conversation persistence
 - **Styling**: Custom cybersecurity-themed design
 
-## 🔧 Configuration
+## 🔧 Configuration.
 
 ### Environment Variables
 
@@ -74,7 +74,7 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes | - |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes | - |
 
-### API Configuration
+### API Configuration.
 
 The app is configured to use:
 - **Model**: `deepseek-chat` (DeepSeek V3.1-Terminus)
@@ -83,7 +83,7 @@ The app is configured to use:
 - **Streaming**: Enabled for real-time responses
 - **Provider**: DeepSeek (direct API integration)
 
-## 🚀 Deployment
+## 🚀 Deployment.
 
 ### Netlify (Recommended)
 
@@ -100,15 +100,7 @@ The app is configured to use:
 4. **Deploy**
    - Netlify will automatically deploy on git push
 
-### Other Platforms
-
-The app can be deployed to any static hosting platform:
-- Vercel
-- GitHub Pages
-- AWS S3 + CloudFront
-- Any static file server
-
-## 🤝 Contributing
+## 🤝 Contributing.
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
@@ -120,11 +112,11 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
+## 📄 License.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ⚠️ Legal Disclaimer
+## ⚠️ Legal Disclaimer.
 
 This tool is designed **EXCLUSIVELY** for authorized security testing activities. Users must:
 
@@ -135,14 +127,14 @@ This tool is designed **EXCLUSIVELY** for authorized security testing activities
 
 **Unauthorized access to systems is illegal and punishable by law.**
 
-## 🔒 Security
+## 🔒 Security.
 
 - OpenRouter API keys are stored locally and never sent to our servers
 - All communication is encrypted via HTTPS
-- No sensitive data is logged or stored
+- No sensitive data is logged or stored 
 - Environment variables are properly protected
 
-## 📞 Support
+## 📞 Support.
 
 - **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)

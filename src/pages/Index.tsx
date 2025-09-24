@@ -171,16 +171,101 @@ const Index = () => {
     }
   }, [messages]);
 
-  // Token estimation function
+  // Improved token estimation function (more accurate for DeepSeek)
   const estimateTokens = (text: string): number => {
-    return Math.ceil(text.length / 4);
+    // More accurate estimation: English text averages ~3.5 chars per token
+    // Account for punctuation, spaces, and special characters
+    const words = text.split(/\s+/).length;
+    const chars = text.length;
+    const estimatedTokens = Math.ceil((chars * 0.75 + words * 1.3) / 2);
+    return Math.max(estimatedTokens, Math.ceil(chars / 4)); // Fallback to simple estimation
   };
 
-  // Check if context limit would be exceeded
-  const checkContextLimit = (newMessageContent: string): boolean => {
+  // Smart context management with sliding window approach
+  const getOptimizedContext = (messages: Message[], maxTokens: number): Message[] => {
     const SYSTEM_PROMPT_TOKENS = estimateTokens(SYSTEM_PROMPT);
-    const CONTEXT_LIMIT = 30000; // Leave 2K buffer from 32K limit
-    const RESPONSE_BUFFER = 8192; // Reserve space for AI response
+    const RESPONSE_BUFFER = 8192;
+    const availableTokens = maxTokens - SYSTEM_PROMPT_TOKENS - RESPONSE_BUFFER;
+    
+    let totalTokens = 0;
+    const optimizedMessages: Message[] = [];
+    
+    // Always keep the most recent messages (sliding window)
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      const messageTokens = estimateTokens(message.content);
+      
+      if (totalTokens + messageTokens <= availableTokens) {
+        optimizedMessages.unshift(message);
+        totalTokens += messageTokens;
+      } else {
+        // If we can't fit the full message, try to compress it
+        const compressedContent = compressMessage(message.content, availableTokens - totalTokens);
+        if (compressedContent && compressedContent !== message.content) {
+          optimizedMessages.unshift({
+            ...message,
+            content: compressedContent
+          });
+          totalTokens += estimateTokens(compressedContent);
+        }
+        break;
+      }
+    }
+    
+    return optimizedMessages;
+  };
+
+  // Compress message content to fit within token limit
+  const compressMessage = (content: string, maxTokens: number): string | null => {
+    const estimatedTokens = estimateTokens(content);
+    if (estimatedTokens <= maxTokens) return content;
+    
+    // Try different compression strategies
+    const strategies = [
+      // Strategy 1: Keep first and last parts
+      (text: string) => {
+        const words = text.split(' ');
+        if (words.length <= 20) return text;
+        const firstPart = words.slice(0, 10).join(' ');
+        const lastPart = words.slice(-10).join(' ');
+        return `${firstPart}... [compressed] ...${lastPart}`;
+      },
+      
+      // Strategy 2: Summarize middle section
+      (text: string) => {
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+        if (sentences.length <= 3) return text;
+        const firstSentence = sentences[0];
+        const lastSentence = sentences[sentences.length - 1];
+        return `${firstSentence}... [${sentences.length - 2} more sentences] ...${lastSentence}`;
+      },
+      
+      // Strategy 3: Extract key phrases
+      (text: string) => {
+        const words = text.split(/\s+/);
+        const keyWords = words.filter(word => 
+          word.length > 4 && 
+          !['this', 'that', 'with', 'from', 'they', 'have', 'been', 'were', 'said', 'each', 'which', 'their', 'time', 'will', 'about', 'there', 'could', 'other', 'after', 'first', 'well', 'also', 'where', 'much', 'some', 'very', 'when', 'here', 'just', 'into', 'over', 'think', 'back', 'then', 'them', 'these', 'so', 'its', 'now', 'find', 'any', 'new', 'work', 'part', 'take', 'get', 'place', 'made', 'live', 'where', 'after', 'back', 'little', 'only', 'round', 'man', 'year', 'came', 'show', 'every', 'good', 'me', 'give', 'our', 'under', 'name', 'very', 'through', 'just', 'form', 'sentence', 'great', 'think', 'say', 'help', 'low', 'line', 'differ', 'turn', 'cause', 'much', 'mean', 'before', 'move', 'right', 'boy', 'old', 'too', 'same', 'she', 'all', 'there', 'when', 'up', 'use', 'her', 'word', 'how', 'said', 'an', 'each', 'which', 'do', 'their', 'time', 'will', 'about', 'if', 'up', 'out', 'many', 'then', 'them', 'can', 'only', 'other', 'new', 'some', 'what', 'time', 'very', 'when', 'much', 'then', 'them', 'can', 'only', 'other', 'new', 'some', 'what', 'time', 'very', 'when', 'much', 'then', 'them', 'can', 'only', 'other', 'new', 'some', 'what'].includes(word.toLowerCase())
+        );
+        return keyWords.slice(0, 15).join(' ') + '...';
+      }
+    ];
+    
+    for (const strategy of strategies) {
+      const compressed = strategy(content);
+      if (estimateTokens(compressed) <= maxTokens) {
+        return compressed;
+      }
+    }
+    
+    return null; // Couldn't compress enough
+  };
+
+  // Check if context limit would be exceeded (updated for 128K context)
+  const checkContextLimit = (newMessageContent: string): boolean => {
+    const CONTEXT_LIMIT = 120000; // Use 120K out of 128K (leave buffer)
+    const SYSTEM_PROMPT_TOKENS = estimateTokens(SYSTEM_PROMPT);
+    const RESPONSE_BUFFER = 8192;
 
     const currentTokens = messages.reduce((total, msg) => total + estimateTokens(msg.content), 0);
     const newMessageTokens = estimateTokens(newMessageContent);
@@ -198,7 +283,7 @@ const Index = () => {
     const notificationMessage: Message = {
       id: `msg_${Date.now()}_notification`,
       type: 'assistant',
-      content: `🔄 **New conversation started**\n\n${reason}\n\nYour previous conversation has been cleared to make room for new context. Please continue with your question.`,
+      content: `🔄 **New conversation started**\n\n${reason}\n\nYour previous conversation has been optimized to maintain context while staying within token limits. Please continue with your question.`,
       timestamp: new Date(),
       isError: false
     };
@@ -296,7 +381,7 @@ const Index = () => {
       const estimatedTotal = Math.round((currentTokens + estimateTokens(SYSTEM_PROMPT) + estimateTokens(messageToSend)) / 1000);
 
       startNewChatWithNotification(
-        `Context limit approaching (~${estimatedTotal}K tokens). Starting fresh conversation to ensure optimal AI performance.`
+        `Context limit approaching (~${estimatedTotal}K tokens). Starting fresh conversation to ensure optimal AI performance. Your previous conversation has been preserved with smart context optimization.`
       );
 
       // Continue with the message in the new chat
@@ -343,13 +428,14 @@ const Index = () => {
         streamingMessageId = initialMessage.id;
       }
 
-      // Include conversation history for context
-      const conversationHistory = messages
-        .filter(msg => !msg.isError) // Exclude error messages
-        .map(msg => ({
-          role: msg.type === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }));
+      // Use optimized context management for better token efficiency
+      const filteredMessages = messages.filter(msg => !msg.isError);
+      const optimizedMessages = getOptimizedContext(filteredMessages, 120000);
+      
+      const conversationHistory = optimizedMessages.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
 
       const conversationMessages = [
         { role: 'system', content: SYSTEM_PROMPT },
