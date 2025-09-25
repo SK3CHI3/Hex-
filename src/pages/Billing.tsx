@@ -69,14 +69,15 @@ export default function Billing() {
         } else {
           console.log('🧪 SANDBOX MODE: Using test Instasend configuration');
         }
-        new window.IntaSend({
-          publicAPIKey: import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY,
-          live: import.meta.env.VITE_INSTASEND_LIVE === 'true',
-          // Webhook URL for live mode (configure in Instasend dashboard)
-          webhookUrl: import.meta.env.VITE_INSTASEND_LIVE === 'true' 
-            ? `${window.location.origin}/api/webhooks/instasend` 
-            : undefined
-        })
+        try {
+          new window.IntaSend({
+            publicAPIKey: import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY,
+            live: import.meta.env.VITE_INSTASEND_LIVE === 'true',
+            // Webhook URL for live mode (configure in Instasend dashboard)
+            webhookUrl: import.meta.env.VITE_INSTASEND_LIVE === 'true' 
+              ? `${window.location.origin}/api/webhooks/instasend` 
+              : undefined
+          })
         .on("COMPLETE", async (results: any) => {
           console.log("✅ Billing: Payment completed:", results);
           console.log("✅ Billing: Results details:", {
@@ -172,6 +173,14 @@ export default function Billing() {
             description: "Please wait while we process your payment...",
           });
         });
+        } catch (error) {
+          console.error('❌ Error initializing Instasend:', error);
+          toast({
+            title: "Payment System Error",
+            description: "Failed to initialize payment system. Please refresh the page and try again.",
+            variant: "destructive",
+          });
+        }
       } else {
         console.log('❌ IntaSend SDK not loaded - will retry...');
         // Retry after a longer delay
@@ -201,10 +210,24 @@ export default function Billing() {
             amount: button.getAttribute('data-amount'),
             currency: button.getAttribute('data-currency'),
             email: button.getAttribute('data-email'),
-            api_ref: button.getAttribute('data-api_ref')
+            first_name: button.getAttribute('data-first_name'),
+            last_name: button.getAttribute('data-last_name'),
+            api_ref: button.getAttribute('data-api_ref'),
+            comment: button.getAttribute('data-comment'),
+            redirect_url: button.getAttribute('data-redirect_url'),
+            country: button.getAttribute('data-country'),
+            method: button.getAttribute('data-method'),
+            card_tarrif: button.getAttribute('data-card_tarrif'),
+            phone_number: button.getAttribute('data-phone_number'),
+            city: button.getAttribute('data-city'),
+            state: button.getAttribute('data-state'),
+            postal_code: button.getAttribute('data-postal_code'),
+            address: button.getAttribute('data-address')
           });
           console.log('🔄 Billing: Instasend SDK available:', !!window.IntaSend);
           console.log('🔄 Billing: API Key available:', !!import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
+          console.log('🔄 Billing: API Key value:', import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY?.substring(0, 20) + '...');
+          console.log('🔄 Billing: Live mode:', import.meta.env.VITE_INSTASEND_LIVE);
         });
       } else {
         console.log('❌ Billing: Instasend button not found, retrying...');
@@ -381,7 +404,7 @@ export default function Billing() {
 
                 <button
                   className="intaSendPayButton w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                  data-amount="3"
+                  data-amount="3.00"
                   data-currency="USD"
                   data-email={profile?.email || user.email}
                   data-first_name={profile?.full_name?.split(' ')[0] || 'User'}
@@ -392,6 +415,11 @@ export default function Billing() {
                   data-country="US"
                   data-method="CARD-PAYMENT"
                   data-card_tarrif="BUSINESS-PAYS"
+                  data-phone_number=""
+                  data-city=""
+                  data-state=""
+                  data-postal_code=""
+                  data-address=""
                 >
                   <Zap className="h-4 w-4" />
                   Upgrade to Premium ($3/month)
