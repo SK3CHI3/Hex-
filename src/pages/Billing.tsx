@@ -51,7 +51,7 @@ export default function Billing() {
     // INSTASEND_WEBHOOK_SECRET=your_webhook_secret (for webhook validation)
     const initializeInstasend = () => {
       console.log('🔄 Initializing InstaSend...');
-      console.log('PublicAPIKey:', import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
+      console.log('PublicAPIKey configured:', !!import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
       console.log('Live mode:', import.meta.env.VITE_INSTASEND_LIVE === 'true');
       console.log('Environment:', import.meta.env.VITE_INSTASEND_LIVE === 'true' ? 'LIVE' : 'SANDBOX');
       console.log('Domain:', window.location.origin);
@@ -70,14 +70,14 @@ export default function Billing() {
           console.log('🧪 SANDBOX MODE: Using test Instasend configuration');
         }
         try {
-          new window.IntaSend({
-            publicAPIKey: import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY,
+        new window.IntaSend({
+          publicAPIKey: import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY,
             live: import.meta.env.VITE_INSTASEND_LIVE === 'true',
             // Webhook URL for live mode (configure in Instasend dashboard)
             webhookUrl: import.meta.env.VITE_INSTASEND_LIVE === 'true' 
               ? `${window.location.origin}/api/webhooks/instasend` 
               : undefined
-          })
+        })
         .on("COMPLETE", async (results: any) => {
           console.log("✅ Billing: Payment completed:", results);
           console.log("✅ Billing: Results details:", {
@@ -226,7 +226,7 @@ export default function Billing() {
           });
           console.log('🔄 Billing: Instasend SDK available:', !!window.IntaSend);
           console.log('🔄 Billing: API Key available:', !!import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
-          console.log('🔄 Billing: API Key value:', import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY?.substring(0, 20) + '...');
+          console.log('🔄 Billing: API Key configured:', !!import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
           console.log('🔄 Billing: Live mode:', import.meta.env.VITE_INSTASEND_LIVE);
         });
       } else {
