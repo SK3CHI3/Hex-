@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://hexai.websitesitemap.xml
+Sitemap: https://hexai.website/sitemap.xml
 
 # Crawl-delay for respectful crawling
 Crawl-delay: 1
