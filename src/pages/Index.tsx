@@ -764,8 +764,8 @@ const Index = () => {
             
             {/* Right side - Simplified for mobile */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* New Chat Button - Show when authenticated and not streaming */}
-              {isAuthenticated && !isStreaming && (
+              {/* New Chat Button - Show when authenticated and not streaming (hidden on mobile since we have it in input) */}
+              {isAuthenticated && !isStreaming && !isMobile && (
                 <div className="flex items-center">
                   <div 
                     className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1 border border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
@@ -961,8 +961,8 @@ const Index = () => {
                 {/* Plus button for new chat */}
                 <Button
                   onClick={startNewChat}
-                  className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-2 py-2 h-10 rounded-full shadow-sm hover:shadow-md transition-all duration-200 flex-shrink-0 min-w-[44px] min-h-[44px]"
-                  style={{ fontSize: '18px' }}
+                  className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-2 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200 flex-shrink-0 min-w-[38px] min-h-[38px]"
+                  style={{ fontSize: '18px', height: '38px' }}
                   tabIndex={0}
                   aria-label="New Chat"
                 >
@@ -987,7 +987,7 @@ const Index = () => {
                         sendMessage();
                       }
                     }}
-                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px]"
+                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-0 focus:outline-none rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px]"
                     rows={1}
                     style={{ minHeight: '38px', maxHeight: '80px', fontSize: '15px' }}
                   />
@@ -999,8 +999,8 @@ const Index = () => {
                     isStreaming 
                       ? 'bg-orange-600 hover:bg-orange-700 text-white' 
                       : 'bg-green-600 hover:bg-green-700 text-black'
-                  } font-semibold px-2 py-2 h-10 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 min-w-[44px] min-h-[44px]`}
-                  style={{ fontSize: '18px' }}
+                  } font-semibold px-2 py-2 rounded-full shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 min-w-[38px] min-h-[38px]`}
+                  style={{ fontSize: '18px', height: '38px' }}
                   tabIndex={0}
                   aria-label={isStreaming ? "Stop Response" : "Send"}
                 >
