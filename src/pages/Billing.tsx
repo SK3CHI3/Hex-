@@ -42,8 +42,13 @@ export default function Billing() {
 
     // Initialize Instasend
     // Required environment variables for live mode:
+    // Frontend (Public) - Safe to expose:
     // VITE_INSTASEND_PUBLISHABLE_KEY=ISPK_live_... (live publishable key)
     // VITE_INSTASEND_LIVE=true
+    // 
+    // Backend (Secret) - Keep secure, never expose:
+    // INSTASEND_SECRET_KEY=ISK_live_... (live secret key - for server-to-server API calls)
+    // INSTASEND_WEBHOOK_SECRET=your_webhook_secret (for webhook validation)
     const initializeInstasend = () => {
       console.log('🔄 Initializing InstaSend...');
       console.log('PublicAPIKey:', import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);

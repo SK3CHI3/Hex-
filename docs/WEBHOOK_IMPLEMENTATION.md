@@ -21,6 +21,10 @@ Select these events:
 
 ### Environment Variables Required
 ```bash
+# Backend Secret Key (for server-to-server API calls)
+INSTASEND_SECRET_KEY=ISK_live_...             # Your live secret key
+
+# Webhook Validation Secret
 INSTASEND_WEBHOOK_SECRET=your_random_secret_key_here
 ```
 

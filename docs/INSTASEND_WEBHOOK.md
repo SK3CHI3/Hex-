@@ -7,9 +7,13 @@ When using Instasend in live mode, you need to configure webhooks in your Instas
 ### Required Environment Variables
 
 ```bash
-# Live mode configuration
+# Frontend (Public) - Safe to expose
 VITE_INSTASEND_PUBLISHABLE_KEY=ISPK_live_...  # Your live publishable key
 VITE_INSTASEND_LIVE=true                      # Enable live mode
+
+# Backend (Secret) - Keep secure, never expose
+INSTASEND_SECRET_KEY=ISK_live_...             # Your live secret key
+INSTASEND_WEBHOOK_SECRET=your_webhook_secret  # Webhook validation secret
 ```
 
 ### Webhook URL
