@@ -18,9 +18,15 @@ const BillingPopup: React.FC<BillingPopupProps> = ({ isOpen, onClose, dailyUsage
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
+    console.log('🔄 BillingPopup: Upgrade Now button clicked');
+    console.log('🔄 BillingPopup: Current daily usage:', dailyUsage);
+    console.log('🔄 BillingPopup: Closing popup and navigating to /billing');
+    
     // Close popup and navigate to billing page with InstaSend integration
     onClose();
     navigate('/billing');
+    
+    console.log('✅ BillingPopup: Navigation initiated to /billing');
   };
 
   return (
@@ -74,7 +80,7 @@ const BillingPopup: React.FC<BillingPopupProps> = ({ isOpen, onClose, dailyUsage
 
           {/* Pricing */}
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-400 mb-1">$5</div>
+            <div className="text-3xl font-bold text-green-400 mb-1">$3</div>
             <div className="text-gray-300 text-sm">per month</div>
           </div>
 

@@ -24,7 +24,7 @@ The Hex Admin Dashboard provides comprehensive monitoring and analytics for your
 - **Total Users**: Complete user count with premium breakdown
 - **Daily Active Users**: Users active in last 24 hours with engagement percentage
 - **Total Messages**: All messages sent with average per user
-- **Monthly Revenue**: Premium subscriptions × $5 with subscriber count
+- **Monthly Revenue**: Premium subscriptions × $3 with subscriber count
 
 ### 2. Real-Time Monitor
 **Live system monitoring (30-second refresh):**

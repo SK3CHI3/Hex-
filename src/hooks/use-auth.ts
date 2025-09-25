@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { type User, type Session } from '@supabase/supabase-js';
 import { supabase, authFunctions, cleanupFunctions, type UserProfile } from '@/lib/supabase';
 
+// Global flag to prevent multiple simultaneous loadUserData calls
+let isLoadingUserData = false;
+
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -43,6 +46,15 @@ export function useAuth() {
   }, []);
 
   const loadUserData = async (userId: string) => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingUserData) {
+      console.log('⏳ User data already loading, skipping...');
+      return;
+    }
+
+    isLoadingUserData = true;
+    console.log('🔄 Loading user data for:', userId);
+
     try {
       // Load profile and usage in parallel
       const [profileResult, usageResult] = await Promise.all([
@@ -59,10 +71,12 @@ export function useAuth() {
         canSendMessage: usageResult.canSendMessage
       });
 
-      // Run cleanup check for authenticated users
+      // Run cleanup check for authenticated users (only once)
       cleanupFunctions.runCleanupIfNeeded().catch(console.warn);
     } catch (error) {
       console.error('Error loading user data:', error);
+    } finally {
+      isLoadingUserData = false;
     }
   };
 
@@ -85,14 +99,17 @@ export function useAuth() {
   const incrementUsage = async (): Promise<boolean> => {
     if (!user) return false;
 
+    console.log('🔄 Attempting to increment usage for user:', user.id);
     const { success } = await authFunctions.incrementDailyUsage(user.id);
-    if (success) {
-      const usageResult = await authFunctions.getDailyUsage(user.id);
-      setDailyUsage({
-        messageCount: usageResult.messageCount,
-        canSendMessage: usageResult.canSendMessage
-      });
-    }
+    
+    // Always refresh usage state regardless of success/failure
+    const usageResult = await authFunctions.getDailyUsage(user.id);
+    setDailyUsage({
+      messageCount: usageResult.messageCount,
+      canSendMessage: usageResult.canSendMessage
+    });
+
+    console.log('📊 Usage increment result:', { success, messageCount: usageResult.messageCount, canSendMessage: usageResult.canSendMessage });
     return success;
   };
 

@@ -215,7 +215,7 @@ const useAuth = () => {
 - **Resets at midnight UTC**
 - **Upgrade prompt** when limit reached
 
-### Premium Tier ($5/month)
+### Premium Tier ($3/month)
 - **Unlimited messages**
 - **No daily restrictions**
 - **Priority support**

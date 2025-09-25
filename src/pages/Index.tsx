@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Terminal, Copy as CopyIcon, Check as CheckIcon, Shield, User, LogOut } from 'lucide-react';
+import { Send, Terminal, Copy as CopyIcon, Check as CheckIcon, Shield, User, LogOut, Square, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -76,15 +76,15 @@ const CopyablePreBlock = (props: React.HTMLAttributes<HTMLPreElement>) => {
       <div className="relative mb-2 sm:mb-3">
         <button
           onClick={handleCopy}
-          className="z-10 text-green-300 p-1 rounded opacity-80 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-green-400 bg-transparent border-none shadow-none absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center"
+          className="z-10 text-green-300 p-1.5 rounded opacity-80 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-green-400 bg-gray-700/50 border border-gray-600/50 shadow-sm absolute top-1 right-1 w-7 h-7 flex items-center justify-center"
           title={copied ? 'Copied!' : 'Copy'}
           aria-label="Copy code block"
           tabIndex={0}
           type="button"
         >
-          {copied ? <CheckIcon className="w-4 h-4 flex-shrink-0" /> : <CopyIcon className="w-4 h-4 flex-shrink-0" />}
+          {copied ? <CheckIcon className="w-3.5 h-3.5 flex-shrink-0" /> : <CopyIcon className="w-3.5 h-3.5 flex-shrink-0" />}
         </button>
-        <pre className="bg-gray-800 p-2 rounded-lg overflow-x-auto text-xs relative">
+        <pre className="bg-gray-800 p-2 pr-10 rounded-lg overflow-x-auto text-xs relative">
           {props.children}
         </pre>
       </div>
@@ -292,6 +292,35 @@ const Index = () => {
     setMessages([notificationMessage]);
   };
 
+  // Stop ongoing streaming response
+  const stopStreaming = () => {
+    if (currentAbortController) {
+      currentAbortController.abort();
+      setCurrentAbortController(null);
+    }
+    setIsStreaming(false);
+  };
+
+  // Start a new chat manually
+  const startNewChat = () => {
+    // Stop any ongoing streaming first
+    stopStreaming();
+    
+    // Clear current messages
+    setMessages([]);
+    
+    // Add notification message
+    const notificationMessage: Message = {
+      id: `msg_${Date.now()}_notification`,
+      type: 'assistant',
+      content: `🆕 **New conversation started**\n\nYou've started a fresh conversation. Your previous conversation has been saved. Feel free to ask me anything about cybersecurity, penetration testing, or ethical hacking!`,
+      timestamp: new Date(),
+      isError: false
+    };
+    
+    setMessages([notificationMessage]);
+  };
+
   // Simple addMessage function
   const addMessage = (type: 'user' | 'assistant', content: string, isError: boolean = false) => {
     const newMessage: Message = {
@@ -318,6 +347,13 @@ const Index = () => {
   const [showBillingPopup, setShowBillingPopup] = useState(false);
   const [showPresetsModal, setShowPresetsModal] = useState(false);
   const [showMobileProfile, setShowMobileProfile] = useState(false);
+  
+  // State for managing streaming and abort controller
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
+  
+  // Debounced height adjustment for mobile performance
+  const heightAdjustTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -372,6 +408,7 @@ const Index = () => {
     // Check usage limits (only for new messages, not retries)
     if (!isRetry && !canSendMessage) {
       // Show billing popup instead of error message
+      console.log('❌ Usage limit check failed - showing billing popup');
       setShowBillingPopup(true);
       return;
     }
@@ -403,22 +440,26 @@ const Index = () => {
 
     // Add user message to chat (unless it's a retry)
     if (!isRetry) {
-      // Add user message to chat
-      addMessage('user', messageToSend);
-
-      // Clear input immediately after adding user message
-      setInput('');
-
-      // Only increment usage after successfully saving the message
+      // CRITICAL: Check usage limit BEFORE adding message to UI
       const usageIncremented = await incrementUsage();
       if (!usageIncremented && !isPremium) {
-        // If usage increment fails, we need to remove the message we just added
-        // For now, we'll log this as a warning but allow the message to proceed
-        console.warn('Failed to increment usage count, but message was saved');
+        // Usage limit exceeded - show billing popup and stop
+        console.log('❌ Daily message limit exceeded');
+        setShowBillingPopup(true);
+        return;
       }
+
+      // Only add message to UI if usage increment succeeded
+      addMessage('user', messageToSend);
+      setInput('');
     }
 
     setLastError(null);
+
+    // Create AbortController for this request
+    const abortController = new AbortController();
+    setCurrentAbortController(abortController);
+    setIsStreaming(true);
 
     // Start loading animation - initialize as null to track it properly
     try {
@@ -452,14 +493,15 @@ const Index = () => {
         stream: true
       };
       
-      // DeepSeek API call
+      // DeepSeek API call with AbortController
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(requestPayload)
+        body: JSON.stringify(requestPayload),
+        signal: abortController.signal
       });
       
       if (!response.ok) {
@@ -574,6 +616,11 @@ const Index = () => {
         setRetryCount(0); // Reset retry count on success
       } catch (streamError) {
         console.error('Streaming error:', streamError);
+        // Check if it's an abort error
+        if (streamError.name === 'AbortError') {
+          // Keep the streamed content as-is, don't modify the message
+          console.log('Response stopped by user - keeping streamed content');
+        } else {
         // Update the message with error content
         setMessages(prevMessages => 
           prevMessages.map(msg => 
@@ -582,17 +629,25 @@ const Index = () => {
               : msg
           )
         );
+        }
       }
     } catch (error) {
       console.error('Unexpected error:', error);
+      // Check if it's an abort error
+      if (error.name === 'AbortError') {
+        console.log('Request was aborted by user');
+      } else {
       handleApiError({
         type: 'client',
         message: 'An unexpected error occurred',
         status: 0,
         retryable: true,
       });
+      }
     } finally {
-      // Cleanup complete
+      // Cleanup streaming state
+      setIsStreaming(false);
+      setCurrentAbortController(null);
     }
   };
 
@@ -603,9 +658,24 @@ const Index = () => {
     }
   };
 
-  // Auto-adjust textarea height
-  useEffect(() => {
+  // Debounced height adjustment for better mobile performance
+  const debouncedHeightAdjust = () => {
+    if (heightAdjustTimeoutRef.current) {
+      clearTimeout(heightAdjustTimeoutRef.current);
+    }
+    heightAdjustTimeoutRef.current = setTimeout(() => {
     adjustTextareaHeight();
+    }, 16); // ~60fps for smooth performance
+  };
+
+  // Auto-adjust textarea height - debounced for better mobile performance
+  useEffect(() => {
+    debouncedHeightAdjust();
+    return () => {
+      if (heightAdjustTimeoutRef.current) {
+        clearTimeout(heightAdjustTimeoutRef.current);
+      }
+    };
   }, [input, isMobile]);
 
   // Scroll input into view on focus (mobile)
@@ -623,8 +693,8 @@ const Index = () => {
     }
   };
 
-  // Short placeholder for mobile
-  const mobilePlaceholder = "Ask about hacking...";
+  // Better placeholders for mobile
+  const mobilePlaceholder = "Ask about cybersecurity, hacking, or pentesting...";
   const desktopPlaceholder = "Ask about penetration testing, request payloads, or security analysis...";
 
   useEffect(() => {
@@ -693,7 +763,23 @@ const Index = () => {
             </div>
             
             {/* Right side - Simplified for mobile */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* New Chat Button - Show when authenticated and not streaming */}
+              {isAuthenticated && !isStreaming && (
+                <div className="flex items-center">
+                  <div 
+                    className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1 border border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
+                    onClick={startNewChat}
+                    title="Start New Chat"
+                  >
+                    <Plus className="h-3 w-3 text-blue-400" />
+                    <span className="hidden sm:inline text-blue-300/80 text-xs font-light">
+                      New Chat
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Mobile Profile Button - Only show when authenticated */}
               {isAuthenticated && (
                 <Button
@@ -767,10 +853,10 @@ const Index = () => {
         <div className="flex-1 flex flex-col min-w-0 p-2 sm:p-3 md:p-4">
           {/* Messages */}
           <div className={
-            `flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-2 sm:mb-3 md:mb-4 ${isMobile ? 'pb-24' : ''}`
+            `flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-2 sm:mb-3 md:mb-4 ${isMobile ? 'pb-20' : ''}`
           }>
             <div className={
-              `h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 ${isMobile ? 'pb-20' : ''}`
+              `h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 ${isMobile ? 'pb-16' : ''}`
             }>
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
@@ -823,7 +909,7 @@ const Index = () => {
                           <div className="prose prose-invert max-w-none">
                             <ReactMarkdown 
                               components={{
-                                p: ({ children, ...props }) => <p className="mb-2 sm:mb-3 last:mb-0 text-xs sm:text-sm leading-relaxed text-gray-200" {...props}>{children}</p>,
+                                p: ({ children, ...props }) => <p className="mb-2 sm:mb-3 last:mb-0 text-sm sm:text-sm leading-relaxed text-gray-200" {...props}>{children}</p>,
                                 code: ({ children, node, ...rest }) => {
                                   // Treat as inline if node is not present or node.tagName is not 'code'
                                   const isInline = !node || node.tagName !== 'code';
@@ -842,7 +928,7 @@ const Index = () => {
                                 em: ({ children, ...props }) => <em className="text-blue-300 italic" {...props}>{children}</em>,
                                 ul: ({ children, ...props }) => <ul className="list-disc list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ul>,
                                 ol: ({ children, ...props }) => <ol className="list-decimal list-inside mb-2 sm:mb-3 space-y-1" {...props}>{children}</ol>,
-                                li: ({ children, ...props }) => <li className="text-gray-200 text-xs sm:text-sm" {...props}>{children}</li>,
+                                li: ({ children, ...props }) => <li className="text-gray-200 text-sm sm:text-sm" {...props}>{children}</li>,
                                 h1: ({ children, ...props }) => <h1 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-green-300 mb-2 sm:mb-3" {...props}>{children}</h1>,
                                 h2: ({ children, ...props }) => <h2 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-green-300 mb-2" {...props}>{children}</h2>,
                                 h3: ({ children, ...props }) => <h3 className="text-xs sm:text-sm md:text-base font-bold text-green-300 mb-2" {...props}>{children}</h3>,
@@ -877,7 +963,11 @@ const Index = () => {
                     ref={textareaRef}
                     placeholder={isMobile ? mobilePlaceholder : desktopPlaceholder}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      // Use debounced height adjustment for better mobile performance
+                      debouncedHeightAdjust();
+                    }}
                     onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
                     onKeyDown={(e) => {
@@ -892,14 +982,18 @@ const Index = () => {
                   />
                 </div>
                 <Button
-                  onClick={() => sendMessage()}
-                  disabled={!input.trim() || !canSendMessage}
-                  className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 py-2 h-10 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 min-w-[44px] min-h-[44px]"
+                  onClick={isStreaming ? stopStreaming : () => sendMessage()}
+                  disabled={!isStreaming && (!input.trim() || !canSendMessage)}
+                  className={`${
+                    isStreaming 
+                      ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                      : 'bg-green-600 hover:bg-green-700 text-black'
+                  } font-semibold px-2 py-2 h-10 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 min-w-[44px] min-h-[44px]`}
                   style={{ fontSize: '18px' }}
                   tabIndex={0}
-                  aria-label="Send"
+                  aria-label={isStreaming ? "Stop Response" : "Send"}
                 >
-                  <Send className="h-5 w-5" />
+                  {isStreaming ? <Square className="h-5 w-5" /> : <Send className="h-5 w-5" />}
                 </Button>
               </div>
             </div>
@@ -912,7 +1006,11 @@ const Index = () => {
                       ref={textareaRef}
                       placeholder={isMobile ? mobilePlaceholder : desktopPlaceholder}
                       value={input}
-                      onChange={(e) => setInput(e.target.value)}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        // Use debounced height adjustment for better performance
+                        debouncedHeightAdjust();
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -925,11 +1023,16 @@ const Index = () => {
                     />
                   </div>
                   <Button
-                    onClick={() => sendMessage()}
-                    disabled={!input.trim() || !canSendMessage}
-                    className="bg-green-600 hover:bg-green-700 text-black font-semibold px-2 sm:px-3 md:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    onClick={isStreaming ? stopStreaming : () => sendMessage()}
+                    disabled={!isStreaming && (!input.trim() || !canSendMessage)}
+                    className={`${
+                      isStreaming 
+                        ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                        : 'bg-green-600 hover:bg-green-700 text-black'
+                    } font-semibold px-2 sm:px-3 md:px-4 py-2 h-10 sm:h-11 rounded-md shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0`}
+                    aria-label={isStreaming ? "Stop Response" : "Send"}
                   >
-                    <Send className="h-4 w-4" />
+                    {isStreaming ? <Square className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
               </div>
@@ -947,14 +1050,14 @@ const Index = () => {
 
       {/* Mobile Presets Modal */}
       <Dialog open={showPresetsModal} onOpenChange={setShowPresetsModal}>
-        <DialogContent className="bg-gray-900 border-green-500/30 text-green-400 max-w-sm mx-auto max-h-[80vh] overflow-hidden">
+        <DialogContent className="bg-gray-900 border-green-500/30 text-green-400 w-[95vw] max-w-md mx-auto max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-green-400 flex items-center gap-2">
               <Shield className="h-5 w-5" />
               Quick Presets
             </DialogTitle>
           </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-[70vh] overflow-y-auto">
             <PresetsCard
               onPresetSelect={(prompt) => {
                 setInput(prompt);
@@ -973,7 +1076,7 @@ const Index = () => {
 
       {/* Mobile Profile Modal */}
       <Dialog open={showMobileProfile} onOpenChange={setShowMobileProfile}>
-        <DialogContent className="bg-gray-900 border-green-500/30 text-green-400 max-w-sm mx-auto">
+        <DialogContent className="bg-gray-900 border-green-500/30 text-green-400 w-[95vw] max-w-md mx-auto max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-green-400 flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -1052,7 +1155,7 @@ const Index = () => {
                 }}
                 className="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-medium py-3 rounded-lg transition-colors"
               >
-                Upgrade to Premium - $5/month
+                Upgrade to Premium - $3/month
               </Button>
             )}
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,12 +25,18 @@ declare global {
 
 export default function Billing() {
   const navigate = useNavigate();
-  const { user, profile, isPremium, dailyUsage, refreshProfile } = useAuth();
+  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
+  const { user, profile, isPremium, dailyUsage, refreshProfile, loading } = useAuth();
 
   useEffect(() => {
-    // Redirect if not authenticated
-    if (!user) {
-      navigate('/');
+    console.log('🔄 Billing useEffect triggered');
+    console.log('🔄 Billing: User:', user?.id, user?.email);
+    console.log('🔄 Billing: Profile:', profile?.email, profile?.subscription_status);
+    console.log('🔄 Billing: Current transaction ID:', currentTransactionId);
+    
+    // Only initialize if user is available and not loading
+    if (loading || !user) {
+      console.log('⏳ Billing: Auth loading or user not available, skipping initialization');
       return;
     }
 
@@ -39,6 +45,7 @@ export default function Billing() {
       console.log('🔄 Initializing InstaSend...');
       console.log('PublicAPIKey:', import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
       console.log('Live mode:', import.meta.env.VITE_INSTASEND_LIVE === 'true');
+      console.log('Window.IntaSend available:', !!window.IntaSend);
 
       if (window.IntaSend) {
         console.log('✅ IntaSend SDK loaded');
@@ -47,19 +54,47 @@ export default function Billing() {
           live: import.meta.env.VITE_INSTASEND_LIVE === 'true'
         })
         .on("COMPLETE", async (results: any) => {
-          console.log("✅ Payment completed:", results);
+          console.log("✅ Billing: Payment completed:", results);
+          console.log("✅ Billing: Results details:", {
+            invoice_id: results.invoice_id,
+            amount: results.amount,
+            currency: results.currency,
+            status: results.status
+          });
           
           try {
+            // Create transaction record when payment completes
+            console.log('🔄 Creating transaction record...');
+            const { transaction, error } = await billingFunctions.createTransaction(
+              user.id,
+              3.00, // $3 USD
+              'subscription',
+              {
+                plan: 'premium_monthly',
+                description: 'Hex Premium - Unlimited Messages',
+                invoice_id: results.invoice_id
+              }
+            );
+
+            if (error || !transaction) {
+              console.log('❌ Failed to create transaction:', error);
+              throw new Error('Failed to create transaction record');
+            }
+
+            // Store the transaction ID
+            setCurrentTransactionId(transaction.id);
+            console.log('✅ Transaction created:', transaction.id);
+            
             // Update transaction status to completed
             if (results.invoice_id) {
               await billingFunctions.updateTransactionStatus(
-                results.api_ref, // This should be our transaction ID
+                transaction.id,
                 'completed',
                 results.invoice_id
               );
               
               // Upgrade user to premium
-              await billingFunctions.upgradeUserToPremium(user.id, results.api_ref);
+              await billingFunctions.upgradeUserToPremium(user.id, transaction.id);
               
               // Refresh user profile
               await refreshProfile();
@@ -72,6 +107,13 @@ export default function Billing() {
               
               // Redirect back to main app
               setTimeout(() => navigate('/'), 2000);
+            } else {
+              console.error('❌ Missing invoice_id');
+              toast({
+                title: "Payment Processing Error",
+                description: "Payment completed but missing transaction information. Please contact support.",
+                variant: "destructive",
+              });
             }
           } catch (error) {
             console.error('Error processing payment completion:', error);
@@ -83,7 +125,12 @@ export default function Billing() {
           }
         })
         .on("FAILED", (results: any) => {
-          console.log("❌ Payment failed:", results);
+          console.log("❌ Billing: Payment failed:", results);
+          console.log("❌ Billing: Failure details:", {
+            error: results.error,
+            message: results.message,
+            status: results.status
+          });
           toast({
             title: "Payment Failed",
             description: "Your payment could not be processed. Please try again.",
@@ -91,62 +138,107 @@ export default function Billing() {
           });
         })
         .on("IN-PROGRESS", (results: any) => {
-          console.log("🔄 Payment in progress:", results);
+          console.log("🔄 Billing: Payment in progress:", results);
+          console.log("🔄 Billing: Progress details:", {
+            status: results.status,
+            message: results.message
+          });
           toast({
             title: "Processing Payment",
             description: "Please wait while we process your payment...",
           });
         });
       } else {
-        console.log('❌ IntaSend SDK not loaded');
+        console.log('❌ IntaSend SDK not loaded - will retry...');
+        // Retry after a longer delay
+        setTimeout(() => {
+          if (window.IntaSend) {
+            console.log('✅ IntaSend SDK loaded on retry');
+            initializeInstasend();
+          } else {
+            console.error('❌ IntaSend SDK still not available after retry');
+          }
+        }, 2000);
       }
     };
 
     // Initialize after a short delay to ensure SDK is loaded
     setTimeout(initializeInstasend, 100);
-  }, [user, navigate, refreshProfile]);
 
-  const handleUpgrade = async () => {
-    console.log('🔄 Upgrade button clicked');
-    if (!user) {
-      console.log('❌ No user found');
-      return;
-    }
-
-    try {
-      console.log('🔄 Creating transaction record...');
-      // Create a billing transaction record
-      const { transaction, error } = await billingFunctions.createTransaction(
-        user.id,
-        5.00, // $5 USD
-        'subscription',
-        {
-          plan: 'premium_monthly',
-          description: 'Hex Premium - Unlimited Messages'
-        }
-      );
-
-      if (error || !transaction) {
-        console.log('❌ Failed to create transaction:', error);
-        throw new Error('Failed to create transaction record');
+    // Add click listener to track button clicks
+    const addButtonClickListener = () => {
+      const button = document.querySelector('.intaSendPayButton');
+      if (button) {
+        console.log('🔄 Billing: Adding click listener to Instasend button');
+        button.addEventListener('click', (e) => {
+          console.log('🔄 Billing: Instasend button clicked!');
+          console.log('🔄 Billing: Button element:', button);
+          console.log('🔄 Billing: Button data attributes:', {
+            amount: button.getAttribute('data-amount'),
+            currency: button.getAttribute('data-currency'),
+            email: button.getAttribute('data-email'),
+            api_ref: button.getAttribute('data-api_ref')
+          });
+          console.log('🔄 Billing: Instasend SDK available:', !!window.IntaSend);
+          console.log('🔄 Billing: API Key available:', !!import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
+        });
+      } else {
+        console.log('❌ Billing: Instasend button not found, retrying...');
+        setTimeout(addButtonClickListener, 500);
       }
+    };
 
-      // The Instasend button will use this transaction ID as api_ref
-      console.log('✅ Transaction created:', transaction.id);
+    // Add button listener after a delay to ensure button is rendered
+    setTimeout(addButtonClickListener, 200);
+  }, [user, navigate, loading]);
 
-    } catch (error) {
-      console.error('❌ Error creating transaction:', error);
-      toast({
-        title: "Error",
-        description: "Failed to initialize payment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Track when the button is actually rendered (must be before conditional returns)
+  useEffect(() => {
+    if (!user) return; // Skip if no user
+    
+    const checkButton = () => {
+      const button = document.querySelector('.intaSendPayButton');
+      if (button) {
+        console.log('✅ Billing: Instasend button found in DOM');
+        console.log('✅ Billing: Button classes:', button.className);
+        console.log('✅ Billing: Button data attributes:', {
+          amount: button.getAttribute('data-amount'),
+          currency: button.getAttribute('data-currency'),
+          email: button.getAttribute('data-email'),
+          api_ref: button.getAttribute('data-api_ref'),
+          method: button.getAttribute('data-method')
+        });
+      } else {
+        console.log('❌ Billing: Instasend button not found in DOM');
+      }
+    };
 
-  if (!user) {
-    return null; // Will redirect in useEffect
+    // Check immediately and after a delay
+    checkButton();
+    setTimeout(checkButton, 1000);
+  }, [user]);
+
+  // Show loading state while user data is being fetched
+  if (loading) {
+    console.log('⏳ Billing: Auth loading, showing loading state');
+    return (
+      <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto mb-4"></div>
+          <p>Loading billing page...</p>
+        </div>
+      </div>
+    );
   }
+
+  // Redirect to home if user is not authenticated (after loading)
+  if (!user) {
+    console.log('❌ Billing: User not authenticated, redirecting to home');
+    navigate('/');
+    return null;
+  }
+
+  console.log('🔄 Billing: Rendering billing page for user:', user.id);
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
@@ -240,7 +332,7 @@ export default function Billing() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-400 mb-2">$5/month</div>
+                  <div className="text-3xl font-bold text-yellow-400 mb-2">$3/month</div>
                   <div className="text-gray-400 text-sm">Unlimited AI conversations</div>
                 </div>
 
@@ -265,7 +357,7 @@ export default function Billing() {
 
                 <button
                   className="intaSendPayButton w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                  data-amount="5"
+                  data-amount="3"
                   data-currency="USD"
                   data-email={profile?.email || user.email}
                   data-first_name={profile?.full_name?.split(' ')[0] || 'User'}
@@ -273,18 +365,14 @@ export default function Billing() {
                   data-api_ref={`hex_premium_${user.id}_${Date.now()}`}
                   data-comment="Hex Premium Monthly Subscription"
                   data-redirect_url={`${window.location.origin}/billing`}
-                  onClick={handleUpgrade}
+                  data-country="US"
+                  data-method="CARD-PAYMENT"
+                  data-card_tarrif="BUSINESS-PAYS"
                 >
                   <Zap className="h-4 w-4" />
-                  Upgrade to Premium ($5/month)
+                  Upgrade to Premium ($3/month)
                 </button>
 
-                {/* Debug Info */}
-                <div className="text-xs text-gray-500 space-y-1">
-                  <div>SDK Status: {typeof window !== 'undefined' && window.IntaSend ? '✅ Loaded' : '❌ Not Loaded'}</div>
-                  <div>API Key: {import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY ? '✅ Set' : '❌ Missing'}</div>
-                  <div>Mode: {import.meta.env.VITE_INSTASEND_LIVE === 'true' ? 'Live' : 'Sandbox'}</div>
-                </div>
 
                 <div className="text-xs text-gray-500 text-center">
                   Secure payment powered by Instasend

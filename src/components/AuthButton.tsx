@@ -114,7 +114,7 @@ export function AuthCard() {
             Sign in with GitHub
           </Button>
           <div className="text-xs text-gray-500 text-center">
-            Free: 3 messages/day • Premium: Unlimited ($5/month)
+            Free: 3 messages/day • Premium: Unlimited ($3/month)
           </div>
         </CardContent>
       </Card>

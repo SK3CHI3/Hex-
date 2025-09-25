@@ -146,10 +146,10 @@ export const authFunctions = {
     console.log('🔄 Getting daily usage for:', userId);
 
     try {
-      // First get user subscription status
+      // First get user subscription status and expiry dates
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
-        .select('subscription_status')
+        .select('subscription_status, subscription_end_date')
         .eq('id', userId)
         .single();
 
@@ -158,8 +158,17 @@ export const authFunctions = {
         return { messageCount: 0, canSendMessage: true, error: profileError };
       }
 
-      // If premium, allow unlimited
+      // If premium, check if subscription has expired
       if (profile?.subscription_status === 'premium') {
+        // Check if subscription has expired
+        if (profile.subscription_end_date && new Date() > new Date(profile.subscription_end_date)) {
+          console.log('⏰ Premium subscription expired, downgrading user');
+          // Downgrade expired user
+          await authFunctions.downgradeExpiredUser(userId);
+          // Return as free user
+          return { messageCount: 0, canSendMessage: false, error: null };
+        }
+        
         console.log('✅ Premium user - unlimited messages');
         return { messageCount: 0, canSendMessage: true, error: null };
       }
@@ -179,9 +188,9 @@ export const authFunctions = {
       }
 
       const messageCount = usage?.message_count || 0;
-      const canSendMessage = messageCount < 3;
+      const canSendMessage = messageCount < 3; // Allow 0, 1, 2 messages (3 total)
 
-      console.log('✅ Daily usage result:', { messageCount, canSendMessage });
+      console.log('✅ Daily usage result:', { messageCount, canSendMessage, limit: 3 });
       return { messageCount, canSendMessage, error: null };
 
     } catch (err) {
@@ -190,13 +199,53 @@ export const authFunctions = {
     }
   },
 
+  // Downgrade expired premium user to free
+  async downgradeExpiredUser(userId: string): Promise<{ success: boolean, error: any }> {
+    console.log('🔄 Downgrading expired premium user:', userId);
+    
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          subscription_status: 'free',
+          subscription_start_date: null,
+          subscription_end_date: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('❌ Error downgrading user:', error);
+        return { success: false, error };
+      }
+
+      console.log('✅ Successfully downgraded expired premium user');
+      return { success: true, error: null };
+    } catch (err) {
+      console.error('❌ Unexpected error downgrading user:', err);
+      return { success: false, error: err };
+    }
+  },
+
   // Increment daily usage
   async incrementDailyUsage(userId: string): Promise<{ success: boolean, error: any }> {
+    console.log('🔄 Calling increment_daily_usage for user:', userId);
+    
     const { data, error } = await supabase.rpc('increment_daily_usage', {
       user_uuid: userId
     });
 
-    return { success: data === true, error };
+    console.log('📊 increment_daily_usage result:', { data, error });
+    
+    if (error) {
+      console.error('❌ Error calling increment_daily_usage:', error);
+      return { success: false, error };
+    }
+
+    const success = data === true;
+    console.log(success ? '✅ Usage incremented successfully' : '❌ Usage increment blocked (limit exceeded)');
+    
+    return { success, error: null };
   }
 };
 
@@ -438,6 +487,31 @@ export const billingFunctions = {
 
 // Database cleanup functions
 export const cleanupFunctions = {
+  // Check and expire subscriptions
+  async checkAndExpireSubscriptions(): Promise<{ success: boolean, expiredCount: number, expiredUsers: string[], error?: any }> {
+    try {
+      const { data, error } = await supabase.rpc('check_and_expire_subscriptions');
+      
+      if (error) {
+        console.error('❌ Error checking subscription expiry:', error);
+        return { success: false, expiredCount: 0, expiredUsers: [], error };
+      }
+
+      const result = data[0];
+      console.log(`✅ Checked subscriptions: ${result.expired_count} expired users processed`);
+      
+      return { 
+        success: true, 
+        expiredCount: result.expired_count || 0, 
+        expiredUsers: result.expired_users || [], 
+        error: null 
+      };
+    } catch (err) {
+      console.error('❌ Unexpected error checking subscription expiry:', err);
+      return { success: false, expiredCount: 0, expiredUsers: [], error: err };
+    }
+  },
+
   // Trigger manual cleanup (calls the database function)
   async triggerCleanup(): Promise<{ success: boolean, message: string, error?: any }> {
     try {

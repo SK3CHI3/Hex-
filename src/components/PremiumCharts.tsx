@@ -429,8 +429,8 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
     // Fallback: If no billing transactions, estimate from premium users
     if (monthlyRevenue === 0 && premiumResult.count && premiumResult.count > 0) {
       // Note: This is an estimate - actual pricing should come from billing_transactions
-      monthlyRevenue = premiumResult.count * 5; // Temporary fallback
-      console.log(`💡 Using fallback revenue calculation: ${premiumResult.count} premium users × $5`);
+      monthlyRevenue = premiumResult.count * 3; // Temporary fallback
+      console.log(`💡 Using fallback revenue calculation: ${premiumResult.count} premium users × $3`);
     }
 
     console.log(`📊 Stats - Users: ${totalUsers}, Messages: ${totalMessages}, Conversations: ${totalConversations}, Revenue: $${monthlyRevenue}`);
