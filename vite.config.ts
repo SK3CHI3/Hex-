@@ -22,6 +22,17 @@ export default defineConfig(({ mode }) => ({
   base: "/",
   build: {
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps in production for smaller bundle
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-tooltip'],
+          utils: ['lucide-react', 'react-markdown'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
   },
 }));

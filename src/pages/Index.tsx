@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 import ReactMarkdown from 'react-markdown';
+import { lazy, Suspense } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ApiError } from '@/lib/api-error-handler';
 
@@ -741,16 +742,16 @@ const Index = () => {
         <div className="absolute top-0 right-1/3 w-px h-3 bg-gradient-to-b from-green-300/20 to-transparent hidden md:block"></div>
         <div className="absolute top-0 left-3/4 w-px h-5 bg-gradient-to-b from-emerald-400/25 to-transparent hidden md:block"></div>
         
-        <div className="container mx-auto px-3 py-3 sm:px-4 sm:py-4">
+        <div className="container mx-auto px-3 py-2 sm:px-4 sm:py-4">
           <div className="flex items-center justify-between">
             {/* Logo - Simplified for mobile */}
             <div className="flex items-center gap-1 sm:gap-3">
               <div className="relative group">
                 <div className="absolute -inset-1 bg-green-400/10 rounded-lg blur opacity-50 group-hover:opacity-75 transition-opacity hidden sm:block"></div>
-                <div className="relative flex items-center gap-1.5 sm:gap-2 bg-black/40 backdrop-blur-sm rounded-lg px-1.5 py-1 sm:px-3 sm:py-2 border border-green-500/20">
-                  <Terminal className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
+                <div className="relative flex items-center gap-1 sm:gap-2 bg-black/40 backdrop-blur-sm rounded-lg px-1 py-0.5 sm:px-3 sm:py-2 border border-green-500/20">
+                  <Terminal className="h-3 w-3 sm:h-5 sm:w-5 text-green-400" />
                   <div>
-                    <h1 className="text-sm sm:text-lg font-light text-green-400 tracking-wide">Hex</h1>
+                    <h1 className="text-xs sm:text-lg font-light text-green-400 tracking-wide">Hex</h1>
                     <p className="text-xs text-gray-400/70 font-light hidden sm:block">AI Penetration Testing</p>
                   </div>
                 </div>
@@ -763,7 +764,7 @@ const Index = () => {
             </div>
             
             {/* Right side - Simplified for mobile */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* New Chat Button - Show when authenticated and not streaming (hidden on mobile since we have it in input) */}
               {isAuthenticated && !isStreaming && !isMobile && (
                 <div className="flex items-center">
@@ -785,7 +786,7 @@ const Index = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="lg:hidden border-green-500/30 text-green-400 hover:bg-green-500/10 px-1.5 py-1"
+                  className="lg:hidden border-green-500/30 text-green-400 hover:bg-green-500/10 px-1 py-0.5"
                   onClick={() => setShowMobileProfile(true)}
                   title="Profile & Upgrade"
                 >
