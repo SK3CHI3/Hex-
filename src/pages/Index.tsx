@@ -987,9 +987,15 @@ const Index = () => {
                         sendMessage();
                       }
                     }}
-                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-0 focus:outline-none rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px]"
+                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:border-green-400 rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px] [&:focus]:outline-none [&:focus]:ring-0 [&:focus]:shadow-none"
                     rows={1}
-                    style={{ minHeight: '38px', maxHeight: '80px', fontSize: '15px' }}
+                    style={{ 
+                      minHeight: '38px', 
+                      maxHeight: '80px', 
+                      fontSize: '15px',
+                      outline: 'none',
+                      boxShadow: 'none'
+                    }}
                   />
                 </div>
                 <Button
@@ -1028,9 +1034,14 @@ const Index = () => {
                           sendMessage();
                         }
                       }}
-                      className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide"
+                      className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:border-green-400 rounded-md transition-all duration-200 scrollbar-hide [&:focus]:outline-none [&:focus]:ring-0 [&:focus]:shadow-none"
                       rows={1}
-                      style={{ minHeight: '44px', maxHeight: '120px' }}
+                      style={{ 
+                        minHeight: '44px', 
+                        maxHeight: '120px',
+                        outline: 'none',
+                        boxShadow: 'none'
+                      }}
                     />
                   </div>
                   <Button
