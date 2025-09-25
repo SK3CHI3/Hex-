@@ -958,10 +958,21 @@ const Index = () => {
               style={{ boxShadow: '0 -2px 16px 0 #000a' }}
             >
               <div className="px-2 pt-2 pb-2 flex items-end gap-2">
+                {/* Plus button for new chat */}
+                <Button
+                  onClick={startNewChat}
+                  className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-2 py-2 h-10 rounded-full shadow-sm hover:shadow-md transition-all duration-200 flex-shrink-0 min-w-[44px] min-h-[44px]"
+                  style={{ fontSize: '18px' }}
+                  tabIndex={0}
+                  aria-label="New Chat"
+                >
+                  <Plus className="h-5 w-5" />
+                </Button>
+                
                 <div className="flex-1">
                   <Textarea
                     ref={textareaRef}
-                    placeholder={isMobile ? mobilePlaceholder : desktopPlaceholder}
+                    placeholder="Ask me about hacking"
                     value={input}
                     onChange={(e) => {
                       setInput(e.target.value);
@@ -976,7 +987,7 @@ const Index = () => {
                         sendMessage();
                       }
                     }}
-                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-md transition-all duration-200 scrollbar-hide px-2 py-2 min-h-[38px] max-h-[80px]"
+                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-1 focus:ring-green-400/20 rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px]"
                     rows={1}
                     style={{ minHeight: '38px', maxHeight: '80px', fontSize: '15px' }}
                   />
