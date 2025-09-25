@@ -151,10 +151,12 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
             .gte('created_at', date)
             .lt('created_at', nextDateString),
 
-          // Messages sent on this specific date
-          supabase.from('messages').select('*', { count: 'exact', head: true })
-            .gte('created_at', date)
-            .lt('created_at', nextDateString),
+          // Messages sent on this specific date from daily_usage
+          supabase.from('daily_usage').select('message_count')
+            .eq('usage_date', date)
+            .then(result => ({
+              count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
+            })),
 
           // Conversations started on this specific date
           supabase.from('conversations').select('*', { count: 'exact', head: true })
@@ -243,10 +245,13 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
             .gte('created_at', weekRange.start)
             .lt('created_at', weekRange.end),
 
-          // Messages sent in this week
-          supabase.from('messages').select('*', { count: 'exact', head: true })
-            .gte('created_at', weekRange.start)
-            .lt('created_at', weekRange.end),
+          // Messages sent in this week from daily_usage
+          supabase.from('daily_usage').select('message_count')
+            .gte('usage_date', weekRange.start.split('T')[0])
+            .lt('usage_date', weekRange.end.split('T')[0])
+            .then(result => ({
+              count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
+            })),
 
           // Conversations started in this week
           supabase.from('conversations').select('*', { count: 'exact', head: true })
@@ -321,10 +326,13 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
             .gte('created_at', monthRange.start)
             .lt('created_at', monthRange.end),
 
-          // Messages sent in this month
-          supabase.from('messages').select('*', { count: 'exact', head: true })
-            .gte('created_at', monthRange.start)
-            .lt('created_at', monthRange.end),
+          // Messages sent in this month from daily_usage
+          supabase.from('daily_usage').select('message_count')
+            .gte('usage_date', monthRange.start.split('T')[0])
+            .lt('usage_date', monthRange.end.split('T')[0])
+            .then(result => ({
+              count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
+            })),
 
           // Conversations started in this month
           supabase.from('conversations').select('*', { count: 'exact', head: true })
@@ -400,8 +408,10 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
       // Total users
       supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
 
-      // Total messages
-      supabase.from('messages').select('*', { count: 'exact', head: true }),
+      // Total messages from daily_usage table
+      supabase.from('daily_usage').select('message_count').then(result => ({
+        count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
+      })),
 
       // Total conversations
       supabase.from('conversations').select('*', { count: 'exact', head: true }),
