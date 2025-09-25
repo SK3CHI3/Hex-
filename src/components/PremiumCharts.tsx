@@ -153,10 +153,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
 
           // Messages sent on this specific date from daily_usage
           supabase.from('daily_usage').select('message_count')
-            .eq('usage_date', date)
-            .then(result => ({
-              count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
-            })),
+            .eq('usage_date', date),
 
           // Conversations started on this specific date
           supabase.from('conversations').select('*', { count: 'exact', head: true })
@@ -186,7 +183,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
         const dayData = {
           date,
           users: usersResult.count || 0,
-          messages: messagesResult.count || 0,
+          messages: messagesResult.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0,
           conversations: conversationsResult.count || 0,
           revenue: dailyRevenue,
           day: dayLabel
@@ -248,10 +245,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
           // Messages sent in this week from daily_usage
           supabase.from('daily_usage').select('message_count')
             .gte('usage_date', weekRange.start.split('T')[0])
-            .lt('usage_date', weekRange.end.split('T')[0])
-            .then(result => ({
-              count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
-            })),
+            .lt('usage_date', weekRange.end.split('T')[0]),
 
           // Conversations started in this week
           supabase.from('conversations').select('*', { count: 'exact', head: true })
@@ -273,7 +267,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
         const weekData = {
           date: weekRange.date,
           users: usersResult.count || 0,
-          messages: messagesResult.count || 0,
+          messages: messagesResult.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0,
           conversations: conversationsResult.count || 0,
           revenue: weeklyRevenue,
           day: weekRange.label
@@ -329,10 +323,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
           // Messages sent in this month from daily_usage
           supabase.from('daily_usage').select('message_count')
             .gte('usage_date', monthRange.start.split('T')[0])
-            .lt('usage_date', monthRange.end.split('T')[0])
-            .then(result => ({
-              count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
-            })),
+            .lt('usage_date', monthRange.end.split('T')[0]),
 
           // Conversations started in this month
           supabase.from('conversations').select('*', { count: 'exact', head: true })
@@ -354,7 +345,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
         const monthData = {
           date: monthRange.date,
           users: usersResult.count || 0,
-          messages: messagesResult.count || 0,
+          messages: messagesResult.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0,
           conversations: conversationsResult.count || 0,
           revenue: monthlyRevenue,
           day: monthRange.label
@@ -409,9 +400,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
       supabase.from('user_profiles').select('*', { count: 'exact', head: true }),
 
       // Total messages from daily_usage table
-      supabase.from('daily_usage').select('message_count').then(result => ({
-        count: result.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0
-      })),
+      supabase.from('daily_usage').select('message_count'),
 
       // Total conversations
       supabase.from('conversations').select('*', { count: 'exact', head: true }),
@@ -428,7 +417,7 @@ export default function PremiumCharts({ refreshTrigger }: PremiumChartsProps) {
     ]);
 
     const totalUsers = usersResult.count || 0;
-    const totalMessages = messagesResult.count || 0;
+    const totalMessages = messagesResult.data?.reduce((sum, row) => sum + (row.message_count || 0), 0) || 0;
     const totalConversations = conversationsResult.count || 0;
 
     // Calculate actual monthly revenue from billing transactions
