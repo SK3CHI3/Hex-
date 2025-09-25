@@ -41,17 +41,36 @@ export default function Billing() {
     }
 
     // Initialize Instasend
+    // Required environment variables for live mode:
+    // VITE_INSTASEND_PUBLISHABLE_KEY=ISPK_live_... (live publishable key)
+    // VITE_INSTASEND_LIVE=true
     const initializeInstasend = () => {
       console.log('🔄 Initializing InstaSend...');
       console.log('PublicAPIKey:', import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY);
       console.log('Live mode:', import.meta.env.VITE_INSTASEND_LIVE === 'true');
+      console.log('Environment:', import.meta.env.VITE_INSTASEND_LIVE === 'true' ? 'LIVE' : 'SANDBOX');
+      console.log('Domain:', window.location.origin);
       console.log('Window.IntaSend available:', !!window.IntaSend);
 
       if (window.IntaSend) {
         console.log('✅ IntaSend SDK loaded');
+        
+        // Validate live mode configuration
+        if (import.meta.env.VITE_INSTASEND_LIVE === 'true') {
+          console.log('🚀 LIVE MODE: Using production Instasend configuration');
+          if (!import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY?.startsWith('ISPK_live_')) {
+            console.warn('⚠️ WARNING: Live mode enabled but API key may not be live key');
+          }
+        } else {
+          console.log('🧪 SANDBOX MODE: Using test Instasend configuration');
+        }
         new window.IntaSend({
           publicAPIKey: import.meta.env.VITE_INSTASEND_PUBLISHABLE_KEY,
-          live: import.meta.env.VITE_INSTASEND_LIVE === 'true'
+          live: import.meta.env.VITE_INSTASEND_LIVE === 'true',
+          // Webhook URL for live mode (configure in Instasend dashboard)
+          webhookUrl: import.meta.env.VITE_INSTASEND_LIVE === 'true' 
+            ? `${window.location.origin}/api/webhooks/instasend` 
+            : undefined
         })
         .on("COMPLETE", async (results: any) => {
           console.log("✅ Billing: Payment completed:", results);
