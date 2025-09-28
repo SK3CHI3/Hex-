@@ -5,7 +5,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Deploy to Netlify](https://img.shields.io/badge/Deploy_to-Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://netlify.com)
 
-> 🤖 Your intelligent companion for ethical hacking and security testing, powered by OpenRouter API
+> 🤖 Your intelligent companion for ethical hacking and security testing, powered by Deepseek R1 API
 
 Hex is an advanced AI assistant designed specifically for cybersecurity professionals, ethical hackers, and penetration testers. It provides intelligent guidance for security testing activities while emphasizing responsible and legal practices.
 
