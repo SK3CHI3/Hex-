@@ -1,4 +1,4 @@
-# Hex - AI-Powered Penetration Testing Assistant.
+# Hex - AI-Powered Penetration Testing Assistant. 
 
 [![Built with React](https://img.shields.io/badge/Built%20with-React-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
