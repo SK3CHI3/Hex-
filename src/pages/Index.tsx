@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Send, Terminal, Copy as CopyIcon, Check as CheckIcon, Shield, User, LogOut, Square, Plus } from 'lucide-react';
+import { Send, Terminal, Copy as CopyIcon, Check as CheckIcon, Shield, User, LogOut, Square, Plus, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -353,29 +353,63 @@ const Index = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
   
-  // Debounced height adjustment for mobile performance
-  const heightAdjustTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Refs for DOM elements
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputBarRef = useRef<HTMLDivElement>(null);
+  const streamingUpdateRef = useRef<number | null>(null);
+  const userScrolledRef = useRef(false);
+  const lastScrollHeightRef = useRef(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
 
 
   // Removed loading messages - now using streaming text display
 
-  const scrollToBottom = () => {
-    // Use setTimeout to ensure DOM has updated before scrolling
-    setTimeout(() => {
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 100);
-  };
+  // Smart scroll - only auto-scroll if user hasn't manually scrolled up
+  const scrollToBottom = useCallback((force: boolean = false) => {
+    if (!messagesContainerRef.current) return;
+    
+    const container = messagesContainerRef.current;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    
+    // Auto-scroll if user is near bottom or force is true
+    if (force || isNearBottom || !userScrolledRef.current) {
+      requestAnimationFrame(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+      });
+    }
+  }, []);
 
+  // Detect manual scroll by user
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    
+    const container = messagesContainerRef.current;
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    
+    // Show/hide scroll button based on position
+    setShowScrollButton(!isAtBottom);
+    
+    // If user scrolled up, mark it
+    if (!isAtBottom && container.scrollTop < lastScrollHeightRef.current) {
+      userScrolledRef.current = true;
+    } else if (isAtBottom) {
+      // If user scrolled back to bottom, reset the flag
+      userScrolledRef.current = false;
+    }
+    
+    lastScrollHeightRef.current = container.scrollTop;
+  }, []);
+
+  // Auto-scroll on new messages, but respect user scroll position
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isMobile]);
+    scrollToBottom(false);
+  }, [messages, scrollToBottom]);
 
 
 
@@ -453,6 +487,9 @@ const Index = () => {
       // Only add message to UI if usage increment succeeded
       addMessage('user', messageToSend);
       setInput('');
+      // Force scroll to bottom when user sends a message
+      userScrolledRef.current = false;
+      setTimeout(() => scrollToBottom(true), 100);
     }
 
     setLastError(null);
@@ -470,6 +507,9 @@ const Index = () => {
       if (initialMessage) {
         streamingMessageId = initialMessage.id;
       }
+      
+      // Reset scroll flag when starting a new response
+      userScrolledRef.current = false;
 
       // Use optimized context management for better token efficiency
       const filteredMessages = messages.filter(msg => !msg.isError);
@@ -584,16 +624,22 @@ const Index = () => {
                   const content = parsed.choices[0].delta.content;
                   fullContent += content;
 
-                  // Streaming content received
-
-                  // Update the streaming message in real-time
-                  setMessages(prevMessages => 
-                    prevMessages.map(msg => 
-                      msg.id === streamingMessageId 
-                        ? { ...msg, content: fullContent }
-                        : msg
-                    )
-                  );
+                  // Batch streaming updates using requestAnimationFrame to prevent layout thrashing
+                  if (streamingUpdateRef.current) {
+                    cancelAnimationFrame(streamingUpdateRef.current);
+                  }
+                  
+                  streamingUpdateRef.current = requestAnimationFrame(() => {
+                    // Update the streaming message in real-time with batched updates
+                    setMessages(prevMessages => 
+                      prevMessages.map(msg => 
+                        msg.id === streamingMessageId 
+                          ? { ...msg, content: fullContent }
+                          : msg
+                      )
+                    );
+                    streamingUpdateRef.current = null;
+                  });
                 }
               } catch (parseError) {
                 console.warn('Failed to parse streaming chunk:', parseError);
@@ -646,90 +692,103 @@ const Index = () => {
       });
       }
     } finally {
-      // Cleanup streaming state
+      // Cleanup streaming state and animation frame
+      if (streamingUpdateRef.current) {
+        cancelAnimationFrame(streamingUpdateRef.current);
+        streamingUpdateRef.current = null;
+      }
       setIsStreaming(false);
       setCurrentAbortController(null);
     }
   };
 
-  const adjustTextareaHeight = () => {
+  // Optimized textarea height adjustment - no debounce for instant response
+  const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
+      // Reset height to auto to get the correct scrollHeight
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      // Set the height to match the content
+      const newHeight = Math.min(textareaRef.current.scrollHeight, isMobile ? 80 : 120);
+      textareaRef.current.style.height = `${newHeight}px`;
     }
-  };
+  }, [isMobile]);
 
-  // Debounced height adjustment for better mobile performance
-  const debouncedHeightAdjust = () => {
-    if (heightAdjustTimeoutRef.current) {
-      clearTimeout(heightAdjustTimeoutRef.current);
-    }
-    heightAdjustTimeoutRef.current = setTimeout(() => {
-    adjustTextareaHeight();
-    }, 16); // ~60fps for smooth performance
-  };
-
-  // Auto-adjust textarea height - debounced for better mobile performance
+  // Auto-adjust textarea height - run immediately without debounce
   useEffect(() => {
-    debouncedHeightAdjust();
-    return () => {
-      if (heightAdjustTimeoutRef.current) {
-        clearTimeout(heightAdjustTimeoutRef.current);
-      }
-    };
-  }, [input, isMobile]);
+    adjustTextareaHeight();
+  }, [input, adjustTextareaHeight]);
 
-  // Scroll input into view on focus (mobile)
-  const handleInputFocus = () => {
+  // Optimized mobile input focus handling
+  const handleInputFocus = useCallback(() => {
     if (isMobile && textareaRef.current) {
+      // Prevent page zoom on iOS
+      textareaRef.current.style.fontSize = '16px';
+      
+      // Scroll into view after keyboard appears
       setTimeout(() => {
-        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }, 100);
+        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
     }
-  };
+  }, [isMobile]);
 
-  const handleInputBlur = () => {
+  const handleInputBlur = useCallback(() => {
     if (isMobile) {
       document.body.classList.remove('keyboard-open');
+      // Reset font size if changed
+      if (textareaRef.current) {
+        textareaRef.current.style.fontSize = '';
+      }
     }
-  };
+  }, [isMobile]);
 
   // Better placeholders for mobile
   const mobilePlaceholder = "Ask about cybersecurity, hacking, or pentesting...";
   const desktopPlaceholder = "Ask about penetration testing, request payloads, or security analysis...";
 
+  // Optimized mobile keyboard handling with better performance
   useEffect(() => {
     if (!isMobile) return;
     const inputBar = inputBarRef.current;
     if (!inputBar) return;
 
     let rafId: number | null = null;
+    let lastBottom = '0px';
 
     function updateInputBarPosition() {
       if (rafId) return; // Prevent multiple rapid updates
 
       rafId = requestAnimationFrame(() => {
         if (window.visualViewport && inputBar) {
-          const keyboardHeight = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
-          const newBottom = keyboardHeight > 0 ? `${keyboardHeight}px` : '0px';
+          const viewportHeight = window.visualViewport.height;
+          const windowHeight = window.innerHeight;
+          const keyboardHeight = Math.max(0, windowHeight - viewportHeight - window.visualViewport.offsetTop);
+          const newBottom = keyboardHeight > 10 ? `${keyboardHeight}px` : '0px';
 
           // Only update if position actually changed to prevent unnecessary reflows
-          if (inputBar.style.bottom !== newBottom) {
+          if (lastBottom !== newBottom) {
             inputBar.style.bottom = newBottom;
+            lastBottom = newBottom;
           }
         }
         rafId = null;
       });
     }
 
+    // Initial position
     updateInputBarPosition();
-    window.visualViewport?.addEventListener('resize', updateInputBarPosition);
-    window.visualViewport?.addEventListener('scroll', updateInputBarPosition);
+    
+    // Use passive listeners for better scroll performance
+    const options = { passive: true };
+    window.visualViewport?.addEventListener('resize', updateInputBarPosition, options);
+    window.visualViewport?.addEventListener('scroll', updateInputBarPosition, options);
+    
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       window.visualViewport?.removeEventListener('resize', updateInputBarPosition);
       window.visualViewport?.removeEventListener('scroll', updateInputBarPosition);
-      if (inputBar) inputBar.style.bottom = '0px';
+      if (inputBar) {
+        inputBar.style.bottom = '0px';
+      }
     };
   }, [isMobile]);
 
@@ -856,9 +915,13 @@ const Index = () => {
           <div className={
             `flex-1 bg-gray-900/50 border border-green-500/30 rounded-lg overflow-hidden backdrop-blur-sm mb-2 sm:mb-3 md:mb-4 ${isMobile ? 'pb-20' : ''}`
           }>
-            <div className={
-              `h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 ${isMobile ? 'pb-16' : ''}`
-            }>
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className={
+                `message-container h-full overflow-y-auto p-2 sm:p-3 md:p-4 lg:p-6 ${isMobile ? 'pb-16' : ''}`
+              }
+            >
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center space-y-3 sm:space-y-4 md:space-y-6 px-2 sm:px-4">
@@ -876,7 +939,7 @@ const Index = () => {
                 <div className="space-y-3 sm:space-y-4 md:space-y-6">
                   {messages.map((message) => {
                     return (
-                      <div key={message.id} className="group">
+                      <div key={message.id} className="chat-message group">
                         <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                           <div className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
                             message.type === 'user' 
@@ -907,7 +970,7 @@ const Index = () => {
                           <div className={`absolute top-0 left-0 w-1 h-full rounded-l-xl ${
                             message.type === 'user' ? 'bg-blue-400' : 'bg-green-400'
                           }`}></div>
-                          <div className="prose prose-invert max-w-none">
+                          <div className="streaming-text prose prose-invert max-w-none">
                             <ReactMarkdown 
                               components={{
                                 p: ({ children, ...props }) => <p className="mb-2 sm:mb-3 last:mb-0 text-sm sm:text-sm leading-relaxed text-gray-200" {...props}>{children}</p>,
@@ -947,6 +1010,27 @@ const Index = () => {
                 </div>
               )}
             </div>
+            
+            {/* Scroll to bottom button - positioned above mobile input or in corner for desktop */}
+            {showScrollButton && (
+              <button
+                onClick={() => {
+                  userScrolledRef.current = false;
+                  scrollToBottom(true);
+                }}
+                className={`absolute right-4 bg-green-600 hover:bg-green-700 text-white rounded-full p-2 shadow-lg transition-all duration-200 z-10 flex items-center justify-center ${
+                  isMobile ? 'bottom-20' : 'bottom-4'
+                }`}
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  animation: 'fadeIn 0.2s ease-in'
+                }}
+                aria-label="Scroll to bottom"
+              >
+                <ArrowDown className="h-5 w-5" />
+              </button>
+            )}
           </div>
 
 
@@ -956,9 +1040,12 @@ const Index = () => {
             <div
               ref={inputBarRef}
               className="fixed-input-bar fixed bottom-0 left-0 w-full z-30 bg-black/95 safe-area-bottom border-t border-green-500/20"
-              style={{ boxShadow: '0 -2px 16px 0 #000a' }}
+              style={{ 
+                boxShadow: '0 -2px 16px 0 #000a',
+                transition: 'bottom 0.2s ease-out'
+              }}
             >
-              <div className="px-2 pt-2 pb-2 flex items-end gap-2">
+              <div className="px-2 pt-2 pb-2 flex items-end gap-2" style={{ touchAction: 'manipulation' }}>
                 {/* Plus button for new chat */}
                 <Button
                   onClick={startNewChat}
@@ -977,8 +1064,6 @@ const Index = () => {
                     value={input}
                     onChange={(e) => {
                       setInput(e.target.value);
-                      // Use debounced height adjustment for better mobile performance
-                      debouncedHeightAdjust();
                     }}
                     onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
@@ -988,7 +1073,7 @@ const Index = () => {
                         sendMessage();
                       }
                     }}
-                    className="bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:border-green-400 rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px] [&:focus]:outline-none [&:focus]:ring-0 [&:focus]:shadow-none"
+                    className="chat-input bg-black/80 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-[15px] leading-tight focus:border-green-400 focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:border-green-400 rounded-full transition-all duration-200 scrollbar-hide px-4 py-2 min-h-[38px] max-h-[80px] [&:focus]:outline-none [&:focus]:ring-0 [&:focus]:shadow-none"
                     rows={1}
                     style={{ 
                       minHeight: '38px', 
@@ -1026,8 +1111,6 @@ const Index = () => {
                       value={input}
                       onChange={(e) => {
                         setInput(e.target.value);
-                        // Use debounced height adjustment for better performance
-                        debouncedHeightAdjust();
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -1035,7 +1118,7 @@ const Index = () => {
                           sendMessage();
                         }
                       }}
-                      className="bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:border-green-400 rounded-md transition-all duration-200 scrollbar-hide [&:focus]:outline-none [&:focus]:ring-0 [&:focus]:shadow-none"
+                      className="chat-input bg-black/50 border-green-500/40 text-green-100 placeholder-gray-400 resize-none text-sm focus:border-green-400 focus:ring-0 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:border-green-400 rounded-md transition-all duration-200 scrollbar-hide [&:focus]:outline-none [&:focus]:ring-0 [&:focus]:shadow-none"
                       rows={1}
                       style={{ 
                         minHeight: '44px', 

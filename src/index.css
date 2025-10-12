@@ -176,4 +176,71 @@
   .mobile-margin {
     @apply m-2 sm:m-3 md:m-4;
   }
+
+  /* Performance optimizations for streaming chat */
+  .chat-message {
+    /* Promote to GPU layer for smoother animations */
+    will-change: contents;
+    /* Use containment to prevent layout thrashing */
+    contain: layout style;
+    /* Hardware acceleration */
+    transform: translateZ(0);
+    /* Prevent text rendering shifts */
+    text-rendering: optimizeSpeed;
+  }
+
+  .streaming-text {
+    /* Prevent layout shifts during streaming */
+    contain: layout style paint;
+    /* Promote to own layer */
+    will-change: contents;
+    /* Optimize repaints */
+    backface-visibility: hidden;
+  }
+
+  /* Stable input box optimization */
+  .chat-input {
+    /* Prevent layout shifts */
+    contain: layout size;
+    /* Smooth transitions only for height */
+    transition: height 0.1s ease-out;
+    /* Hardware acceleration */
+    transform: translateZ(0);
+    /* Prevent flickering */
+    backface-visibility: hidden;
+  }
+
+  /* Fixed input bar optimization */
+  .fixed-input-bar {
+    /* Promote to own layer to prevent repaints */
+    will-change: transform;
+    transform: translateZ(0);
+    /* Prevent layout shifts */
+    contain: layout style;
+    /* Force hardware acceleration */
+    backface-visibility: hidden;
+  }
+
+  /* Smooth scrolling for message container */
+  .message-container {
+    /* Optimize scroll performance */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent reflows during scroll */
+    contain: layout style paint;
+  }
+
+  /* Fade in animation for scroll button */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
