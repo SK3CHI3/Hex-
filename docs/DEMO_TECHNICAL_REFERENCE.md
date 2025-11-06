@@ -124,7 +124,7 @@ Complete technical documentation for the Hex AI demo.
 
 ```
                     ┌─────────────────────────────────────────────┐
-                    │  Frontend: useToolExecution Hook             │
+                    │  Frontend: useToolExecution Hook               │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  executeTool(toolName, args)          │  │
                     │  │  1. Build command from tool schema    │  │
@@ -145,7 +145,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  Backend: server/index.js                  │
+                    │  Backend: server/index.js                    │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  WebSocket Handler                     │  │
                     │  │  1. Authenticate (JWT)                 │  │
@@ -159,7 +159,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  Docker Container: hex-kali-tools          │
+                    │  Docker Container: hex-kali-tools            │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  Process: nmap -F 192.168.1.100      │  │
                     │  │  stdout.on('data') → Stream to WS     │  │
@@ -175,7 +175,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  Frontend: WebSocket Handler                │
+                    │  Frontend: WebSocket Handler                  │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  ws.onmessage()                       │  │
                     │  │  - Parse message                      │  │
@@ -186,7 +186,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  TerminalWindow Component                   │
+                    │  TerminalWindow Component                    │
                     │  - Displays outputs in real-time            │
                     │  - Auto-scrolls to bottom                   │
                     │  - Shows command input                      │
@@ -222,7 +222,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  Frontend: onComplete Callback             │
+                    │  Frontend: onComplete Callback               │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  if (exitCode !== 0) {                 │  │
                     │  │    // Extract error output              │  │
@@ -272,7 +272,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  User Sees: AI Analysis + Fix               │
+                    │  User Sees: AI Analysis + Fix                │
                     │  - Option 1: User manually retries           │
                     │  - Option 2: AI can auto-retry               │
                     │    (if configured)                          │
@@ -384,7 +384,7 @@ Complete technical documentation for the Hex AI demo.
                        │
                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  Docker Container: hex-kali-tools          │
+                    │  Docker Container: hex-kali-tools            │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  Base Image:                          │  │
                     │  │  kalilinux/kali-rolling:latest        │  │
@@ -449,7 +449,7 @@ Complete technical documentation for the Hex AI demo.
                                        │
                                        ▼
                     ┌─────────────────────────────────────────────┐
-                    │  DeepSeek API: Report Generation           │
+                    │  DeepSeek API: Report Generation             │
                     │  ┌───────────────────────────────────────┐  │
                     │  │  System Prompt:                        │  │
                     │  │  "Generate professional security       │  │
