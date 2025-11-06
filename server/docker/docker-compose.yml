@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Kali Linux container for tool execution
+  kali-tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.kali
+    container_name: hex-kali-tools
+    hostname: hex-pentest
+    
+    # Security settings
+    cap_add:
+      - NET_RAW      # For ping, nmap
+      - NET_ADMIN    # For network scanning
+      - SYS_PTRACE   # For debugging tools
+      - SETUID       # For user switching
+      - SETGID       # For group switching
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    
+    # Network configuration
+    networks:
+      - hex-network
+    
+    # Volumes for persistent data
+    volumes:
+      - tool-results:/home/hexagent/workspace
+      - wordlists:/usr/share/wordlists
+    
+    # Environment variables
+    environment:
+      - TZ=UTC
+      - TOOL_TIMEOUT=300
+    
+    # Keep container running
+    tty: true
+    stdin_open: true
+    
+    # Restart policy
+    restart: unless-stopped
+
+networks:
+  hex-network:
+    driver: bridge
+
+volumes:
+  tool-results:
+    driver: local
+  wordlists:
+    driver: local
+
+

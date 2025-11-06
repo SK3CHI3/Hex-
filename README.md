@@ -18,7 +18,19 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
 - **🔐 Privilege Escalation**: Techniques for privilege escalation scenarios
 - **📝 Code Review**: Security-focused code analysis and recommendations
 
-## 🚀 Quick Start.
+## 🚀 Quick Start
+
+### 🎯 Production Deployment (Recommended - 100% FREE!)
+
+**Deploy to Oracle Cloud in 30 minutes - $0/month forever!**
+
+👉 **[Oracle Cloud Quickstart Guide](docs/ORACLE_CLOUD_QUICKSTART.md)** 👈
+
+Pre-configured for **https://hexai.website/** - just copy & paste!
+
+---
+
+### 💻 Local Development
 
 1. **Clone the repository**
    ```bash
@@ -26,34 +38,21 @@ Hex is an advanced AI assistant designed specifically for cybersecurity professi
    cd Hex-
    ```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up your DeepSeek API key**
-   
-   **Option A: Environment Variable (Recommended)**
-   ```bash
-   # Create .env file
-   echo "VITE_DEEPSEEK_API_KEY=your_deepseek_api_key_here" > .env
+2. **Start all services** (Windows)
+   ```powershell
+   .\start-dev.ps1
    ```
    
-   **Option B: UI Input**
-   - Start the app and enter your DeepSeek API key when prompted
-
-4. **Get your DeepSeek API Key**
-   - Visit [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys)
-   - Create a new API key
-   - Copy the key
-
-5. **Start the development server**
+   **Or** (Mac/Linux)
    ```bash
-   npm run dev
+   chmod +x start-dev.sh
+   ./start-dev.sh
    ```
 
-6. **Open your browser**
-   Visit `http://localhost:8080` and enter your OpenRouter API key when prompted.
+3. **Open your browser**
+   Visit `http://localhost:8080`
+
+**Full setup guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md)
 
 ## 🏗️ Architecture.
 
@@ -82,22 +81,30 @@ The app is configured to use:
 - **Streaming**: Enabled for real-time responses
 - **Provider**: DeepSeek (direct API integration)
 
-## 🚀 Deployment.
+## 🚀 Deployment
 
-### Netlify (Recommended)
+### Backend Options
 
-1. **Connect your repository**
-   - Link your GitHub repository to Netlify
+| Platform | Cost | Setup Time | Guide |
+|----------|------|------------|-------|
+| **Oracle Cloud** 🎁 | **$0/month** | 30 min | **[Quickstart](docs/ORACLE_CLOUD_QUICKSTART.md)** ⭐ |
+| Railway | $20/month | 10 min | [Guide](docs/HYBRID_DEPLOYMENT_STRATEGY.md#option-2-railway-easiest) |
+| DigitalOcean | $24/month | 60 min | [Guide](docs/HYBRID_DEPLOYMENT_STRATEGY.md#option-1-full-cloud-vps) |
 
-2. **Set build settings**
-   - Build command: `npm run build`
-   - Publish directory: `dist`
+**Recommended:** Oracle Cloud - Free forever with 12GB RAM!
 
-3. **Set environment variables**
-   - Add `VITE_DEEPSEEK_API_KEY` in Netlify dashboard
+### Frontend
 
-4. **Deploy**
-   - Netlify will automatically deploy on git push
+**Netlify** (FREE):
+1. Connect GitHub repository
+2. Build: `npm run build`, Publish: `dist`
+3. Set environment variables ([Guide](docs/FRONTEND_ENV_CONFIG.md))
+4. Auto-deploys on `git push`
+
+**Complete deployment guides:**
+- 📋 [Oracle Cloud Quickstart](docs/ORACLE_CLOUD_QUICKSTART.md) - Copy & paste ready!
+- 🏗️ [Hybrid Deployment Strategy](docs/HYBRID_DEPLOYMENT_STRATEGY.md) - All options
+- 🎨 [Frontend Configuration](docs/FRONTEND_ENV_CONFIG.md) - Environment setup
 
 ## 🤝 Contributing.
 

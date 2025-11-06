@@ -1,19 +1,38 @@
 {
-  "name": "hex-webhook-server",
+  "name": "hex-execution-server",
   "version": "1.0.0",
-  "description": "Webhook server for Instasend integration",
-  "main": "webhook-server.js",
+  "description": "Hex AI backend execution server for pentesting tools",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "node webhook-server.js",
-    "dev": "nodemon webhook-server.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "docker:build": "cd docker && docker-compose build",
+    "docker:up": "cd docker && docker-compose up -d",
+    "docker:down": "cd docker && docker-compose down",
+    "docker:logs": "cd docker && docker-compose logs -f kali-tools",
+    "docker:exec": "docker exec -it hex-kali-tools /bin/bash"
   },
+  "keywords": [
+    "pentesting",
+    "security",
+    "red-team",
+    "websocket"
+  ],
+  "author": "Hex AI Team",
+  "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@supabase/supabase-js": "^2.38.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "ws": "^8.14.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   }
 }

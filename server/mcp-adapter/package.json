@@ -1,0 +1,24 @@
+{
+  "name": "hex-deepseek-mcp-adapter",
+  "version": "1.0.0",
+  "description": "MCP adapter for DeepSeek API integration",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": ["mcp", "deepseek", "adapter", "llm"],
+  "author": "Hex AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+
+

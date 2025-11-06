@@ -1,0 +1,213 @@
+# Hex AI - Professional Red Teaming Container
+# Based on Kali Linux with full pentesting toolset
+
+FROM kalilinux/kali-rolling:latest
+
+# Avoid interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update and upgrade the system
+RUN apt-get update && apt-get upgrade -y
+
+# Install essential pentesting tools (ONLY tools available in Kali repos)
+RUN apt-get install -y \
+    # ========== NETWORK SCANNING ==========
+    nmap \
+    masscan \
+    zmap \
+    # ========== WEB APPLICATION TESTING ==========
+    sqlmap \
+    nikto \
+    dirb \
+    gobuster \
+    wpscan \
+    whatweb \
+    commix \
+    # ========== EXPLOITATION FRAMEWORKS ==========
+    metasploit-framework \
+    exploitdb \
+    # ========== PASSWORD CRACKING ==========
+    hydra \
+    john \
+    hashcat \
+    hashcat-data \
+    medusa \
+    # ========== WIRELESS HACKING ==========
+    aircrack-ng \
+    reaver \
+    wifite \
+    bettercap \
+    kismet \
+    mdk4 \
+    pixiewps \
+    hostapd-wpe \
+    # ========== ENUMERATION TOOLS ==========
+    enum4linux \
+    smbmap \
+    crackmapexec \
+    nbtscan \
+    ldap-utils \
+    samba-common-bin \
+    # ========== NETWORK TOOLS ==========
+    netcat-traditional \
+    socat \
+    tcpdump \
+    tshark \
+    wireshark-common \
+    proxychains4 \
+    # ========== WEB TOOLS ==========
+    curl \
+    wget \
+    git \
+    # ========== DNS TOOLS ==========
+    dnsutils \
+    bind9-dnsutils \
+    bind9-host \
+    # ========== SSL/TLS TOOLS ==========
+    openssl \
+    sslscan \
+    sslyze \
+    # ========== MISC SECURITY TOOLS ==========
+    whois \
+    traceroute \
+    net-tools \
+    iputils-ping \
+    responder \
+    # ========== BUILD TOOLS (needed for Go installs) ==========
+    build-essential \
+    gcc \
+    make \
+    # ========== PYTHON AND UTILITIES ==========
+    python3 \
+    python3-pip \
+    python3-dev \
+    vim \
+    nano \
+    jq \
+    unzip \
+    zip \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional Python tools
+RUN pip3 install --break-system-packages --no-cache-dir \
+    impacket \
+    pwntools \
+    requests \
+    beautifulsoup4 \
+    paramiko \
+    bloodhound \
+    netaddr \
+    dnspython \
+    pysmb \
+    ldap3 || true
+
+# Install modern Go-based tools (these aren't in Kali repos)
+# Install Go first
+RUN cd /tmp && \
+    wget https://go.dev/dl/go1.21.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.21.5.linux-amd64.tar.gz && \
+    rm go1.21.5.linux-amd64.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
+ENV GOPATH="/opt/go"
+ENV PATH="${GOPATH}/bin:${PATH}"
+
+# Install ProjectDiscovery tools (nuclei, subfinder, httpx, etc.)
+RUN mkdir -p ${GOPATH}/bin && \
+    go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest && \
+    go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest && \
+    go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest && \
+    go install -v github.com/projectdiscovery/katana/cmd/katana@latest && \
+    go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest || true
+
+# Install other modern Go tools
+RUN go install -v github.com/ffuf/ffuf/v2@latest && \
+    go install -v github.com/ropnop/kerbrute@latest && \
+    go install -v github.com/owasp-amass/amass/v4/...@master || true
+
+# Install RustScan (ultra-fast port scanner)
+RUN cd /tmp && \
+    wget https://github.com/RustScan/RustScan/releases/download/2.1.1/rustscan_2.1.1_amd64.deb && \
+    dpkg -i rustscan_2.1.1_amd64.deb || apt-get install -f -y && \
+    rm rustscan_2.1.1_amd64.deb || true
+
+# Install Feroxbuster (Rust-based, download binary)
+RUN cd /tmp && \
+    wget https://github.com/epi052/feroxbuster/releases/download/v2.10.1/x86_64-linux-feroxbuster.zip && \
+    unzip x86_64-linux-feroxbuster.zip && \
+    chmod +x feroxbuster && \
+    mv feroxbuster /usr/local/bin/ && \
+    rm x86_64-linux-feroxbuster.zip || true
+
+# Install Chisel (tunneling tool)
+RUN cd /tmp && \
+    wget https://github.com/jpillora/chisel/releases/download/v1.9.1/chisel_1.9.1_linux_amd64.gz && \
+    gunzip chisel_1.9.1_linux_amd64.gz && \
+    chmod +x chisel_1.9.1_linux_amd64 && \
+    mv chisel_1.9.1_linux_amd64 /usr/local/bin/chisel && \
+    rm -f chisel_1.9.1_linux_amd64.gz || true
+
+# Install enum4linux-ng (modern enum4linux)
+RUN cd /opt && \
+    git clone https://github.com/cddmp/enum4linux-ng && \
+    cd enum4linux-ng && \
+    pip3 install --break-system-packages -r requirements.txt && \
+    ln -s /opt/enum4linux-ng/enum4linux-ng.py /usr/local/bin/enum4linux-ng || true
+
+# Make Go binaries accessible system-wide
+RUN cp -r ${GOPATH}/bin/* /usr/local/bin/ 2>/dev/null || true
+
+# Update Nuclei templates (CRITICAL for nuclei to work)
+RUN nuclei -update-templates || true
+
+# Create non-root user for security
+RUN useradd -m -s /bin/bash hexagent && \
+    echo "hexagent:hexagent" | chpasswd && \
+    mkdir -p /home/hexagent/workspace && \
+    chown -R hexagent:hexagent /home/hexagent
+
+# Set up wordlists directory and download SecLists
+RUN mkdir -p /usr/share/wordlists && \
+    cd /usr/share && \
+    git clone --depth 1 https://github.com/danielmiessler/SecLists.git seclists 2>/dev/null || \
+    (mkdir -p seclists/Discovery/Web-Content && \
+     wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/main/Discovery/Web-Content/common.txt -O seclists/Discovery/Web-Content/common.txt && \
+     wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/main/Discovery/Web-Content/directory-list-2.3-medium.txt -O seclists/Discovery/Web-Content/directory-list-2.3-medium.txt) && \
+    ln -s /usr/share/seclists /usr/share/wordlists/seclists && \
+    chown -R hexagent:hexagent /usr/share/wordlists /usr/share/seclists 2>/dev/null || true
+
+# Download rockyou wordlist (most popular password list)
+RUN cd /usr/share/wordlists && \
+    (wget https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt || \
+     curl -L https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt -o rockyou.txt) && \
+    chown hexagent:hexagent rockyou.txt 2>/dev/null || true
+
+# Copy verification script
+COPY verify-tools.sh /usr/local/bin/verify-tools
+RUN chmod +x /usr/local/bin/verify-tools
+
+# Set resource limits (these will be enforced by docker run command)
+ENV MAX_MEMORY=2g
+ENV MAX_CPU=2
+ENV TOOL_TIMEOUT=300
+
+# Set working directory
+WORKDIR /home/hexagent/workspace
+
+# Switch to non-root user
+USER hexagent
+
+# Set up environment
+ENV PATH="/home/hexagent/.local/bin:${PATH}"
+ENV LANG=C.UTF-8
+
+# Verify all tools are installed (run as hexagent user)
+RUN verify-tools || echo "⚠️ Some tools missing but continuing..."
+
+# Keep container running
+CMD ["/bin/bash"]
+
+
