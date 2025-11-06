@@ -379,10 +379,10 @@ Complete technical documentation for the Hex AI demo.
                     │  │  - Handles process lifecycle           │  │
                     │  └───────────────────────────────────────┘  │
                     └──────────────────┬──────────────────────────┘
-                                       │
-                                       │ Docker Exec API
-                                       │
-                                       ▼
+                       │
+                       │ Docker Exec API
+                       │
+                       ▼
                     ┌─────────────────────────────────────────────┐
                     │  Docker Container: hex-kali-tools          │
                     │  ┌───────────────────────────────────────┐  │
