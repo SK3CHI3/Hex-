@@ -83,8 +83,9 @@ export class DeepSeekAdapter {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
       
+      let response = null;
       try {
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
+        response = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,
@@ -96,12 +97,13 @@ export class DeepSeekAdapter {
 
         clearTimeout(timeoutId);
 
-        if (!response.ok) {
-          const errorText = await response.text();
+        if (!response || !response.ok) {
+          const status = response ? response.status : 'unknown';
+          const errorText = response ? await response.text().catch(() => 'Unable to read error response') : 'No response received';
           // Redact API key from error messages for security
           const sanitizedError = errorText.replace(/sk-[a-zA-Z0-9]{32}/g, 'sk-***REDACTED***');
-          console.error('[DeepSeek] API Error:', response.status, sanitizedError);
-          throw new Error(`DeepSeek API error: ${response.status} - Check your API key and credits`);
+          console.error('[DeepSeek] API Error:', status, sanitizedError);
+          throw new Error(`DeepSeek API error: ${status} - Check your API key and credits`);
         }
       } catch (fetchError) {
         clearTimeout(timeoutId);
@@ -109,10 +111,20 @@ export class DeepSeekAdapter {
           console.error('[DeepSeek] Request timeout after 2 minutes');
           throw new Error('DeepSeek API request timed out. The request may be too large or the service is slow.');
         }
+        // If response is still null, it means fetch failed completely
+        if (!response) {
+          const errorMsg = fetchError.message || 'Unknown fetch error';
+          console.error('[DeepSeek] Fetch failed:', errorMsg);
+          throw new Error(`Failed to connect to DeepSeek API: ${errorMsg}`);
+        }
         throw fetchError;
       }
 
-      // Stream response
+      // Stream response - at this point response should be defined
+      if (!response || !response.body) {
+        throw new Error('No response received from DeepSeek API');
+      }
+      
       const reader = response.body.getReader();
       if (!reader) {
         throw new Error('No response body reader available from DeepSeek API');
