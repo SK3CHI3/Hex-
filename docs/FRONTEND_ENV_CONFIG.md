@@ -41,7 +41,7 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 
 # DeepSeek API
-VITE_DEEPSEEK_API_KEY=sk-56b004b8a0cb44f88e1df91b42fd3a0f
+VITE_DEEPSEEK_API_KEY=sk-
 ```
 
 ---
