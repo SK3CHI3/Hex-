@@ -13,7 +13,7 @@ VITE_MCP_ADAPTER_URL=https://hexai.website
 VITE_WS_URL=wss://hexai.website/ws
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key-here
-VITE_DEEPSEEK_API_KEY=sk-56b004b8a0cb44f88e1df91b42fd3a0f
+VITE_DEEPSEEK_API_KEY=
 ```
 
 ⚠️ **Replace these placeholders:**
