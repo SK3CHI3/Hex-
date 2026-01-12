@@ -23,7 +23,7 @@ VITE_DEEPSEEK_API_KEY=
 **Keep these as-is:**
 - `https://hexai.website` - Your backend domain ✅
 - `wss://hexai.website/ws` - Your WebSocket URL ✅
-- `sk-56b004b8a0cb44f88e1df91b42fd3a0f` - Your DeepSeek API key ✅
+-  - Your DeepSeek API key ✅
 
 ---
 
