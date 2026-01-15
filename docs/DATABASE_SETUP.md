@@ -1,4 +1,4 @@
-# Database Setup Guide.
+# Database Setup Guide
 
 This guide will help you set up the necessary database indexes and cleanup functions for optimal performance.
 
