@@ -1,6 +1,6 @@
 /**
  * MCP Client for Hex AI
- * Abstracts communication with MCP adapter (DeepSeek backend)
+ * Abstracts communication with MCP adapter (ModelScope backend)
  */
 
 export interface MCPMessage {

@@ -29,7 +29,7 @@ export class ConversationOptimizer {
   constructor(config: OptimizationConfig = {}) {
     this.config = {
       maxMessages: config.maxMessages || 20,
-      maxTokens: config.maxTokens || 120000, // DeepSeek context limit
+      maxTokens: config.maxTokens || 120000, // ModelScope context limit
       summarizeThreshold: config.summarizeThreshold || 30,
       keepSystemMessage: config.keepSystemMessage !== false
     };
@@ -196,7 +196,7 @@ export class ConversationOptimizer {
  */
 export const conversationOptimizer = new ConversationOptimizer({
   maxMessages: 20,        // Send max 20 messages to API
-  maxTokens: 120000,      // DeepSeek limit
+  maxTokens: 120000,      // ModelScope limit
   summarizeThreshold: 30, // Summarize when > 30 messages
   keepSystemMessage: true
 });

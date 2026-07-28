@@ -1,12 +1,12 @@
 /**
- * DeepSeek MCP Adapter
- * Bridges MCP protocol with DeepSeek API
+ * ModelScope MCP Adapter
+ * Bridges MCP protocol with ModelScope API
  */
 
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { DeepSeekAdapter } from './deepseek-adapter.js';
+import { ModelScopeAdapter } from './modelscope-adapter.js';
 
 dotenv.config();
 
@@ -20,17 +20,17 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 // Create adapter instance
-const adapter = new DeepSeekAdapter({
-  apiKey: process.env.DEEPSEEK_API_KEY,
+const adapter = new ModelScopeAdapter({
+  apiKey: process.env.MODELSCOPE_API_KEY,
   mcpToolServerUrl: process.env.MCP_TOOL_SERVER_URL || 'stdio://mcp-server'
 });
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    service: 'deepseek-mcp-adapter',
-    timestamp: new Date().toISOString() 
+  res.json({
+    status: 'ok',
+    service: 'modelscope-mcp-adapter',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -38,7 +38,7 @@ app.get('/health', (req, res) => {
 app.post('/chat', async (req, res) => {
   try {
     const { messages, systemPrompt, tools } = req.body;
-    
+
     // Log request info
     const payloadSize = JSON.stringify(req.body).length;
     console.log('[Adapter] Received chat request:', {
@@ -62,7 +62,7 @@ app.post('/chat', async (req, res) => {
     // Send initial connection
     res.write('data: {"type":"connected"}\n\n');
 
-    // Stream DeepSeek response
+    // Stream ModelScope response
     await adapter.streamChat({
       messages,
       systemPrompt,
@@ -98,9 +98,9 @@ app.post('/chat', async (req, res) => {
   } catch (error) {
     console.error('[Adapter] Fatal error:', error);
     console.error('[Adapter] Error stack:', error.stack);
-    
+
     if (!res.headersSent) {
-      res.status(500).json({ 
+      res.status(500).json({
         error: error.message || 'Internal server error',
         type: error.name || 'Error'
       });
@@ -131,8 +131,8 @@ app.get('/tools', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 DeepSeek MCP Adapter running on port ${PORT}`);
-  console.log(`📡 Ready to bridge MCP ↔ DeepSeek`);
+  console.log(`🚀 ModelScope MCP Adapter running on port ${PORT}`);
+  console.log(`📡 Ready to bridge MCP ↔ ModelScope`);
 });
 
 // Graceful shutdown
@@ -145,5 +145,3 @@ process.on('SIGINT', () => {
   console.log('🛑 SIGINT received, shutting down...');
   process.exit(0);
 });
-
-

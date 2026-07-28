@@ -1,14 +1,14 @@
 {
-  "name": "hex-deepseek-mcp-adapter",
+  "name": "hex-modelscope-mcp-adapter",
   "version": "1.0.0",
-  "description": "MCP adapter for DeepSeek API integration",
+  "description": "MCP adapter for ModelScope API integration",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "keywords": ["mcp", "deepseek", "adapter", "llm"],
+  "keywords": ["mcp", "modelscope", "adapter", "llm"],
   "author": "Hex AI Team",
   "license": "MIT",
   "dependencies": {
@@ -20,5 +20,3 @@
     "nodemon": "^3.0.1"
   }
 }
-
-

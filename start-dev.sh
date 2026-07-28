@@ -29,7 +29,7 @@ fi
 
 if [ ! -f "server/mcp-adapter/.env" ]; then
     echo -e "${RED}⚠️  WARNING: server/mcp-adapter/.env file not found${NC}"
-    echo -e "${YELLOW}Please create it with your DeepSeek API key${NC}"
+    echo -e "${YELLOW}Please create it with your ModelScope API key${NC}"
     echo -e "${YELLOW}See docs/HYBRID_DEPLOYMENT_STRATEGY.md for details${NC}"
 fi
 

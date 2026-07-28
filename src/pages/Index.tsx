@@ -207,7 +207,7 @@ const Index = () => {
     }
   }, [messages]);
 
-  // Improved token estimation function (more accurate for DeepSeek)
+  // Improved token estimation function (more accurate for ModelScope)
   const estimateTokens = (text: string): number => {
     // More accurate estimation: English text averages ~3.5 chars per token
     // Account for punctuation, spaces, and special characters
@@ -676,12 +676,12 @@ const Index = () => {
       // The notification message is already added, so we can proceed
     }
 
-    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+    const apiKey = import.meta.env.VITE_MODELSCOPE_API_KEY;
 
     if (!apiKey) {
       handleApiError({
         type: 'client',
-        message: 'DeepSeek API key not found. Please set VITE_DEEPSEEK_API_KEY in your .env file.',
+        message: 'ModelScope API key not found. Please set VITE_MODELSCOPE_API_KEY in your .env file.',
         status: 0,
         retryable: true,
       });
@@ -750,7 +750,7 @@ const Index = () => {
       ];
 
       const requestPayload = {
-        model: 'deepseek-chat',
+        model: 'Qwen-Ambassador/Qwen3.7-Plus',
         messages: conversationMessages,
         tools: professionalSecurityTools,
         tool_choice: 'auto',
@@ -760,7 +760,7 @@ const Index = () => {
       };
       
       // Debug: Log the request payload
-      console.log('📤 Sending to DeepSeek:', {
+      console.log('📤 Sending to ModelScope:', {
         model: requestPayload.model,
         messageCount: conversationMessages.length,
         toolCount: professionalSecurityTools.length,

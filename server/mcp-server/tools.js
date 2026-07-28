@@ -1,6 +1,6 @@
 /**
  * MCP Tool Definitions
- * Converted from OpenAI/DeepSeek format to MCP format
+ * Converted from ModelScope format to MCP format
  */
 
 export const mcpTools = [

@@ -22,7 +22,7 @@ if (-not $rootEnvExists) {
 
 if (-not $mcpAdapterEnvExists) {
     Write-Host "WARNING: server/mcp-adapter/.env file not found" -ForegroundColor Red
-    Write-Host "Please create it with your DeepSeek API key" -ForegroundColor Yellow
+    Write-Host "Please create it with your ModelScope API key" -ForegroundColor Yellow
     Write-Host "See docs/HYBRID_DEPLOYMENT_STRATEGY.md for details" -ForegroundColor Yellow
 }
 

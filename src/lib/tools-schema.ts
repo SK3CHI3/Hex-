@@ -1,5 +1,5 @@
 /**
- * Professional Security Tool Schemas for DeepSeek Function Calling
+ * Professional Security Tool Schemas for ModelScope Function Calling
  * These define all the pentesting tools available to Hex AI
  */
 
