@@ -1,6 +1,6 @@
-# 🚀 Hex AI - Agentic Mode Setup Guide
+# 🚀 Hex AI - Setup Guide
 
-Complete guide to set up professional red teaming features with real tool execution.
+Complete guide to set up Hex AI for local penetration testing with AI-powered tool execution.
 
 ---
 
@@ -30,38 +30,58 @@ docker ps  # Should show no errors
 
 ---
 
-## 🔧 Installation Steps
+## 🔧 Quick Setup (Recommended)
 
-### Step 1: Install Frontend Dependencies
-
-```bash
-# Navigate to project root
+### Windows
+```powershell
+# Clone the repository
+git clone https://github.com/SK3CHI3/Hex-.git
 cd Hex-
 
-# Install dependencies
-npm install
+# Run automated setup
+.\setup.ps1
 ```
 
-### Step 2: Install Backend Dependencies
-
+### Linux/Mac
 ```bash
-# Navigate to server directory
-cd server
+# Clone the repository
+git clone https://github.com/SK3CHI3/Hex-.git
+cd Hex-
 
-# Install dependencies
-npm install
-
-# Go back to root
-cd ..
+# Run automated setup
+chmod +x setup.sh
+./setup.sh
 ```
 
-### Step 3: Build Docker Container
+The setup script will:
+- Install all Node.js dependencies
+- Build the Kali Linux Docker container (15-30 minutes)
+- Create `.env` files with default configuration
+- Start all services automatically
+
+---
+
+## 🔧 Manual Installation
+
+### Step 1: Install Dependencies
 
 ```bash
-# Navigate to server/docker directory
+# Frontend dependencies
+npm install
+
+# Backend dependencies
+cd server && npm install && cd ..
+
+# MCP Adapter dependencies
+cd server/mcp-adapter && npm install && cd ../..
+```
+
+### Step 2: Build Docker Container
+
+```bash
 cd server/docker
 
-# Build the Kali Linux container (this takes 10-15 minutes)
+# Build the Kali Linux container (15-30 minutes)
 docker-compose build
 
 # Start the container
@@ -71,21 +91,19 @@ docker-compose up -d
 docker ps
 ```
 
-You should see output like:
+You should see:
 ```
 CONTAINER ID   IMAGE          COMMAND       CREATED        STATUS        PORTS     NAMES
 abc123def456   hex-kali...   "/bin/bash"   2 minutes ago  Up 2 minutes            hex-kali-tools
 ```
 
-### Step 4: Configure Environment Variables
+### Step 3: Configure Environment Variables
 
 Create `.env` file in the project root:
 
 ```bash
-# From project root
-cat > .env << 'EOF'
-# DeepSeek API
-VITE_DEEPSEEK_API_KEY=your_deepseek_api_key_here
+# ModelScope API (Qwen3.7-Plus)
+VITE_MODELSCOPE_API_KEY=your_modelscope_api_key_here
 
 # Supabase
 VITE_SUPABASE_URL=your_supabase_url
@@ -93,10 +111,32 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # WebSocket Server URL
 VITE_WS_URL=ws://localhost:8081
-EOF
 ```
 
-Create `.env` file in the server directory:
+Create `server/mcp-adapter/.env`:
+
+```bash
+# ModelScope API Key
+MODELSCOPE_API_KEY=your_modelscope_api_key_here
+
+# MCP Adapter Port
+MCP_ADAPTER_PORT=8083
+```
+
+Create `server/.env`:
+
+```bash
+# Supabase Configuration
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_KEY=your_supabase_service_key
+
+# Server Port
+PORT=8081
+```
+
+**Get your API keys:**
+- ModelScope: https://modelscope.ai (free tier available)
+- Supabase: https://supabase.com (free tier available)
 
 ```bash
 # From server directory
@@ -116,45 +156,59 @@ cd ..
 
 ## 🏃 Running the Application
 
-### Option A: Run Everything (Recommended)
+### Quick Start (Recommended)
 
-Open **3 terminal windows**:
-
-#### Terminal 1: Docker Container
-```bash
-cd server/docker
-docker-compose up
+**Windows:**
+```powershell
+.\start.ps1
 ```
 
-#### Terminal 2: Backend WebSocket Server
+**Linux/Mac:**
+```bash
+./start-dev.sh
+```
+
+This single command starts:
+- ✅ Kali Docker container (if not running)
+- ✅ MCP Adapter (port 8083) — connects to ModelScope AI
+- ✅ Tool Server (port 8081) — executes pentesting tools
+- ✅ Frontend (port 8080) — web interface
+
+**Access the app:** http://localhost:8080
+
+### Manual Start (Advanced)
+
+If you prefer to start services individually:
+
+**Terminal 1: MCP Adapter**
+```bash
+cd server/mcp-adapter
+npm start
+```
+
+**Terminal 2: Tool Server**
 ```bash
 cd server
-npm run dev
+npm start
 ```
 
-#### Terminal 3: Frontend React App
+**Terminal 3: Frontend**
 ```bash
 npm run dev
 ```
 
-The application will be available at:
-- **Frontend**: http://localhost:8080
-- **Backend**: http://localhost:8081
-- **WebSocket**: ws://localhost:8081
+### Stopping Services
 
-### Option B: Using npm scripts
+**Windows:**
+```powershell
+.\stop.ps1
+```
 
-From project root:
-
+**Linux/Mac:**
 ```bash
-# Terminal 1: Start Docker
-npm run docker:up
-
-# Terminal 2: Start Backend
-cd server && npm run dev
-
-# Terminal 3: Start Frontend  
-npm run dev
+# Press Ctrl+C in each terminal, or:
+pkill -f "node.*server"
+docker stop hex-kali-tools
 ```
 
 ---

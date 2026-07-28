@@ -81,8 +81,8 @@ Write-Host "📊 Container Info:" -ForegroundColor Yellow
 docker ps --filter "name=hex-kali-tools" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 Write-Host ""
 Write-Host "🎯 Next Steps:" -ForegroundColor Yellow
-Write-Host "   1. Start the MCP Adapter: cd server/mcp-adapter && npm start" -ForegroundColor Gray
-Write-Host "   2. Start the Tool Server: cd server && npm start" -ForegroundColor Gray
+Write-Host "   1. Start the MCP Adapter: cd server\mcp-adapter; npm start" -ForegroundColor Gray
+Write-Host "   2. Start the Tool Server: cd server; npm start" -ForegroundColor Gray
 Write-Host "   3. Start the Frontend: npm run dev" -ForegroundColor Gray
 Write-Host ""
 Write-Host "🧪 Test Tools:" -ForegroundColor Yellow

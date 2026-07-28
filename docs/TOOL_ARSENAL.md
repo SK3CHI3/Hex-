@@ -231,7 +231,7 @@ docker-compose up -d
 
 ---
 
-**Built by Victor** | Powered by DeepSeek AI | Kali Linux Tools
+**Built by Victor** | Powered by ModelScope (Qwen3.7-Plus) | Kali Linux Tools
 
 
 

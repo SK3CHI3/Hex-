@@ -2,15 +2,15 @@
 
 ## Overview
 
-Hex integrates directly with the DeepSeek API to access advanced AI models for cybersecurity assistance. This document outlines the API integration and usage patterns.
+Hex integrates with the ModelScope API (Qwen3.7-Plus) for AI-powered cybersecurity assistance. The MCP adapter handles all API communication, providing streaming responses and tool execution capabilities.
 
-## DeepSeek Integration
+## ModelScope Integration
 
 ### Base Configuration
 
 ```typescript
-const API_BASE_URL = 'https://api.deepseek.com/chat/completions';
-const MODEL = 'deepseek-chat';
+const API_BASE_URL = 'https://api-inference.modelscope.ai/v1/chat/completions';
+const MODEL = 'Qwen-Ambassador/Qwen3.7-Plus';
 ```
 
 ### Authentication
@@ -31,6 +31,8 @@ interface ChatRequest {
   temperature: number;
   max_tokens: number;
   stream: boolean;
+  tools?: Tool[];
+  tool_choice?: 'auto' | 'none' | { type: 'function', function: { name: string } };
 }
 
 interface Message {
@@ -42,14 +44,14 @@ interface Message {
 ### Example Request
 
 ```typescript
-const response = await fetch('https://api.deepseek.com/chat/completions', {
+const response = await fetch('https://api-inference.modelscope.ai/v1/chat/completions', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${apiKey}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    model: 'deepseek-chat',
+    model: 'Qwen-Ambassador/Qwen3.7-Plus',
     messages: [
       {
         role: 'system',
@@ -193,10 +195,10 @@ const sendMessageWithRetry = async (message: string, retries = 3) => {
 
 ```typescript
 // Save API key
-localStorage.setItem('deepseek-api-key', apiKey);
+localStorage.setItem('modelscope-api-key', apiKey);
 
 // Retrieve API key
-const apiKey = localStorage.getItem('deepseek-api-key');
+const apiKey = localStorage.getItem('modelscope-api-key');
 
 // Validate API key format
 const isValidApiKey = (key: string) => {
@@ -280,7 +282,7 @@ const loadConversation = (): StoredMessage[] => {
 ```typescript
 class HexAPI {
   private apiKey: string;
-  private baseURL: string = 'https://api.deepseek.com/chat/completions';
+  private baseURL: string = 'https://api-inference.modelscope.ai/v1/chat/completions';
   
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -291,7 +293,7 @@ class HexAPI {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'Qwen-Ambassador/Qwen3.7-Plus',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages
@@ -343,4 +345,4 @@ class HexAPI {
 }
 ```
 
-This API documentation provides comprehensive guidance for integrating with DeepSeek and managing the AI interactions within Hex.
+This API documentation provides comprehensive guidance for integrating with ModelScope (Qwen3.7-Plus) and managing the AI interactions within Hex.

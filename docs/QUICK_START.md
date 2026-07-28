@@ -1,149 +1,125 @@
-# ⚡ Hex AI - Quick Start (Agentic Mode)
+# ⚡ Hex AI - Quick Start
 
-## 🎯 What's Ready
+## 🎯 What You Get
 
-✅ **ALL CODE COMPLETE** - Professional red teaming architecture fully integrated!
-
----
-
-## 🚀 3-Step Setup
-
-### Step 1: Install Dependencies
-
-```bash
-# Frontend
-npm install
-
-# Backend
-cd server
-npm install
-cd ..
-```
-
-### Step 2: Build Docker Container
-
-```bash
-cd server/docker
-docker-compose build
-docker-compose up -d
-cd ../..
-```
-
-### Step 3: Create Environment Files
-
-**`.env` (project root):**
-```env
-VITE_DEEPSEEK_API_KEY=your_key_here
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_anon_key
-VITE_WS_URL=ws://localhost:8081
-```
-
-**`server/.env`:**
-```env
-PORT=8081
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_KEY=your_service_key
-```
+- **AI-powered pentesting assistant** with 42+ security tools
+- **Real-time tool execution** in isolated Docker containers
+- **Local-first** — runs on your machine, no cloud costs
+- **ModelScope Qwen3.7-Plus** — free tier available
 
 ---
 
-## 🏃 Run Everything
+## 🚀 Quick Setup (5 minutes + 15 min Docker build)
 
-**Terminal 1** - Backend:
-```bash
-cd server
-npm run dev
+### Prerequisites
+
+- **Node.js 18+** and npm
+- **Docker Desktop** (running)
+- **Git**
+
+### Installation
+
+**Windows:**
+```powershell
+# 1. Clone the repo
+git clone https://github.com/SK3CHI3/Hex-.git
+cd Hex-
+
+# 2. Run automated setup (installs deps, builds Docker, creates .env files)
+.\setup.ps1
+
+# 3. Edit .env files with your API keys
+#    - .env → VITE_MODELSCOPE_API_KEY
+#    - server\mcp-adapter\.env → MODELSCOPE_API_KEY
+#    - server\.env → SUPABASE_URL, SUPABASE_SERVICE_KEY
+
+# 4. Start all services
+.\start.ps1
 ```
 
-**Terminal 2** - Frontend:
+**Linux/Mac:**
 ```bash
-npm run dev
+# 1. Clone the repo
+git clone https://github.com/SK3CHI3/Hex-.git
+cd Hex-
+
+# 2. Run automated setup
+chmod +x setup.sh
+./setup.sh
+
+# 3. Edit .env files with your API keys
+
+# 4. Start all services
+./start-dev.sh
 ```
 
 ---
 
 ## ✅ Test It
 
-1. Go to http://localhost:8080
+1. Open http://localhost:8080
 2. Sign in with GitHub
-3. Upgrade to Premium ($3/month)
-4. Try: **"Scan 127.0.0.1 with nmap quick scan"**
-5. Watch the terminal appear with real output! 🔥
+3. Try: **"Scan 127.0.0.1 with nmap quick scan"**
+4. Watch the terminal appear with real output! 🔥
 
 ---
 
-## 🛠️ What You Can Do Now
+## 🛠️ What You Can Do
 
 Try these commands:
 
 - **"Scan my local network"** → Nmap
-- **"Check example.com for SQL injection"** → SQLMap
-- **"Find hidden directories on my test site"** → Gobuster
-- **"Scan testsite.local for vulnerabilities"** → Nikto
-- **"Test SSH password on 192.168.1.100"** → Hydra
-- **"Search Metasploit for Apache exploits"** → Metasploit
+- **"Find subdomains of example.com"** → Subfinder
+- **"Check example.com for vulnerabilities"** → Nuclei
+- **"Brute force SSH on 192.168.1.1"** → Hydra
+- **"Analyze this APK for malware"** → APK analysis
 
 ---
 
-## 📦 Files Created
+## 📚 Full Documentation
 
-✅ `src/components/TerminalWindow.tsx` - Terminal UI  
-✅ `src/hooks/use-tool-execution.ts` - WebSocket + tool execution  
-✅ `src/lib/tools-schema.ts` - 15+ tool definitions  
-✅ `server/index.js` - WebSocket server  
-✅ `server/docker/Dockerfile.kali` - Kali Linux + 30+ tools  
-✅ `server/docker/docker-compose.yml` - Container config  
-✅ **Updated** `src/pages/Index.tsx` - Full integration
+- **[Setup Guide](SETUP_GUIDE.md)** — Detailed installation instructions
+- **[Architecture](ARCHITECTURE.md)** — System design and components
+- **[Tool Arsenal](TOOL_ARSENAL.md)** — All 42+ available tools
+- **[API Documentation](API.md)** — ModelScope integration details
 
 ---
 
-## 🔥 What's Integrated
+## 🔧 Daily Usage
 
-✅ Real-time terminal output  
-✅ 30+ pentesting tools (Nmap, SQLMap, Metasploit, etc.)  
-✅ Docker sandboxing  
-✅ Premium-only access  
-✅ WebSocket streaming  
-✅ Command validation  
-✅ DeepSeek tool calling  
+```powershell
+# Start everything
+.\start.ps1
 
----
-
-## 🐛 Troubleshooting
-
-**"Premium Required" error?**
-```sql
--- In Supabase SQL editor:
-UPDATE user_profiles
-SET subscription_status = 'premium',
-    subscription_start_date = NOW(),
-    subscription_end_date = NOW() + INTERVAL '30 days'
-WHERE email = 'your-email@example.com';
-```
-
-**Container not starting?**
-```bash
-docker ps  # Check if running
-docker-compose logs -f  # Check logs
-```
-
-**WebSocket won't connect?**
-```bash
-curl http://localhost:8081/health  # Should return OK
+# Stop everything
+.\stop.ps1
 ```
 
 ---
 
-## 📚 Full Docs
+## 🆘 Troubleshooting
 
-- `SETUP_GUIDE.md` - Complete setup guide
-- `IMPLEMENTATION_COMPLETE.md` - What was built
-- `docs/PROFESSIONAL_AGENTIC_ARCHITECTURE.md` - Architecture
+**Docker not running?**
+- Start Docker Desktop first
+- Check with: `docker ps`
+
+**Port already in use?**
+- Stop other services on ports 8080, 8081, 8083
+- Or edit the port in the respective `.env` files
+
+**API key errors?**
+- Verify your ModelScope API key at https://modelscope.ai
+- Check `server/mcp-adapter/.env` has the key
+
+**Full troubleshooting guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md#troubleshooting)
 
 ---
 
-**READY TO HACK! 🎉**
+## 📞 Support
 
+- **Issues**: [GitHub Issues](https://github.com/SK3CHI3/Hex-/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/SK3CHI3/Hex-/discussions)
 
+---
 
+**🔒 Hack Ethically • Learn Continuously • Share Knowledge**

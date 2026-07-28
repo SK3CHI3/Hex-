@@ -12,6 +12,9 @@ lerna-debug.log*
 .env.local
 .env.*.local
 
+# MCP configuration (contains sensitive tokens)
+.mcp.json
+
 node_modules
 dist
 dist-ssr

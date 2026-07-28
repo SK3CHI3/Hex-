@@ -169,21 +169,21 @@ RUN useradd -m -s /bin/bash hexagent && \
     mkdir -p /home/hexagent/workspace && \
     chown -R hexagent:hexagent /home/hexagent
 
-# Set up wordlists directory and download SecLists
-RUN mkdir -p /usr/share/wordlists && \
-    cd /usr/share && \
-    git clone --depth 1 https://github.com/danielmiessler/SecLists.git seclists 2>/dev/null || \
-    (mkdir -p seclists/Discovery/Web-Content && \
-     wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/main/Discovery/Web-Content/common.txt -O seclists/Discovery/Web-Content/common.txt && \
-     wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/main/Discovery/Web-Content/directory-list-2.3-medium.txt -O seclists/Discovery/Web-Content/directory-list-2.3-medium.txt) && \
-    ln -s /usr/share/seclists /usr/share/wordlists/seclists && \
-    chown -R hexagent:hexagent /usr/share/wordlists /usr/share/seclists 2>/dev/null || true
+# Set up wordlists directory - download essential wordlists only (skip full SecLists repo)
+# Note: Downloading from GitHub raw is very slow in Docker builds. 
+# Users can manually download wordlists later: 
+#   docker exec hex-kali-tools wget -O /usr/share/wordlists/common.txt https://raw.githubusercontent.com/danielmiessler/SecLists/main/Discovery/Web-Content/common.txt
+RUN mkdir -p /usr/share/wordlists/Discovery/Web-Content && \
+    chown -R hexagent:hexagent /usr/share/wordlists
 
 # Download rockyou wordlist (most popular password list)
-RUN cd /usr/share/wordlists && \
-    (wget https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt || \
-     curl -L https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt -o rockyou.txt) && \
-    chown hexagent:hexagent rockyou.txt 2>/dev/null || true
+# Note: Skipped by default due to slow GitHub downloads in Docker builds.
+# Users can manually download later:
+#   docker exec hex-kali-tools wget -O /usr/share/wordlists/rockyou.txt https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt
+# RUN cd /usr/share/wordlists && \
+#     (wget https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt || \
+#      curl -L https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt -o rockyou.txt) && \
+#     chown hexagent:hexagent rockyou.txt 2>/dev/null || true
 
 # Copy verification script
 COPY verify-tools.sh /usr/local/bin/verify-tools

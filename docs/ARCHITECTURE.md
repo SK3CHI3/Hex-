@@ -43,7 +43,7 @@ Hex AI uses a **hybrid architecture** combining serverless components with state
 │     - User authentication                    │            │
 │                                              │            │
 │  1. MCP Adapter                              │            │
-│     - DeepSeek API integration (port 8083)   │            │
+│     - ModelScope API integration (port 8083) │            │
 │     - MCP protocol bridge                    │            │
 │     - SSE streaming                          │            │
 │     - Tool call routing                      │            │
@@ -83,9 +83,9 @@ Hex AI uses a **hybrid architecture** combining serverless components with state
    ↓
 3. HTTP POST → MCP Adapter (port 8083)
    ↓
-4. MCP Adapter → DeepSeek API
+4. MCP Adapter → ModelScope API (Qwen3.7-Plus)
    ↓
-5. DeepSeek decides to use a tool
+5. ModelScope decides to use a tool
    ↓
 6. Tool call → WebSocket (port 8081)
    ↓
@@ -95,7 +95,7 @@ Hex AI uses a **hybrid architecture** combining serverless components with state
    ↓
 9. Frontend displays in terminal window
    ↓
-10. DeepSeek analyzes results
+10. ModelScope analyzes results
     ↓
 11. Response streams back to user
 ```
@@ -104,7 +104,7 @@ Hex AI uses a **hybrid architecture** combining serverless components with state
 ```
 User: "Scan 192.168.1.1 with nmap"
    ↓
-DeepSeek AI: "I'll run an nmap scan"
+AI (Qwen3.7-Plus): "I'll run an nmap scan"
    ↓
 executeTool('nmap_scan', {
   target: '192.168.1.1',
@@ -150,9 +150,9 @@ Hex-/
 │       ├── index.js                # Main tool execution server
 │       │                           # Port: 8081 (WebSocket)
 │       │
-│       ├── mcp-adapter/            # DeepSeek ↔ MCP Bridge
+│       ├── mcp-adapter/            # ModelScope ↔ MCP Bridge
 │       │   ├── index.js            # Express + SSE server
-│       │   ├── deepseek-adapter.js # DeepSeek API integration
+│       │   ├── modelscope-adapter.js # ModelScope API integration
 │       │   └── package.json        # Port: 8083
 │       │
 │       ├── mcp-server/             # MCP Tool Server (Optional)
@@ -195,7 +195,7 @@ Hex-/
 |---------|------|----------|---------|----------|
 | **Frontend** | 8080 | HTTP | React development server | Development only |
 | **Tool Execution Server** | 8081 | WebSocket | Real-time tool execution | ✅ Yes |
-| **MCP Adapter** | 8083 | HTTP/SSE | DeepSeek API bridge | ✅ Yes |
+| **MCP Adapter** | 8083 | HTTP/SSE | ModelScope API bridge | ✅ Yes |
 | **MCP Tool Server** | 8082 | stdio | MCP protocol tools | Optional |
 | **Supabase** | 443 | HTTPS | Database & Auth | ✅ Yes |
 | **Docker Container** | N/A | N/A | Isolated tool execution | ✅ Yes |
@@ -261,7 +261,7 @@ Hex-/
 - **Framework:** Express.js
 - **WebSocket:** ws
 - **MCP:** @modelcontextprotocol/sdk
-- **AI Provider:** DeepSeek API
+- **AI Provider:** ModelScope API (Qwen3.7-Plus)
 
 ### Database & Auth
 - **Database:** PostgreSQL (Supabase)
@@ -377,7 +377,7 @@ User sends message
    ↓
 Frontend → Supabase (messages table)
    ↓
-Frontend → MCP Adapter → DeepSeek
+Frontend → MCP Adapter → ModelScope
    ↓
 AI response → Frontend
    ↓
@@ -462,7 +462,7 @@ docker exec hex-kali-tools nmap -sn 127.0.0.1
 - Check user has premium status
 - Verify command validation rules
 
-**DeepSeek API errors:**
+**ModelScope API errors:**
 - Check `server/mcp-adapter/.env` has valid API key
 - Verify API key has credits
 - Check rate limits

@@ -1,4 +1,4 @@
-# 🎨 Frontend Environment Configuration for hexai.website
+# 🎨 Frontend Environment Configuration
 
 ## Copy & Paste These Environment Variables
 
@@ -9,21 +9,21 @@ Go to: **Site settings → Environment variables → Edit variables**
 Then copy-paste these:
 
 ```env
-VITE_MCP_ADAPTER_URL=https://hexai.website
-VITE_WS_URL=wss://hexai.website/ws
+VITE_MCP_ADAPTER_URL=http://localhost:8083
+VITE_WS_URL=ws://localhost:8081
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key-here
-VITE_DEEPSEEK_API_KEY=
+VITE_MODELSCOPE_API_KEY=your-modelscope-api-key
 ```
 
 ⚠️ **Replace these placeholders:**
 - `your-project-id` - Your Supabase project ID
 - `your-supabase-anon-key-here` - Your Supabase anonymous key
+- `your-modelscope-api-key` - Your ModelScope API key
 
-**Keep these as-is:**
-- `https://hexai.website` - Your backend domain ✅
-- `wss://hexai.website/ws` - Your WebSocket URL ✅
--  - Your DeepSeek API key ✅
+**Get your API keys:**
+- ModelScope: https://modelscope.ai (free tier available)
+- Supabase: https://supabase.com (free tier available)
 
 ---
 
@@ -32,16 +32,16 @@ VITE_DEEPSEEK_API_KEY=
 If running frontend locally, create `.env` file in project root:
 
 ```bash
-# Backend URLs (Production)
-VITE_MCP_ADAPTER_URL=https://hexai.website
-VITE_WS_URL=wss://hexai.website/ws
+# Backend URLs (Local)
+VITE_MCP_ADAPTER_URL=http://localhost:8083
+VITE_WS_URL=ws://localhost:8081
 
 # Supabase (Replace with your values)
 VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 
-# DeepSeek API
-VITE_DEEPSEEK_API_KEY=sk-
+# ModelScope API (Qwen3.7-Plus)
+VITE_MODELSCOPE_API_KEY=your-modelscope-api-key
 ```
 
 ---
@@ -175,7 +175,7 @@ nslookup hexai.website
 - [ ] `VITE_WS_URL` = `wss://hexai.website/ws`
 - [ ] `VITE_SUPABASE_URL` = Your Supabase URL
 - [ ] `VITE_SUPABASE_ANON_KEY` = Your Supabase anon key
-- [ ] `VITE_DEEPSEEK_API_KEY` = Your DeepSeek key
+- [ ] `VITE_MODELSCOPE_API_KEY` = Your ModelScope key
 - [ ] Frontend redeployed after changes
 - [ ] Browser cache cleared
 - [ ] Tested in incognito mode
