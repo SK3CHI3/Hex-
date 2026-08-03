@@ -101,13 +101,14 @@ Tools execute in an isolated Kali Linux container.
 ```
 Hex-/
 ├── cli/                    # CLI application
-│   ├── index.js            # Entry point + chat loop
+│   ├── index.js            # Entry point + chat loop + agentic loop
 │   ├── config.js           # Provider configuration + setup wizard
-│   ├── ai.js               # Multi-provider API client
+│   ├── ai.js               # Multi-provider API client + abort support
 │   ├── tools.js            # Tool definitions (function calling)
 │   ├── executor.js         # Tool call → command builder + executor
 │   ├── docker.js           # Execution layer (direct or Docker)
-│   └── storage.js          # Local JSON conversation storage
+│   ├── storage.js          # Local JSON conversation storage
+│   └── search.js           # Web search (DuckDuckGo)
 │
 ├── server/
 │   └── docker/             # Kali Linux container (optional)
@@ -129,6 +130,78 @@ Tools are defined in `cli/tools.js` using the OpenAI-compatible function calling
    - **Direct:** `spawn(command, args)` on your machine
    - **Docker:** `docker exec hex-kali-tools <command> <args>`
 3. Output streams to the terminal and back to the AI
+
+## Agentic Loop
+
+Hex uses an agentic loop pattern for multi-step task execution:
+
+```
+┌─────────────────────────────────────────┐
+│  User Request                           │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  AI Thinks + Responds + Calls Tools     │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  Execute Tools → Feed Results to AI     │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  AI Sees Results → More Tools?          │
+│  Yes → Loop back (max 10 rounds)        │
+│  No  → Final response, done             │
+└─────────────────────────────────────────┘
+```
+
+**Key features:**
+- Loop continues as long as AI calls tools
+- Max 10 rounds prevents infinite loops
+- Each iteration: AI thinks → acts → observes → thinks again
+- Results from each step inform the next step
+
+This is the standard pattern used by Claude Code, OpenAI Codex CLI, Cursor agent mode, etc.
+
+## AbortController & Cancellation
+
+Hex supports graceful cancellation of operations:
+
+- **Ctrl+C** during AI thinking: Aborts the fetch request
+- **Ctrl+C** during tool execution: Stops the current tool
+- **AbortController** passed to `chat()` function
+- SIGINT handler manages cancellation gracefully
+- Conversation history preserved after cancellation
+
+## Thinking Models
+
+Hex supports models with reasoning/thinking capabilities:
+
+- Detects `delta.reasoning_content` and `delta.thinking` from streaming responses
+- Displays thinking with 💭 indicator in dim text
+- Collapsible display: `/thinking` toggles between compact and expanded views
+- Thinking shown before actual response
+
+## Web Search
+
+Web search via DuckDuckGo Instant Answer API:
+
+- No API key required
+- Works for CVEs, security concepts, OSINT
+- Integrated as `web_search` tool
+- Results formatted for AI consumption
+
+## OS-Aware System Prompt
+
+System prompt adapts to the operating system:
+
+- **Windows**: Suggests PowerShell/CMD commands (dir, Get-Command, where.exe)
+- **macOS**: Suggests Unix commands (which, ls, grep)
+- **Linux**: Standard Linux commands
+- Prevents AI from generating incompatible commands
 
 ## Data Storage
 

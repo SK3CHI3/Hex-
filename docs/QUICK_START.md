@@ -87,9 +87,36 @@ Hex can search the internet for OSINT, CVE lookups, and research:
 | `/resume <id>` | Resume a conversation |
 | `/tools` | List available pentesting tools |
 | `/config` | Show current configuration |
+| `/provider` | Switch AI provider |
 | `/setup` | Re-run setup wizard (change provider/model) |
 | `/status` | Check execution environment |
+| `/thinking` | Toggle thinking display (collapsed/expanded) |
 | `/quit` | Exit Hex |
+
+## Interface Features
+
+### Status Indicators
+Hex shows real-time status while working:
+- **AI is thinking...** - Shows when the AI is processing
+- **Running [tool]...** - Shows during tool execution
+- Status updates inline, keeping the interface clean
+
+### Collapsible Thinking
+By default, AI reasoning is shown compactly:
+```
+💭 [Thinking] (123 chars)
+```
+
+Toggle full thinking display with `/thinking`:
+- **Collapsed** (default): Shows character count only
+- **Expanded**: Shows full reasoning process
+
+### Cancellation
+Press **Ctrl+C** to cancel the current operation:
+- Stops AI thinking mid-stream
+- Cancels tool execution
+- Returns to prompt gracefully
+- Conversation history is preserved
 
 ## Example Prompts
 

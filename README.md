@@ -52,6 +52,7 @@ Complete guides and references:
 
 | Document | Description |
 |----------|-------------|
+| **[Features](docs/FEATURES.md)** | Complete feature overview |
 | **[Setup Guide](docs/SETUP_GUIDE.md)** | Installation, configuration, and first run |
 | **[Quick Start](docs/QUICK_START.md)** | CLI commands and usage examples |
 | **[Multi-Provider AI](docs/MULTI_PROVIDER.md)** | Configure OpenAI, Anthropic, Google, Ollama, or custom endpoints |
