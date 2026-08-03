@@ -1,7 +1,7 @@
 {
   "name": "hex-ai",
   "version": "2.0.1",
-  "description": "AI-powered penetration testing assistant — runs in your terminal",
+  "description": "Terminal-native AI pentesting assistant with 42+ tools, multi-provider AI support, autonomous planning, and web search. Install any security tool, run complex assessments, and get intelligent analysis through natural language.",
   "type": "module",
   "bin": {
     "hex": "./cli/index.js"

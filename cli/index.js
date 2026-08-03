@@ -320,7 +320,7 @@ process.on('SIGINT', () => {
 async function sendAndReceive(userMessage) {
   messages.push({ role: 'user', content: userMessage });
 
-  const MAX_ROUNDS = 25; // Prevent infinite loops
+  const MAX_ROUNDS = 100; // Prevent infinite loops
   let round = 0;
   let cancelled = false;
 
