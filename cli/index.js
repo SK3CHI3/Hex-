@@ -8,6 +8,7 @@ import { executeToolCall } from './executor.js';
 import { isDockerAvailable, isToolAvailable } from './docker.js';
 import { saveConversation, loadConversation, listConversations } from './storage.js';
 import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS } from './config.js';
+import { listSkills, getSkill, saveSkill, initBuiltinSkills } from './skills.js';
 import { randomUUID } from 'crypto';
 import { platform } from 'os';
 
@@ -112,6 +113,8 @@ ${C.bold('Commands:')}
   /history     List saved conversations
   /resume <id> Resume a previous conversation
   /tools       List available pentesting tools
+  /skills      List available skills
+  /skill <name> [vars]  Run a skill with optional variables
   /config      Show current configuration
   /provider    Switch AI provider
   /setup       Run setup wizard to change provider/model
@@ -228,6 +231,45 @@ ${C.bold('Commands:')}
       console.log(C.dim(`  Thinking display: ${showThinking ? 'expanded' : 'collapsed'}`));
       return true;
 
+    case '/skills': {
+      const skills = listSkills();
+      if (skills.length === 0) {
+        console.log(C.dim('No skills available.'));
+      } else {
+        console.log(C.bold('\n  Available skills:'));
+        for (const s of skills) {
+          console.log(C.tool(`  ${s.name}`) + C.dim(` — ${s.description}`));
+        }
+        console.log('');
+      }
+      return true;
+    }
+
+    case '/skill': {
+      const skillName = parts[1];
+      if (!skillName) {
+        console.log(C.error('Usage: /skill <name> [var1=value1 var2=value2 ...]'));
+        return true;
+      }
+      const skill = getSkill(skillName);
+      if (!skill) {
+        console.log(C.error(`Skill '${skillName}' not found. Use /skills to list available skills.`));
+        return true;
+      }
+      
+      // Parse variables from command line
+      const vars = {};
+      for (let i = 2; i < parts.length; i++) {
+        const [key, value] = parts[i].split('=');
+        if (key && value) {
+          vars[key] = value;
+        }
+      }
+      
+      await executeSkill(skill, vars);
+      return true;
+    }
+
     case '/quit':
     case '/exit':
       console.log(C.dim('\nGoodbye.'));
@@ -241,7 +283,7 @@ ${C.bold('Commands:')}
 
 async function checkStatus() {
   const config = loadConfig();
-  
+
   if (config.executionMode === 'docker') {
     const running = await isDockerAvailable();
     if (running) {
@@ -252,7 +294,7 @@ async function checkStatus() {
     }
   } else {
     console.log(C.ai('  ✓ Direct execution mode (tools run on your machine)'));
-    
+
     // Check a few common tools
     const testTools = ['nmap', 'curl', 'whois'];
     for (const tool of testTools) {
@@ -264,6 +306,84 @@ async function checkStatus() {
       }
     }
   }
+}
+
+async function executeSkill(skill, vars) {
+  console.log(C.bold(`\n  Executing skill: ${skill.name}`));
+  console.log(C.dim(`  ${skill.description}\n`));
+
+  // Check for missing required variables
+  const requiredVars = new Set();
+  for (const step of skill.steps) {
+    const argsStr = JSON.stringify(step.args);
+    const matches = argsStr.match(/\{\{(\w+)\}\}/g);
+    if (matches) {
+      matches.forEach(m => requiredVars.add(m.replace(/[{}]/g, '')));
+    }
+  }
+
+  const missingVars = [...requiredVars].filter(v => !vars[v]);
+  if (missingVars.length > 0) {
+    console.log(C.error(`  Missing required variables: ${missingVars.join(', ')}`));
+    console.log(C.dim(`  Usage: /skill ${skill.name} ${missingVars.map(v => `${v}=<value>`).join(' ')}`));
+    return;
+  }
+
+  // Execute each step
+  for (let i = 0; i < skill.steps.length; i++) {
+    const step = skill.steps[i];
+    console.log(C.tool(`\n  Step ${i + 1}/${skill.steps.length}: ${step.tool}`));
+
+    // Replace variables in arguments
+    const argsStr = JSON.stringify(step.args);
+    const resolvedArgsStr = argsStr.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+      return vars[varName] || match;
+    });
+    const resolvedArgs = JSON.parse(resolvedArgsStr);
+
+    // Execute the tool
+    const toolCall = {
+      id: `skill_${Date.now()}_${i}`,
+      name: step.tool,
+      arguments: resolvedArgs
+    };
+
+    setStatus(`Running ${step.tool}...`);
+    const result = await executeToolCall(toolCall);
+    clearStatus();
+
+    if (result.error) {
+      console.log(C.error(`  Error: ${result.error}`));
+    } else {
+      console.log(C.dim('  Output:'));
+      const output = result.output || 'No output';
+      const lines = output.split('\n').slice(0, 10);
+      lines.forEach(line => console.log(C.dim(`    ${line}`)));
+      if (output.split('\n').length > 10) {
+        console.log(C.dim(`    ... (${output.split('\n').length - 10} more lines)`));
+      }
+    }
+
+    // Add to conversation context
+    messages.push({
+      role: 'assistant',
+      content: `Executing skill step: ${step.tool}`,
+      tool_calls: [{
+        id: toolCall.id,
+        type: 'function',
+        function: { name: step.tool, arguments: JSON.stringify(resolvedArgs) }
+      }]
+    });
+
+    messages.push({
+      role: 'tool',
+      tool_call_id: toolCall.id,
+      content: result.error || result.output || 'No output'
+    });
+  }
+
+  console.log(C.ai(`\n  ✓ Skill '${skill.name}' completed\n`));
+  saveConversation(conversationId, messages);
 }
 
 // Animation frames - braille spinner
@@ -442,6 +562,9 @@ async function main() {
   if (!apiKey && config.provider !== 'ollama') {
     await setupWizard();
   }
+
+  // Initialize built-in skills
+  initBuiltinSkills();
 
   printBanner();
 
