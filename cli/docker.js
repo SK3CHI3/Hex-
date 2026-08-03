@@ -3,7 +3,6 @@ import { loadConfig } from './config.js';
 
 const CONTAINER = 'hex-kali-tools';
 const USER = 'hexagent';
-const TIMEOUT_MS = 5 * 60 * 1000;
 
 export async function runCommand(command, args = [], { onStdout, onStderr } = {}) {
   const config = loadConfig();
@@ -34,18 +33,11 @@ async function runDirect(command, args, { onStdout, onStderr }) {
       onStderr?.(text);
     });
 
-    const timeout = setTimeout(() => {
-      proc.kill('SIGTERM');
-      resolve({ stdout, stderr, exitCode: 124, timedOut: true });
-    }, TIMEOUT_MS);
-
     proc.on('close', (code) => {
-      clearTimeout(timeout);
       resolve({ stdout, stderr, exitCode: code, timedOut: false });
     });
 
     proc.on('error', (err) => {
-      clearTimeout(timeout);
       resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut: false });
     });
   });
@@ -73,18 +65,11 @@ async function runInDocker(command, args, { onStdout, onStderr }) {
       onStderr?.(text);
     });
 
-    const timeout = setTimeout(() => {
-      proc.kill('SIGTERM');
-      resolve({ stdout, stderr, exitCode: 124, timedOut: true });
-    }, TIMEOUT_MS);
-
     proc.on('close', (code) => {
-      clearTimeout(timeout);
       resolve({ stdout, stderr, exitCode: code, timedOut: false });
     });
 
     proc.on('error', (err) => {
-      clearTimeout(timeout);
       resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut: false });
     });
   });

@@ -136,14 +136,24 @@ export async function executeToolCall(toolCall) {
   });
 
   if (result.timedOut) {
-    return { error: 'Command timed out after 5 minutes' };
+    return { error: 'Command timed out' };
   }
 
   const output = result.stdout || result.stderr || 'Command completed with no output';
   const MAX_LEN = 8000;
-  const truncated = output.length > MAX_LEN
-    ? output.slice(0, MAX_LEN) + `\n\n... [output truncated, ${output.length - MAX_LEN} chars omitted]`
-    : output;
+  let truncated = output;
+  let wasTruncated = false;
 
-  return { output: truncated, exitCode: result.exitCode };
+  if (output.length > MAX_LEN) {
+    truncated = output.slice(0, MAX_LEN);
+    wasTruncated = true;
+  }
+
+  return {
+    output: truncated,
+    exitCode: result.exitCode,
+    fullLength: output.length,
+    wasTruncated,
+    expandHint: wasTruncated ? `\n\n[Output truncated. Full output: ${output.length} chars. Use 'show full' to see complete output.]` : null
+  };
 }

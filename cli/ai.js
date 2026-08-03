@@ -30,13 +30,11 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
 
   // Listen for external abort signal (Ctrl+C or Escape)
   if (abortSignal) {
     abortSignal.addEventListener('abort', () => {
       controller.abort();
-      clearTimeout(timeout);
     });
   }
 
@@ -60,9 +58,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    clearTimeout(timeout);
   } catch (err) {
-    clearTimeout(timeout);
     if (err.name === 'AbortError') {
       onError(new Error('Request cancelled by user.'));
     } else {
