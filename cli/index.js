@@ -4,13 +4,23 @@ import readline from 'readline';
 import chalk from 'chalk';
 import { chat } from './ai.js';
 import { tools } from './tools.js';
-import { executeToolCall } from './executor.js';
+import { executeToolCall } from './cli/executor.js';
 import { isDockerAvailable, isToolAvailable } from './docker.js';
 import { saveConversation, loadConversation, listConversations } from './storage.js';
 import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS } from './config.js';
 import { randomUUID } from 'crypto';
+import { platform } from 'os';
+
+const currentPlatform = platform();
+const platformInfo = currentPlatform === 'win32' 
+  ? 'Windows (use PowerShell/CMD commands like dir, Get-Command, where.exe)'
+  : currentPlatform === 'darwin'
+  ? 'macOS (use Unix commands like which, ls, grep)'
+  : 'Linux (use standard Linux commands)';
 
 const SYSTEM_PROMPT = `You are Hex, an AI-powered penetration testing assistant. You have access to 42+ security tools and can execute commands to help with security assessments.
+
+You are running on: ${platformInfo}
 
 Your capabilities include:
 - Network scanning (nmap, masscan, zmap)
@@ -27,7 +37,8 @@ IMPORTANT:
 - Only test targets the user explicitly authorizes
 - Explain your findings clearly
 - Suggest next steps after each scan
-- Be ethical — remind users to only test systems they own or have permission to test`;
+- Be ethical — remind users to only test systems they own or have permission to test
+- Use commands appropriate for the current operating system`;
 
 const C = {
   prompt: chalk.cyan,
