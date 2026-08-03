@@ -142,6 +142,7 @@ ${C.bold('Commands:')}
   /provider    Switch AI provider
   /setup       Run setup wizard to change provider/model
   /status      Check execution environment status
+  /thinking    Toggle thinking display (collapsed/expanded)
   /quit        Exit Hex
 `);
       return true;
@@ -248,6 +249,11 @@ ${C.bold('Commands:')}
       await checkStatus();
       return true;
 
+    case '/thinking':
+      showThinking = !showThinking;
+      console.log(C.dim(`  Thinking display: ${showThinking ? 'expanded' : 'collapsed'}`));
+      return true;
+
     case '/quit':
     case '/exit':
       console.log(C.dim('\nGoodbye.'));
@@ -286,6 +292,20 @@ async function checkStatus() {
   }
 }
 
+// Status indicator
+let showThinking = false; // Toggle with /thinking command
+let currentStatus = '';
+
+function setStatus(status) {
+  currentStatus = status;
+  // Clear line and show status
+  process.stdout.write('\r\x1b[K' + C.dim('  ' + status));
+}
+
+function clearStatus() {
+  process.stdout.write('\r\x1b[K');
+}
+
 async function sendAndReceive(userMessage) {
   messages.push({ role: 'user', content: userMessage });
 
@@ -299,19 +319,30 @@ async function sendAndReceive(userMessage) {
     const toolCalls = [];
     let error = null;
 
+    setStatus('AI is thinking...');
+
     await chat({
       messages,
       tools,
       onThinking: (chunk) => {
-        if (!thinkingContent) {
-          process.stdout.write(C.dim('\n  💭 Thinking: '));
-        }
-        process.stdout.write(C.dim(chunk));
         thinkingContent += chunk;
+        if (showThinking) {
+          clearStatus();
+          if (thinkingContent.length === chunk.length) {
+            process.stdout.write(C.dim('\n  💭 Thinking: '));
+          }
+          process.stdout.write(C.dim(chunk));
+        }
       },
       onContent: (chunk) => {
+        clearStatus();
         if (thinkingContent && !assistantContent) {
-          console.log('\n');
+          if (showThinking) {
+            console.log('\n');
+          } else {
+            // Show compact thinking indicator
+            console.log(C.dim('  💭 [Thinking] ') + C.dim('(' + thinkingContent.length + ' chars)'));
+          }
         }
         if (!assistantContent) {
           process.stdout.write(C.ai('\n  '));
@@ -327,6 +358,7 @@ async function sendAndReceive(userMessage) {
       },
     });
 
+    clearStatus();
     if (assistantContent) console.log('\n');
 
     if (error) {
@@ -351,8 +383,10 @@ async function sendAndReceive(userMessage) {
     });
 
     for (const tc of toolCalls) {
-      console.log(C.tool(`\n  ⚡ Running ${C.bold(tc.name)}...`));
+      setStatus(`Running ${tc.name}...`);
       const result = await executeToolCall(tc);
+      clearStatus();
+      console.log(C.tool(`  ⚡ Running ${C.bold(tc.name)}...`));
       console.log('');
 
       messages.push({
