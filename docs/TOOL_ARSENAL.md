@@ -1,12 +1,12 @@
-# 🛠️ Hex AI - Complete Tool Arsenal
+# Hex AI - Complete Tool Arsenal
 
-## 📊 **Total: 42 Professional Red Teaming Tools**
+## Total: 42 Professional Red Teaming Tools
 
 All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 🌐 **Network Scanning & Reconnaissance (7)**
+## Network Scanning & Reconnaissance (7)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -20,7 +20,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 🕸️ **Web Application Testing (10)**
+## Web Application Testing (10)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -37,7 +37,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 💀 **Active Directory & Windows (8)**
+## Active Directory & Windows (8)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -52,7 +52,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 🔐 **Password Cracking (2)**
+## Password Cracking (2)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -61,7 +61,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 💣 **Exploitation & Post-Exploitation (1)**
+## Exploitation & Post-Exploitation (1)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -69,7 +69,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 📡 **WiFi / Wireless Hacking (8)**
+## WiFi / Wireless Hacking (8)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -84,7 +84,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 🌉 **Pivoting & Tunneling (4)**
+## Pivoting & Tunneling (4)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -95,7 +95,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 📝 **Utilities & Reporting (2)**
+## Utilities & Reporting (2)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
@@ -104,7 +104,31 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 🎯 **Quick Use Examples**
+## Beyond the Built-in Tools
+
+**You're not limited to these 42 tools.** Hex can install and use any pentesting tool you need.
+
+### Ask Hex to Install Tools
+
+```
+❯ Install rustscan
+❯ Install ffuf
+❯ Install nuclei
+❯ Install the latest version of sqlmap
+```
+
+Hex will handle the installation and configuration for you. Once installed, use them just like built-in tools:
+
+```
+❯ Use rustscan to scan 192.168.1.1
+❯ Run ffuf against https://target.com
+```
+
+See [Custom Tools Guide](CUSTOM_TOOLS.md) for detailed instructions on installing and managing additional tools.
+
+---
+
+## Quick Use Examples
 
 ### Network Recon
 ```
@@ -141,7 +165,7 @@ All tools are **installed in Docker** and **integrated with AI**!
 
 ---
 
-## 🐳 **Docker Container**
+## Docker Container
 
 All tools are pre-installed in **Kali Linux Docker container** (`hex-kali-tools`):
 
@@ -166,47 +190,47 @@ All tools are pre-installed in **Kali Linux Docker container** (`hex-kali-tools`
 
 ---
 
-## 🚀 **AI Integration**
+## AI Integration
 
 Hex AI automatically:
-- ✅ **Detects tool needs** based on your requests
-- ✅ **Selects appropriate tools** using smart keyword matching
-- ✅ **Executes tools** in isolated Docker environment
-- ✅ **Parses results** and provides analysis
-- ✅ **Optimizes payload** (only sends tools when needed)
+- Detects tool needs based on your requests
+- Selects appropriate tools using smart keyword matching
+- Executes tools in isolated Docker environment
+- Parses results and provides analysis
+- Optimizes payload (only sends tools when needed)
 
 ### Smart Tool Loading
 
 ```
 User: "Hello"
-→ AI skips sending tools (saved 50KB payload)
+-> AI skips sending tools (saved 50KB payload)
 
 User: "Scan example.com for vulnerabilities"
-→ AI loads nuclei, nmap, httpx tools automatically
+-> AI loads nuclei, nmap, httpx tools automatically
 
 User: "Crack WiFi password"
-→ AI loads aircrack-ng, wifite, bettercap tools
+-> AI loads aircrack-ng, wifite, bettercap tools
 ```
 
 ---
 
-## 📈 **Statistics**
+## Statistics
 
 | Category | Tools | Installed |
 |----------|-------|-----------|
-| Network Recon | 7 | ✅ |
-| Web Testing | 10 | ✅ |
-| Active Directory | 8 | ✅ |
-| Password Cracking | 2 | ✅ |
-| Exploitation | 1 | ✅ |
-| WiFi Hacking | 8 | ✅ |
-| Pivoting | 4 | ✅ |
-| Utilities | 2 | ✅ |
-| **TOTAL** | **42** | **✅** |
+| Network Recon | 7 | Yes |
+| Web Testing | 10 | Yes |
+| Active Directory | 8 | Yes |
+| Password Cracking | 2 | Yes |
+| Exploitation | 1 | Yes |
+| WiFi Hacking | 8 | Yes |
+| Pivoting | 4 | Yes |
+| Utilities | 2 | Yes |
+| **TOTAL** | **42** | **Yes** |
 
 ---
 
-## 🔒 **Security Notes**
+## Security Notes
 
 - All tools run in **isolated Docker container**
 - **Non-root user** (`hexagent`) for security
@@ -216,7 +240,7 @@ User: "Crack WiFi password"
 
 ---
 
-## 🛠️ **Rebuild Docker Container**
+## Rebuild Docker Container
 
 If you need to rebuild with all new tools:
 
@@ -232,14 +256,3 @@ docker-compose up -d
 ---
 
 **Built by Victor** | Powered by ModelScope (Qwen3.7-Plus) | Kali Linux Tools
-
-
-
-
-
-
-
-
-
-
-
