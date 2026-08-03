@@ -281,48 +281,57 @@ async function checkStatus() {
 async function sendAndReceive(userMessage) {
   messages.push({ role: 'user', content: userMessage });
 
-  let assistantContent = '';
-  let thinkingContent = '';
-  const toolCalls = [];
-  let error = null;
+  const MAX_ROUNDS = 10; // Prevent infinite loops
+  let round = 0;
 
-  await chat({
-    messages,
-    tools,
-    onThinking: (chunk) => {
-      if (!thinkingContent) {
-        process.stdout.write(C.dim('\n  💭 Thinking: '));
-      }
-      process.stdout.write(C.dim(chunk));
-      thinkingContent += chunk;
-    },
-    onContent: (chunk) => {
-      if (thinkingContent && !assistantContent) {
-        // Transition from thinking to content
-        console.log('\n');
-      }
-      if (!assistantContent) {
-        process.stdout.write(C.ai('\n  '));
-      }
-      process.stdout.write(C.ai(chunk));
-      assistantContent += chunk;
-    },
-    onToolCall: (tc) => {
-      toolCalls.push(tc);
-    },
-    onError: (err) => {
-      error = err;
-    },
-  });
+  while (round < MAX_ROUNDS) {
+    round++;
+    let assistantContent = '';
+    let thinkingContent = '';
+    const toolCalls = [];
+    let error = null;
 
-  if (assistantContent) console.log('\n');
+    await chat({
+      messages,
+      tools,
+      onThinking: (chunk) => {
+        if (!thinkingContent) {
+          process.stdout.write(C.dim('\n  💭 Thinking: '));
+        }
+        process.stdout.write(C.dim(chunk));
+        thinkingContent += chunk;
+      },
+      onContent: (chunk) => {
+        if (thinkingContent && !assistantContent) {
+          console.log('\n');
+        }
+        if (!assistantContent) {
+          process.stdout.write(C.ai('\n  '));
+        }
+        process.stdout.write(C.ai(chunk));
+        assistantContent += chunk;
+      },
+      onToolCall: (tc) => {
+        toolCalls.push(tc);
+      },
+      onError: (err) => {
+        error = err;
+      },
+    });
 
-  if (error) {
-    console.log(C.error(`  Error: ${error.message}`));
-    return;
-  }
+    if (assistantContent) console.log('\n');
 
-  if (toolCalls.length > 0) {
+    if (error) {
+      console.log(C.error(`  Error: ${error.message}`));
+      return;
+    }
+
+    // If no tool calls, we're done
+    if (toolCalls.length === 0) {
+      break;
+    }
+
+    // Execute tool calls and add results to messages
     messages.push({
       role: 'assistant',
       content: assistantContent || null,
@@ -345,41 +354,11 @@ async function sendAndReceive(userMessage) {
       });
     }
 
-    let followupContent = '';
-    let followupThinking = '';
-    let followupError = null;
+    // Loop continues - AI will see tool results and can call more tools
+  }
 
-    await chat({
-      messages,
-      tools,
-      onThinking: (chunk) => {
-        if (!followupThinking) {
-          process.stdout.write(C.dim('\n  💭 Thinking: '));
-        }
-        process.stdout.write(C.dim(chunk));
-        followupThinking += chunk;
-      },
-      onContent: (chunk) => {
-        if (followupThinking && !followupContent) {
-          console.log('\n');
-        }
-        if (!followupContent) {
-          process.stdout.write(C.ai('\n  '));
-        }
-        process.stdout.write(C.ai(chunk));
-        followupContent += chunk;
-      },
-      onToolCall: () => {},
-      onError: (err) => { followupError = err; },
-    });
-
-    if (followupContent) console.log('\n');
-
-    if (followupError) {
-      console.log(C.error(`  Error: ${followupError.message}`));
-    }
-
-    messages.push({ role: 'assistant', content: followupContent || null });
+  if (round >= MAX_ROUNDS) {
+    console.log(C.dim('\n  [Max rounds reached]'));
   }
 
   saveConversation(conversationId, messages);
