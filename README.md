@@ -29,13 +29,20 @@ Hex is a terminal-native AI pentesting assistant that runs 42+ security tools th
 ## Installation
 
 ```bash
+npm install -g hex-ai
+hex
+```
+
+The setup wizard configures your AI provider and execution mode on first run.
+
+### Development
+
+```bash
 git clone https://github.com/SK3CHI3/Hex-.git
 cd Hex-
 npm install
 npm start
 ```
-
-The setup wizard configures your AI provider and execution mode on first run.
 
 ---
 
