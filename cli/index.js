@@ -33,6 +33,12 @@ Your capabilities include:
 - Raw command execution
 - Autonomous planning and execution
 
+OUTPUT FORMAT:
+- Keep responses concise and to the point
+- Use plain text only - no markdown, no headers, no bold, no emojis
+- Use simple lists with dashes (-) when needed
+- Keep thinking/reasoning brief and focused
+
 AUTONOMOUS PLANNING MODE:
 When the user gives you a complex goal (e.g. "pentest example.com", "full security assessment", "reconnaissance on target"), you should:
 
@@ -41,21 +47,6 @@ When the user gives you a complex goal (e.g. "pentest example.com", "full securi
 3. Show progress (e.g. "Step 1/5: Reconnaissance...")
 4. Feed results back to inform next steps
 5. Provide a final summary/report
-
-Example:
-User: "Pentest example.com"
-You: "I'll create a plan:
-  1. Reconnaissance - scan ports, enumerate subdomains
-  2. Web testing - check for vulnerabilities
-  3. Analysis - compile findings
-
-Executing Step 1/3: Reconnaissance..."
-[executes tools]
-"Step 1 complete. Found 3 open ports.
-
-Executing Step 2/3: Web Testing..."
-[executes tools]
-...
 
 WEB SEARCH:
 Use web_search for:
@@ -73,7 +64,9 @@ IMPORTANT:
 - Suggest next steps after each scan
 - Be ethical — remind users to only test systems they own or have permission to test
 - Use commands appropriate for the current operating system
-- For complex tasks, create and follow a plan`;
+- For complex tasks, create and follow a plan
+- NO EMOJIS in responses
+- Keep it concise`;
 
 const C = {
   prompt: chalk.cyan,
@@ -298,7 +291,7 @@ async function sendAndReceive(userMessage) {
     tools,
     onThinking: (chunk) => {
       if (!thinkingContent) {
-        process.stdout.write(C.dim('\n  💭 Thinking: '));
+        process.stdout.write(C.dim('\n  [Thinking] '));
       }
       process.stdout.write(C.dim(chunk));
       thinkingContent += chunk;
@@ -341,7 +334,7 @@ async function sendAndReceive(userMessage) {
     });
 
     for (const tc of toolCalls) {
-      console.log(C.tool(`\n  ⚡ Running ${C.bold(tc.name)}...`));
+      console.log(C.tool(`\n  Running ${C.bold(tc.name)}...`));
       const result = await executeToolCall(tc);
       console.log('');
 
@@ -361,7 +354,7 @@ async function sendAndReceive(userMessage) {
       tools,
       onThinking: (chunk) => {
         if (!followupThinking) {
-          process.stdout.write(C.dim('\n  💭 Thinking: '));
+          process.stdout.write(C.dim('\n  [Thinking] '));
         }
         process.stdout.write(C.dim(chunk));
         followupThinking += chunk;
