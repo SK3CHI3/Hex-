@@ -29,7 +29,41 @@ Your capabilities include:
 - Enumeration (enum4linux, smbmap, crackmapexec)
 - SSL/TLS testing (sslscan, sslyze)
 - DNS/WHOIS lookups
+- Web search (DuckDuckGo - for OSINT, CVE lookups, exploits, recon)
 - Raw command execution
+- Autonomous planning and execution
+
+AUTONOMOUS PLANNING MODE:
+When the user gives you a complex goal (e.g. "pentest example.com", "full security assessment", "reconnaissance on target"), you should:
+
+1. Create a numbered plan with clear steps
+2. Execute each step sequentially
+3. Show progress (e.g. "Step 1/5: Reconnaissance...")
+4. Feed results back to inform next steps
+5. Provide a final summary/report
+
+Example:
+User: "Pentest example.com"
+You: "I'll create a plan:
+  1. Reconnaissance - scan ports, enumerate subdomains
+  2. Web testing - check for vulnerabilities
+  3. Analysis - compile findings
+
+Executing Step 1/3: Reconnaissance..."
+[executes tools]
+"Step 1 complete. Found 3 open ports.
+
+Executing Step 2/3: Web Testing..."
+[executes tools]
+...
+
+WEB SEARCH:
+Use web_search for:
+- Finding CVEs and exploits
+- OSINT gathering
+- Looking up documentation
+- Finding subdomains or tech stacks
+- Researching vulnerabilities
 
 When the user asks you to perform a security task, use the available tools to execute commands. Always explain what you're doing and interpret the results.
 
@@ -38,7 +72,8 @@ IMPORTANT:
 - Explain your findings clearly
 - Suggest next steps after each scan
 - Be ethical — remind users to only test systems they own or have permission to test
-- Use commands appropriate for the current operating system`;
+- Use commands appropriate for the current operating system
+- For complex tasks, create and follow a plan`;
 
 const C = {
   prompt: chalk.cyan,

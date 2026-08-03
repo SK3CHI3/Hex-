@@ -224,6 +224,21 @@ export const tools = [
   {
     type: 'function',
     function: {
+      name: 'web_search',
+      description: 'Search the internet for information. Useful for OSINT, finding CVEs, exploits, documentation, and reconnaissance.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query (e.g. "CVE-2024-1234 exploit", "target.com subdomains")' },
+          max_results: { type: 'integer', minimum: 1, maximum: 10, description: 'Number of results to return (default: 5)' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'raw_command',
       description: 'Execute a raw shell command in the Kali container. Use with caution.',
       parameters: {
