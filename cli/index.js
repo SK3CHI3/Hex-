@@ -52,11 +52,11 @@ For complex tasks, create and follow a plan:
 Be concise. When uncertain about a command, ask only for the missing technical information.`;
 
 const C = {
-  prompt: chalk.cyan,
-  ai: chalk.green,
-  tool: chalk.yellow,
-  error: chalk.red,
-  dim: chalk.gray,
+  prompt: chalk.hex('#00FF41'),      // Matrix green for prompt
+  ai: chalk.hex('#98C379'),          // Soft sage green for AI responses
+  tool: chalk.hex('#E5C07B'),        // Warm amber for tools
+  error: chalk.hex('#E06C75'),       // Muted red for errors
+  dim: chalk.hex('#5C6370'),         // Subtle gray for dimmed text
   bold: chalk.bold,
 };
 
@@ -82,12 +82,12 @@ function prompt() {
 
 function printBanner() {
   console.log('');
-  console.log(C.bold.green('  ██╗  ██╗███████╗██╗  ██╗'));
-  console.log(C.bold.green('  ██║  ██║██╔════╝╚██╗██╔╝'));
-  console.log(C.bold.green('  ███████║███████╗ ╚███╔╝ '));
-  console.log(C.bold.green('  ██╔══██║██╔════╝ ██╔██╗ '));
-  console.log(C.bold.green('  ██║  ██║███████╗██╔╝ ██╗'));
-  console.log(C.bold.green('  ╚═╝  ╚═╝╚══════╝ ╚═╝  ╚═╝'));
+  console.log(chalk.hex('#00FF41').bold('  ██╗  ██╗███████╗██╗  ██╗'));
+  console.log(chalk.hex('#00FF41').bold('  ██║  ██║██╔════╝╚██╗██╔╝'));
+  console.log(chalk.hex('#00FF41').bold('  ███████║███████╗ ╚███╔╝ '));
+  console.log(chalk.hex('#00FF41').bold('  ██╔══██║██╔════╝ ██╔██╗ '));
+  console.log(chalk.hex('#00FF41').bold('  ██║  ██║███████╗██╔╝ ██╗'));
+  console.log(chalk.hex('#00FF41').bold('  ╚═╝  ╚═╝╚══════╝ ╚═╝  ╚═╝'));
   console.log('');
   console.log(C.dim('  The AI-Powered Pentesting Assistant'));
   console.log(C.dim('  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
