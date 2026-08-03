@@ -291,7 +291,7 @@ async function sendAndReceive(userMessage) {
     tools,
     onThinking: (chunk) => {
       if (!thinkingContent) {
-        process.stdout.write(C.dim('\n  [Thinking] '));
+        process.stdout.write(C.dim('\n  💭 Thinking: '));
       }
       process.stdout.write(C.dim(chunk));
       thinkingContent += chunk;
@@ -334,7 +334,7 @@ async function sendAndReceive(userMessage) {
     });
 
     for (const tc of toolCalls) {
-      console.log(C.tool(`\n  Running ${C.bold(tc.name)}...`));
+      console.log(C.tool(`\n  ⚡ Running ${C.bold(tc.name)}...`));
       const result = await executeToolCall(tc);
       console.log('');
 
@@ -354,7 +354,7 @@ async function sendAndReceive(userMessage) {
       tools,
       onThinking: (chunk) => {
         if (!followupThinking) {
-          process.stdout.write(C.dim('\n  [Thinking] '));
+          process.stdout.write(C.dim('\n  💭 Thinking: '));
         }
         process.stdout.write(C.dim(chunk));
         followupThinking += chunk;
