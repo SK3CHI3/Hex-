@@ -32,17 +32,49 @@ The setup wizard will guide you through:
 
 ```
   ██╗  ██╗███████╗██╗  ██╗
-  ██║  ██║██╔════╝██║  ██║
-  ███████║█████╗  ███████║
-  ██╔══██║██╔══╝  ██╔══██║
-  ██║  ██║███████╗██║  ██║
-  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+  ██║  ██║██╔════╝╚██╗██╔╝
+  ███████║███████╗ ╚███╔╝ 
+  ██╔══██║██╔════╝ ██╔██╗ 
+  ██║  ██║███████╗██╔╝ ██╗
+  ╚═╝  ╚═╝╚══════╝ ╚═╝  ╚═╝
 
-  AI-Powered Pentesting Assistant
-  Provider: OpenAI | Model: gpt-4-turbo
+  The AI-Powered Pentesting Assistant
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Provider: ModelScope | Model: Qwen3.7-Plus
   Mode: Direct | Type /help for commands
 
 ❯ scan 192.168.1.1 for open ports
+```
+
+## Autonomous Planning Mode
+
+For complex tasks, Hex creates and executes a plan automatically:
+
+```
+❯ pentest example.com
+
+I'll create a plan:
+  1. Reconnaissance - scan ports, enumerate subdomains
+  2. Web testing - check for vulnerabilities
+  3. Analysis - compile findings
+
+Executing Step 1/3: Reconnaissance...
+[executes nmap, subfinder]
+Step 1 complete. Found 3 open ports, 5 subdomains.
+
+Executing Step 2/3: Web Testing...
+[executes nikto, sqlmap]
+...
+```
+
+## Web Search
+
+Hex can search the internet for OSINT, CVE lookups, and research:
+
+```
+❯ search for CVE-2024-1234
+❯ find information about SQL injection
+❯ research target.com technology stack
 ```
 
 ## Commands
@@ -61,11 +93,24 @@ The setup wizard will guide you through:
 
 ## Example Prompts
 
+### Basic Scanning
 - "Scan 192.168.1.1 for open ports"
 - "Check example.com for SQL injection"
 - "Find hidden directories on http://testsite.local"
+
+### Autonomous Tasks
+- "Pentest example.com"
+- "Full security assessment of target.com"
+- "Reconnaissance on 10.0.0.1"
+
+### Research & OSINT
+- "Search for recent CVEs in Apache"
+- "Find information about Log4j vulnerability"
+- "Research target.com technology stack"
+
+### Active Directory
 - "Enumerate SMB shares on 192.168.1.100"
-- "What SSL/TLS protocols does example.com support?"
+- "Check SSL/TLS configuration for example.com"
 
 ## Switching Providers
 
