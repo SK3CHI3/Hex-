@@ -1,125 +1,125 @@
-# ⚡ Hex AI - Quick Start
+# Hex AI - Quick Start
 
-## 🎯 What You Get
+## Install & Run
 
-- **AI-powered pentesting assistant** with 42+ security tools
-- **Real-time tool execution** in isolated Docker containers
-- **Local-first** — runs on your machine, no cloud costs
-- **ModelScope Qwen3.7-Plus** — free tier available
-
----
-
-## 🚀 Quick Setup (5 minutes + 15 min Docker build)
-
-### Prerequisites
-
-- **Node.js 18+** and npm
-- **Docker Desktop** (running)
-- **Git**
-
-### Installation
-
-**Windows:**
-```powershell
-# 1. Clone the repo
-git clone https://github.com/SK3CHI3/Hex-.git
-cd Hex-
-
-# 2. Run automated setup (installs deps, builds Docker, creates .env files)
-.\setup.ps1
-
-# 3. Edit .env files with your API keys
-#    - .env → VITE_MODELSCOPE_API_KEY
-#    - server\mcp-adapter\.env → MODELSCOPE_API_KEY
-#    - server\.env → SUPABASE_URL, SUPABASE_SERVICE_KEY
-
-# 4. Start all services
-.\start.ps1
-```
-
-**Linux/Mac:**
 ```bash
-# 1. Clone the repo
 git clone https://github.com/SK3CHI3/Hex-.git
 cd Hex-
-
-# 2. Run automated setup
-chmod +x setup.sh
-./setup.sh
-
-# 3. Edit .env files with your API keys
-
-# 4. Start all services
-./start-dev.sh
+npm install
+npm start                    # Setup wizard runs on first launch
 ```
 
----
+## First Run
 
-## ✅ Test It
+The setup wizard will guide you through:
 
-1. Open http://localhost:8080
-2. Sign in with GitHub
-3. Try: **"Scan 127.0.0.1 with nmap quick scan"**
-4. Watch the terminal appear with real output! 🔥
+1. **Choose AI Provider**
+   - OpenAI (GPT-4, GPT-3.5)
+   - Anthropic (Claude 3)
+   - Google Gemini
+   - Ollama (local, free)
+   - Custom (OpenAI-compatible)
 
----
+2. **Enter API Key** (not needed for Ollama)
 
-## 🛠️ What You Can Do
+3. **Select Model** (e.g., gpt-4-turbo, claude-3-opus)
 
-Try these commands:
+4. **Choose Execution Mode**
+   - Direct (run tools on your machine) — default
+   - Docker (run tools in Kali container) — optional
 
-- **"Scan my local network"** → Nmap
-- **"Find subdomains of example.com"** → Subfinder
-- **"Check example.com for vulnerabilities"** → Nuclei
-- **"Brute force SSH on 192.168.1.1"** → Hydra
-- **"Analyze this APK for malware"** → APK analysis
+## Usage
 
----
+```
+  ██╗  ██╗███████╗██╗  ██╗
+  ██║  ██║██╔════╝██║  ██║
+  ███████║█████╗  ███████║
+  ██╔══██║██╔══╝  ██╔══██║
+  ██║  ██║███████╗██║  ██║
+  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 
-## 📚 Full Documentation
+  AI-Powered Pentesting Assistant
+  Provider: OpenAI | Model: gpt-4-turbo
+  Mode: Direct | Type /help for commands
 
-- **[Setup Guide](SETUP_GUIDE.md)** — Detailed installation instructions
-- **[Architecture](ARCHITECTURE.md)** — System design and components
-- **[Tool Arsenal](TOOL_ARSENAL.md)** — All 42+ available tools
-- **[API Documentation](API.md)** — ModelScope integration details
-
----
-
-## 🔧 Daily Usage
-
-```powershell
-# Start everything
-.\start.ps1
-
-# Stop everything
-.\stop.ps1
+❯ scan 192.168.1.1 for open ports
 ```
 
----
+## Commands
 
-## 🆘 Troubleshooting
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands |
+| `/clear` | Clear conversation |
+| `/history` | List saved conversations |
+| `/resume <id>` | Resume a conversation |
+| `/tools` | List available pentesting tools |
+| `/config` | Show current configuration |
+| `/setup` | Re-run setup wizard (change provider/model) |
+| `/status` | Check execution environment |
+| `/quit` | Exit Hex |
 
-**Docker not running?**
-- Start Docker Desktop first
-- Check with: `docker ps`
+## Example Prompts
 
-**Port already in use?**
-- Stop other services on ports 8080, 8081, 8083
-- Or edit the port in the respective `.env` files
+- "Scan 192.168.1.1 for open ports"
+- "Check example.com for SQL injection"
+- "Find hidden directories on http://testsite.local"
+- "Enumerate SMB shares on 192.168.1.100"
+- "What SSL/TLS protocols does example.com support?"
 
-**API key errors?**
-- Verify your ModelScope API key at https://modelscope.ai
-- Check `server/mcp-adapter/.env` has the key
+## Switching Providers
 
-**Full troubleshooting guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md#troubleshooting)
+Run `/setup` anytime to change AI provider or model:
 
----
+```
+❯ /setup
 
-## 📞 Support
+╔═══════════════════════════════════════╗
+║  Welcome to Hex - Initial Setup      ║
+╚═══════════════════════════════════════╝
 
-- **Issues**: [GitHub Issues](https://github.com/SK3CHI3/Hex-/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/SK3CHI3/Hex-/discussions)
+Select AI Provider:
+  1. OpenAI
+  2. Anthropic
+  3. Google Gemini
+  4. Ollama (Local)
+  5. Custom (OpenAI-compatible)
+```
 
----
+## Using Ollama (Local/Free)
 
-**🔒 Hack Ethically • Learn Continuously • Share Knowledge**
+1. Install Ollama: https://ollama.com
+2. Download a model: `ollama pull llama3`
+3. Start Ollama: `ollama serve`
+4. Run Hex, select "Ollama" in setup
+5. No API key needed!
+
+## Using Docker (Optional)
+
+If you prefer isolated tool execution:
+
+```bash
+# Build Kali container (~15-30 min)
+npm run docker:build
+
+# Start container
+npm run docker:up
+
+# In Hex, run /setup and select "Docker" execution mode
+```
+
+## Configuration
+
+Your settings are saved to `~/.hex/config.json`:
+
+```json
+{
+  "provider": "openai",
+  "apiKey": "sk-...",
+  "baseUrl": "https://api.openai.com/v1",
+  "model": "gpt-4-turbo",
+  "executionMode": "direct"
+}
+```
+
+Edit this file directly or use `/setup` to reconfigure.
