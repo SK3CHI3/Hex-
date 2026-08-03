@@ -295,6 +295,7 @@ async function checkStatus() {
 // Status indicator
 let showThinking = false; // Toggle with /thinking command
 let currentStatus = '';
+let currentAbortController = null; // For Ctrl+C/Escape handling
 
 function setStatus(status) {
   currentStatus = status;
@@ -306,11 +307,25 @@ function clearStatus() {
   process.stdout.write('\r\x1b[K');
 }
 
+// Handle Ctrl+C and Escape to abort current operation
+process.on('SIGINT', () => {
+  if (currentAbortController) {
+    console.log(C.dim('\n\n  [Operation cancelled]'));
+    currentAbortController.abort();
+    currentAbortController = null;
+    clearStatus();
+  } else {
+    console.log(C.dim('\nGoodbye.'));
+    process.exit(0);
+  }
+});
+
 async function sendAndReceive(userMessage) {
   messages.push({ role: 'user', content: userMessage });
 
   const MAX_ROUNDS = 10; // Prevent infinite loops
   let round = 0;
+  let cancelled = false;
 
   while (round < MAX_ROUNDS) {
     round++;
@@ -319,11 +334,15 @@ async function sendAndReceive(userMessage) {
     const toolCalls = [];
     let error = null;
 
+    // Create abort controller for this round
+    currentAbortController = new AbortController();
+
     setStatus('AI is thinking...');
 
     await chat({
       messages,
       tools,
+      abortSignal: currentAbortController.signal,
       onThinking: (chunk) => {
         thinkingContent += chunk;
         if (showThinking) {
@@ -359,6 +378,14 @@ async function sendAndReceive(userMessage) {
     });
 
     clearStatus();
+    currentAbortController = null;
+
+    // Check if operation was cancelled
+    if (error && error.message === 'Request cancelled by user.') {
+      cancelled = true;
+      break;
+    }
+
     if (assistantContent) console.log('\n');
 
     if (error) {
@@ -397,6 +424,11 @@ async function sendAndReceive(userMessage) {
     }
 
     // Loop continues - AI will see tool results and can call more tools
+  }
+
+  if (cancelled) {
+    console.log(C.dim('  [Cancelled]'));
+    return;
   }
 
   if (round >= MAX_ROUNDS) {

@@ -1,6 +1,6 @@
 import { loadConfig, getProvider, getApiKey, getBaseUrl } from './config.js';
 
-export async function chat({ messages, tools, onContent, onToolCall, onThinking, onError }) {
+export async function chat({ messages, tools, onContent, onToolCall, onThinking, onError, abortSignal }) {
   const config = loadConfig();
   const provider = getProvider();
   const apiKey = getApiKey(config.provider);
@@ -32,6 +32,14 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120000);
 
+  // Listen for external abort signal (Ctrl+C or Escape)
+  if (abortSignal) {
+    abortSignal.addEventListener('abort', () => {
+      controller.abort();
+      clearTimeout(timeout);
+    });
+  }
+
   let response;
   try {
     const headers = {
@@ -56,7 +64,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   } catch (err) {
     clearTimeout(timeout);
     if (err.name === 'AbortError') {
-      onError(new Error('Request timed out after 2 minutes.'));
+      onError(new Error('Request cancelled by user.'));
     } else {
       onError(err);
     }
