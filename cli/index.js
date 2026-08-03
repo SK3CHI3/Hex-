@@ -325,8 +325,9 @@ async function sendAndReceive(userMessage) {
 
 async function main() {
   const config = loadConfig();
-  
-  if (!config.apiKey && config.provider !== 'ollama') {
+  const apiKey = getApiKey(config.provider);
+
+  if (!apiKey && config.provider !== 'ollama') {
     await setupWizard();
   }
 
