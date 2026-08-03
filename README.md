@@ -8,7 +8,6 @@
   ██║  ██║███████╗██╔╝ ██╗
   ╚═╝  ╚═╝╚══════╝ ╚═╝  ╚═╝
 ```
-
 **AI-Powered Pentesting Assistant for Terminal**
 
 [![Node](https://img.shields.io/badge/Node-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
