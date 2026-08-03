@@ -162,7 +162,11 @@ rl.on('close', () => {
 
 function prompt() {
   return new Promise((resolve) => {
-    rl.question(C.prompt('\n❯ '), resolve);
+    startCursorAnimation();
+    rl.question('', (answer) => {
+      stopCursorAnimation();
+      resolve(answer);
+    });
   });
 }
 
@@ -353,19 +357,64 @@ async function checkStatus() {
   }
 }
 
+// Animation frames
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+const CURSOR_FRAMES = ['❯', '❮', '◆', '◇'];
+
+let spinnerIndex = 0;
+let cursorIndex = 0;
+let spinnerInterval = null;
+let cursorInterval = null;
+
 // Status indicator
 let showThinking = false; // Toggle with /thinking command
 let currentStatus = '';
 let currentAbortController = null; // For Ctrl+C/Escape handling
 
+function startSpinner(status) {
+  if (spinnerInterval) clearInterval(spinnerInterval);
+  spinnerIndex = 0;
+  spinnerInterval = setInterval(() => {
+    const frame = SPINNER_FRAMES[spinnerIndex % SPINNER_FRAMES.length];
+    process.stdout.write('\r\x1b[K' + C.dim(`  ${frame} ${status}`));
+    spinnerIndex++;
+  }, 80);
+}
+
+function stopSpinner() {
+  if (spinnerInterval) {
+    clearInterval(spinnerInterval);
+    spinnerInterval = null;
+  }
+  process.stdout.write('\r\x1b[K');
+}
+
+function startCursorAnimation() {
+  if (cursorInterval) clearInterval(cursorInterval);
+  cursorIndex = 0;
+  cursorInterval = setInterval(() => {
+    const frame = CURSOR_FRAMES[cursorIndex % CURSOR_FRAMES.length];
+    // Alternate between bright and dim cyan for blinking effect
+    const color = cursorIndex % 2 === 0 ? chalk.cyan : chalk.cyan.dim;
+    process.stdout.write(`\r${color(frame)} `);
+    cursorIndex++;
+  }, 500);
+}
+
+function stopCursorAnimation() {
+  if (cursorInterval) {
+    clearInterval(cursorInterval);
+    cursorInterval = null;
+  }
+}
+
 function setStatus(status) {
   currentStatus = status;
-  // Clear line and show status
-  process.stdout.write('\r\x1b[K' + C.dim('  ' + status));
+  startSpinner(status);
 }
 
 function clearStatus() {
-  process.stdout.write('\r\x1b[K');
+  stopSpinner();
 }
 
 // Handle Ctrl+C and Escape to abort current operation
