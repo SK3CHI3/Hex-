@@ -4,7 +4,7 @@ import readline from 'readline';
 import chalk from 'chalk';
 import { chat } from './ai.js';
 import { tools } from './tools.js';
-import { executeToolCall } from './cli/executor.js';
+import { executeToolCall } from './executor.js';
 import { isDockerAvailable, isToolAvailable } from './docker.js';
 import { saveConversation, loadConversation, listConversations } from './storage.js';
 import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS } from './config.js';
