@@ -289,13 +289,25 @@ async function sendAndReceive(userMessage) {
   messages.push({ role: 'user', content: userMessage });
 
   let assistantContent = '';
+  let thinkingContent = '';
   const toolCalls = [];
   let error = null;
 
   await chat({
     messages,
     tools,
+    onThinking: (chunk) => {
+      if (!thinkingContent) {
+        process.stdout.write(C.dim('\n  💭 Thinking: '));
+      }
+      process.stdout.write(C.dim(chunk));
+      thinkingContent += chunk;
+    },
     onContent: (chunk) => {
+      if (thinkingContent && !assistantContent) {
+        // Transition from thinking to content
+        console.log('\n');
+      }
       if (!assistantContent) {
         process.stdout.write(C.ai('\n  '));
       }
@@ -341,12 +353,23 @@ async function sendAndReceive(userMessage) {
     }
 
     let followupContent = '';
+    let followupThinking = '';
     let followupError = null;
 
     await chat({
       messages,
       tools,
+      onThinking: (chunk) => {
+        if (!followupThinking) {
+          process.stdout.write(C.dim('\n  💭 Thinking: '));
+        }
+        process.stdout.write(C.dim(chunk));
+        followupThinking += chunk;
+      },
       onContent: (chunk) => {
+        if (followupThinking && !followupContent) {
+          console.log('\n');
+        }
         if (!followupContent) {
           process.stdout.write(C.ai('\n  '));
         }

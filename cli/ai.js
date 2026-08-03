@@ -1,6 +1,6 @@
 import { loadConfig, getProvider, getApiKey, getBaseUrl } from './config.js';
 
-export async function chat({ messages, tools, onContent, onToolCall, onError }) {
+export async function chat({ messages, tools, onContent, onToolCall, onThinking, onError }) {
   const config = loadConfig();
   const provider = getProvider();
   const apiKey = getApiKey(config.provider);
@@ -91,6 +91,14 @@ export async function chat({ messages, tools, onContent, onToolCall, onError }) 
 
         if (delta.content) {
           onContent(delta.content);
+        }
+
+        // Handle thinking/reasoning content from models that support it
+        if (delta.reasoning_content || delta.thinking) {
+          const thinkingContent = delta.reasoning_content || delta.thinking;
+          if (onThinking) {
+            onThinking(thinkingContent);
+          }
         }
 
         if (delta.tool_calls) {
