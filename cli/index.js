@@ -9,11 +9,16 @@ import { isDockerAvailable, isToolAvailable } from './docker.js';
 import { saveConversation, loadConversation, listConversations } from './storage.js';
 import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS } from './config.js';
 import { listSkills, getSkill, saveSkill, initBuiltinSkills } from './skills.js';
+import { handleCommand } from './commands.js';
+import { countMessagesTokens, getTokenLimit, shouldSummarize } from './tokens.js';
+import { summarizeOldMessages, truncateMessages } from './summary.js';
+import { ProgressIndicator, StepProgress, startProgress, stopProgress, updateProgress } from './progress.js';
+import { formatter } from './output.js';
 import { randomUUID } from 'crypto';
 import { platform } from 'os';
 
 const currentPlatform = platform();
-const platformInfo = currentPlatform === 'win32' 
+const platformInfo = currentPlatform === 'win32'
   ? 'Windows (use PowerShell/CMD commands like dir, Get-Command, where.exe)'
   : currentPlatform === 'darwin'
   ? 'macOS (use Unix commands like which, ls, grep)'
@@ -52,16 +57,19 @@ For complex tasks, create and follow a plan:
 Be concise. When uncertain about a command, ask only for the missing technical information.`;
 
 const C = {
-  prompt: chalk.hex('#00FF41'),      // Matrix green for prompt
-  ai: chalk.hex('#98C379'),          // Soft sage green for AI responses
-  tool: chalk.hex('#E5C07B'),        // Warm amber for tools
-  error: chalk.hex('#E06C75'),       // Muted red for errors
-  dim: chalk.hex('#5C6370'),         // Subtle gray for dimmed text
+  prompt: chalk.hex('#00FF41'),
+  ai: chalk.hex('#98C379'),
+  tool: chalk.hex('#E5C07B'),
+  error: chalk.hex('#E06C75'),
+  dim: chalk.hex('#5C6370'),
   bold: chalk.bold,
+  green: chalk.green,
 };
 
 let conversationId = randomUUID();
 let messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+let showThinking = false;
+let currentAbortController = null;
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -97,293 +105,12 @@ function printBanner() {
   const model = config.model || provider.defaultModel;
   console.log(C.dim(`  Provider: ${provider.name} | Model: ${model}`));
   console.log(C.dim(`  Mode: ${config.executionMode === 'docker' ? 'Docker' : 'Direct'} | Type /help for commands`));
-  console.log('');
-}
-
-async function handleCommand(input) {
-  const parts = input.trim().split(/\s+/);
-  const cmd = parts[0].toLowerCase();
-
-  switch (cmd) {
-    case '/help':
-      console.log(`
-${C.bold('Commands:')}
-  /help        Show this help
-  /clear       Clear conversation and start fresh
-  /history     List saved conversations
-  /resume <id> Resume a previous conversation
-  /tools       List available pentesting tools
-  /skills      List available skills
-  /skill <name> [vars]  Run a skill with optional variables
-  /config      Show current configuration
-  /provider    Switch AI provider
-  /setup       Run setup wizard to change provider/model
-  /status      Check execution environment status
-  /thinking    Toggle thinking display (collapsed/expanded)
-  /quit        Exit Hex
-`);
-      return true;
-
-    case '/clear':
-      conversationId = randomUUID();
-      messages = [{ role: 'system', content: SYSTEM_PROMPT }];
-      console.log(C.dim('Conversation cleared.'));
-      return true;
-
-    case '/history': {
-      const convos = listConversations();
-      if (convos.length === 0) {
-        console.log(C.dim('No saved conversations.'));
-      } else {
-        console.log(C.bold('\n  Saved conversations:'));
-        for (const c of convos.slice(0, 10)) {
-          console.log(C.dim(`  ${c.id.slice(0, 8)}  ${c.messageCount} msgs  ${c.updatedAt}`));
-        }
-        console.log('');
-      }
-      return true;
-    }
-
-    case '/resume': {
-      const id = parts[1];
-      if (!id) {
-        console.log(C.error('Usage: /resume <conversation-id>'));
-        return true;
-      }
-      const convos = listConversations();
-      const match = convos.find(c => c.id === id || c.id.startsWith(id));
-      if (!match) {
-        console.log(C.error('Conversation not found.'));
-        return true;
-      }
-      const convo = loadConversation(match.id);
-      if (convo) {
-        conversationId = convo.id;
-        messages = convo.messages;
-        console.log(C.dim(`Resumed conversation ${convo.id.slice(0, 8)} (${convo.messages.length} messages).`));
-      }
-      return true;
-    }
-
-    case '/tools':
-      console.log(C.bold('\n  Available tools:'));
-      for (const t of tools) {
-        console.log(C.tool(`  ${t.function.name}`) + C.dim(` — ${t.function.description}`));
-      }
-      console.log('');
-      return true;
-
-    case '/config': {
-      const config = loadConfig();
-      const provider = getProvider();
-      const apiKey = getApiKey(config.provider);
-      const hasKey = apiKey || config.provider === 'ollama';
-      console.log(C.bold('\n  Current Configuration:'));
-      console.log(`  Provider: ${C.tool(provider.name)}`);
-      console.log(`  Model: ${C.tool(config.model || provider.defaultModel)}`);
-      console.log(`  Base URL: ${C.dim(provider.baseUrl)}`);
-      console.log(`  API Key: ${C.dim(hasKey ? '***' + (apiKey || 'local').slice(-4) : 'Not set')}`);
-      console.log(`  Execution: ${C.tool(config.executionMode)}`);
-      if (provider.envKey && process.env[provider.envKey]) {
-        console.log(`  ${C.green('✓')} ${provider.envKey} set via environment`);
-      }
-      console.log('');
-      return true;
-    }
-
-    case '/provider': {
-      const providerKeys = Object.keys(PROVIDERS);
-      console.log(C.bold('\n  Available providers:'));
-      providerKeys.forEach((key, i) => {
-        const envKey = PROVIDERS[key].envKey;
-        const hasEnvKey = envKey && process.env[envKey];
-        const marker = hasEnvKey ? C.green(' (env set)') : '';
-        console.log(`  ${i + 1}. ${PROVIDERS[key].name}${marker}`);
-      });
-      const choice = await prompt();
-      const idx = parseInt(choice.trim()) - 1;
-      const newProvider = providerKeys[idx];
-      
-      if (newProvider && PROVIDERS[newProvider]) {
-        const config = loadConfig();
-        config.provider = newProvider;
-        config.model = PROVIDERS[newProvider].defaultModel;
-        saveConfig(config);
-        console.log(C.green(`\n  ✓ Switched to ${PROVIDERS[newProvider].name}`));
-        console.log(C.dim('  Restart Hex or run /setup to configure API key.\n'));
-      } else {
-        console.log(C.error('  Invalid selection.'));
-      }
-      return true;
-    }
-
-    case '/setup':
-      await setupWizard();
-      console.log(C.dim('Restart Hex to apply changes.'));
-      return true;
-
-    case '/status':
-      await checkStatus();
-      return true;
-
-    case '/thinking':
-      showThinking = !showThinking;
-      console.log(C.dim(`  Thinking display: ${showThinking ? 'expanded' : 'collapsed'}`));
-      return true;
-
-    case '/skills': {
-      const skills = listSkills();
-      if (skills.length === 0) {
-        console.log(C.dim('No skills available.'));
-      } else {
-        console.log(C.bold('\n  Available skills:'));
-        for (const s of skills) {
-          console.log(C.tool(`  ${s.name}`) + C.dim(` — ${s.description}`));
-        }
-        console.log('');
-      }
-      return true;
-    }
-
-    case '/skill': {
-      const skillName = parts[1];
-      if (!skillName) {
-        console.log(C.error('Usage: /skill <name> [var1=value1 var2=value2 ...]'));
-        return true;
-      }
-      const skill = getSkill(skillName);
-      if (!skill) {
-        console.log(C.error(`Skill '${skillName}' not found. Use /skills to list available skills.`));
-        return true;
-      }
-      
-      // Parse variables from command line
-      const vars = {};
-      for (let i = 2; i < parts.length; i++) {
-        const [key, value] = parts[i].split('=');
-        if (key && value) {
-          vars[key] = value;
-        }
-      }
-      
-      await executeSkill(skill, vars);
-      return true;
-    }
-
-    case '/quit':
-    case '/exit':
-      console.log(C.dim('\nGoodbye.'));
-      process.exit(0);
-
-    default:
-      console.log(C.error(`Unknown command: ${cmd}. Type /help for commands.`));
-      return true;
-  }
-}
-
-async function checkStatus() {
-  const config = loadConfig();
-
-  if (config.executionMode === 'docker') {
-    const running = await isDockerAvailable();
-    if (running) {
-      console.log(C.ai('  ✓ Docker container is running'));
-    } else {
-      console.log(C.error('  ✗ Docker container is NOT running'));
-      console.log(C.dim('  Start it with: npm run docker:up'));
-    }
-  } else {
-    console.log(C.ai('  ✓ Direct execution mode (tools run on your machine)'));
-
-    // Check a few common tools
-    const testTools = ['nmap', 'curl', 'whois'];
-    for (const tool of testTools) {
-      const available = await isToolAvailable(tool);
-      if (available) {
-        console.log(C.ai(`  ✓ ${tool} is available`));
-      } else {
-        console.log(C.error(`  ✗ ${tool} not found`));
-      }
-    }
-  }
-}
-
-async function executeSkill(skill, vars) {
-  console.log(C.bold(`\n  Executing skill: ${skill.name}`));
-  console.log(C.dim(`  ${skill.description}\n`));
-
-  // Check for missing required variables
-  const requiredVars = new Set();
-  for (const step of skill.steps) {
-    const argsStr = JSON.stringify(step.args);
-    const matches = argsStr.match(/\{\{(\w+)\}\}/g);
-    if (matches) {
-      matches.forEach(m => requiredVars.add(m.replace(/[{}]/g, '')));
-    }
-  }
-
-  const missingVars = [...requiredVars].filter(v => !vars[v]);
-  if (missingVars.length > 0) {
-    console.log(C.error(`  Missing required variables: ${missingVars.join(', ')}`));
-    console.log(C.dim(`  Usage: /skill ${skill.name} ${missingVars.map(v => `${v}=<value>`).join(' ')}`));
-    return;
-  }
-
-  // Execute each step
-  for (let i = 0; i < skill.steps.length; i++) {
-    const step = skill.steps[i];
-    console.log(C.tool(`\n  Step ${i + 1}/${skill.steps.length}: ${step.tool}`));
-
-    // Replace variables in arguments
-    const argsStr = JSON.stringify(step.args);
-    const resolvedArgsStr = argsStr.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
-      return vars[varName] || match;
-    });
-    const resolvedArgs = JSON.parse(resolvedArgsStr);
-
-    // Execute the tool
-    const toolCall = {
-      id: `skill_${Date.now()}_${i}`,
-      name: step.tool,
-      arguments: resolvedArgs
-    };
-
-    setStatus(`Running ${step.tool}...`);
-    const result = await executeToolCall(toolCall);
-    clearStatus();
-
-    if (result.error) {
-      console.log(C.error(`  Error: ${result.error}`));
-    } else {
-      console.log(C.dim('  Output:'));
-      const output = result.output || 'No output';
-      const lines = output.split('\n').slice(0, 10);
-      lines.forEach(line => console.log(C.dim(`    ${line}`)));
-      if (output.split('\n').length > 10) {
-        console.log(C.dim(`    ... (${output.split('\n').length - 10} more lines)`));
-      }
-    }
-
-    // Add to conversation context
-    messages.push({
-      role: 'assistant',
-      content: `Executing skill step: ${step.tool}`,
-      tool_calls: [{
-        id: toolCall.id,
-        type: 'function',
-        function: { name: step.tool, arguments: JSON.stringify(resolvedArgs) }
-      }]
-    });
-
-    messages.push({
-      role: 'tool',
-      tool_call_id: toolCall.id,
-      content: result.error || result.output || 'No output'
-    });
-  }
-
-  console.log(C.ai(`\n  ✓ Skill '${skill.name}' completed\n`));
-  saveConversation(conversationId, messages);
+  
+  // Show token usage
+  const tokens = countMessagesTokens(messages);
+  const limit = getTokenLimit(model);
+  const percentage = Math.round((tokens / limit) * 100);
+  console.log(C.dim(`  Tokens: ${tokens.toLocaleString()} / ${limit.toLocaleString()} (${percentage}%)\n`));
 }
 
 // Animation frames - braille spinner
@@ -391,11 +118,7 @@ const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 
 let spinnerIndex = 0;
 let spinnerInterval = null;
-
-// Status indicator
-let showThinking = false; // Toggle with /thinking command
 let currentStatus = '';
-let currentAbortController = null; // For Ctrl+C/Escape handling
 
 function startSpinner(status) {
   if (spinnerInterval) clearInterval(spinnerInterval);
@@ -437,10 +160,97 @@ process.on('SIGINT', () => {
   }
 });
 
+async function executeSkill(skill, vars) {
+  console.log(C.bold(`\n  Executing skill: ${skill.name}`));
+  console.log(C.dim(`  ${skill.description}\n`));
+
+  // Check for missing required variables
+  const requiredVars = new Set();
+  for (const step of skill.steps) {
+    const argsStr = JSON.stringify(step.args);
+    const matches = argsStr.match(/\{\{(\w+)\}\}/g);
+    if (matches) {
+      matches.forEach(m => requiredVars.add(m.replace(/[{}]/g, '')));
+    }
+  }
+
+  const missingVars = [...requiredVars].filter(v => !vars[v]);
+  if (missingVars.length > 0) {
+    console.log(C.error(`  Missing required variables: ${missingVars.join(', ')}`));
+    console.log(C.dim(`  Usage: /skill ${skill.name} ${missingVars.map(v => `${v}=<value>`).join(' ')}`));
+    return;
+  }
+
+  const stepProgress = new StepProgress(skill.steps.map(s => s.tool), 'Skill steps');
+
+  // Execute each step
+  for (let i = 0; i < skill.steps.length; i++) {
+    const step = skill.steps[i];
+    stepProgress.start();
+
+    // Replace variables in arguments
+    const argsStr = JSON.stringify(step.args);
+    const resolvedArgsStr = argsStr.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
+      return vars[varName] || match;
+    });
+    const resolvedArgs = JSON.parse(resolvedArgsStr);
+
+    // Execute the tool
+    const toolCall = {
+      id: `skill_${Date.now()}_${i}`,
+      name: step.tool,
+      arguments: resolvedArgs
+    };
+
+    setStatus(`Running ${step.tool}...`);
+    const result = await executeToolCall(toolCall);
+    clearStatus();
+
+    if (result.error) {
+      console.log(formatter.formatError(result.error));
+    } else {
+      console.log(formatter.formatToolOutput(step.tool, result.output, toolCall.id));
+    }
+
+    // Add to conversation context
+    messages.push({
+      role: 'assistant',
+      content: `Executing skill step: ${step.tool}`,
+      tool_calls: [{
+        id: toolCall.id,
+        type: 'function',
+        function: { name: step.tool, arguments: JSON.stringify(resolvedArgs) }
+      }]
+    });
+
+    messages.push({
+      role: 'tool',
+      tool_call_id: toolCall.id,
+      content: result.error || result.output || 'No output'
+    });
+
+    stepProgress.next();
+  }
+
+  stepProgress.complete();
+  console.log(C.ai(`\n  ✓ Skill '${skill.name}' completed\n`));
+  saveConversation(conversationId, messages);
+}
+
 async function sendAndReceive(userMessage) {
   messages.push({ role: 'user', content: userMessage });
 
-  const MAX_ROUNDS = 100; // Prevent infinite loops
+  // Check if we need to summarize
+  const config = loadConfig();
+  const model = config.model || getProvider().defaultModel;
+  
+  if (shouldSummarize(messages, model)) {
+    console.log(C.dim('\n  [Auto-summarizing conversation to manage context...]'));
+    messages = summarizeOldMessages(messages, model);
+    console.log(C.green('  ✓ Conversation summarized'));
+  }
+
+  const MAX_ROUNDS = 100;
   let round = 0;
   let cancelled = false;
 
@@ -476,8 +286,7 @@ async function sendAndReceive(userMessage) {
           if (showThinking) {
             console.log('\n');
           } else {
-            // Show compact thinking indicator
-            console.log(C.dim('  💭 [Thinking] ') + C.dim('(' + thinkingContent.length + ' chars)'));
+            console.log(formatter.formatThinkingContent(thinkingContent, false));
           }
         }
         if (!assistantContent) {
@@ -492,6 +301,9 @@ async function sendAndReceive(userMessage) {
       onError: (err) => {
         error = err;
       },
+      onRetry: (attempt, delay) => {
+        console.log(C.dim(`\n  [Retrying... attempt ${attempt}, waiting ${delay}ms]`));
+      },
     });
 
     clearStatus();
@@ -503,10 +315,12 @@ async function sendAndReceive(userMessage) {
       break;
     }
 
-    if (assistantContent) console.log('\n');
+    if (assistantContent) {
+      console.log('\n');
+    }
 
     if (error) {
-      console.log(C.error(`  Error: ${error.message}`));
+      console.log(formatter.formatError(error));
       return;
     }
 
@@ -530,8 +344,14 @@ async function sendAndReceive(userMessage) {
       setStatus(`Running ${tc.name}...`);
       const result = await executeToolCall(tc);
       clearStatus();
+      
       console.log(C.tool(`  ⚡ Running ${C.bold(tc.name)}...`));
-      console.log('');
+      
+      if (result.error) {
+        console.log(formatter.formatError(result.error));
+      } else {
+        console.log(formatter.formatToolOutput(tc.name, result.output, tc.id));
+      }
 
       messages.push({
         role: 'tool',
@@ -539,8 +359,6 @@ async function sendAndReceive(userMessage) {
         content: result.error || result.output,
       });
     }
-
-    // Loop continues - AI will see tool results and can call more tools
   }
 
   if (cancelled) {
@@ -568,6 +386,16 @@ async function main() {
 
   printBanner();
 
+  // Create context object for commands
+  const context = {
+    conversationId,
+    messages,
+    SYSTEM_PROMPT,
+    showThinking,
+    prompt,
+    executeSkill,
+  };
+
   while (true) {
     const input = await prompt();
     const trimmed = input.trim();
@@ -575,7 +403,11 @@ async function main() {
     if (!trimmed) continue;
 
     if (trimmed.startsWith('/')) {
-      await handleCommand(trimmed);
+      await handleCommand(trimmed, context);
+      // Sync context back
+      conversationId = context.conversationId;
+      messages = context.messages;
+      showThinking = context.showThinking;
       continue;
     }
 
@@ -584,6 +416,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(C.error(`Fatal: ${err.message}`));
+  console.error(formatter.formatError(err));
   process.exit(1);
 });

@@ -1,6 +1,9 @@
 import { loadConfig, getProvider, getApiKey, getBaseUrl } from './config.js';
 
-export async function chat({ messages, tools, onContent, onToolCall, onThinking, onError, abortSignal }) {
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
+
+export async function chat({ messages, tools, onContent, onToolCall, onThinking, onError, abortSignal, onRetry }) {
   const config = loadConfig();
   const provider = getProvider();
   const apiKey = getApiKey(config.provider);
@@ -38,41 +41,90 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
     });
   }
 
-  let response;
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+  let lastError = null;
 
-    // Provider-specific auth
-    if (config.provider === 'anthropic') {
-      headers['x-api-key'] = apiKey;
-      headers['anthropic-version'] = '2023-06-01';
-    } else if (config.provider !== 'ollama') {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
+  // Retry loop
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = RETRY_DELAYS[attempt - 1] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
+        if (onRetry) {
+          onRetry(attempt, delay);
+        }
+        await sleep(delay);
+      }
 
-    response = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      onError(new Error('Request cancelled by user.'));
-    } else {
-      onError(err);
+      const response = await makeRequest(baseUrl, payload, config.provider, apiKey, controller.signal);
+      
+      if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        const error = new Error(`API error ${response.status}: ${text || 'Check your API key and credits.'}`);
+        
+        // Don't retry on client errors (4xx) except 429 (rate limit)
+        if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+          onError(error);
+          return;
+        }
+        
+        lastError = error;
+        continue; // Retry on server errors (5xx) or rate limits (429)
+      }
+
+      // Success - process the stream
+      await processStream(response, onContent, onToolCall, onThinking, controller.signal);
+      return; // Exit retry loop on success
+
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        onError(new Error('Request cancelled by user.'));
+        return;
+      }
+      
+      lastError = err;
+      
+      // Don't retry on certain errors
+      if (err.message.includes('API key') || err.message.includes('authentication')) {
+        onError(err);
+        return;
+      }
+      
+      // Continue to next retry attempt
+      if (attempt < MAX_RETRIES) {
+        continue;
+      }
     }
-    return;
   }
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    onError(new Error(`API error ${response.status}: ${text || 'Check your API key and credits.'}`));
-    return;
+  // All retries exhausted
+  if (lastError) {
+    onError(lastError);
+  } else {
+    onError(new Error('Request failed after multiple retries.'));
+  }
+}
+
+async function makeRequest(baseUrl, payload, provider, apiKey, signal) {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  // Provider-specific auth
+  if (provider === 'anthropic') {
+    headers['x-api-key'] = apiKey;
+    headers['anthropic-version'] = '2023-06-01';
+  } else if (provider !== 'ollama') {
+    headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
+  return fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+    signal,
+  });
+}
+
+async function processStream(response, onContent, onToolCall, onThinking, signal) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   const toolCallsMap = new Map();
@@ -80,6 +132,11 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
+
+    if (signal.aborted) {
+      reader.cancel();
+      break;
+    }
 
     const chunk = decoder.decode(value, { stream: true });
 
@@ -133,8 +190,12 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
           arguments: JSON.parse(tc.arguments),
         });
       } catch {
-        onError(new Error(`Failed to parse tool call arguments for ${tc.name}`));
+        // Skip invalid tool calls
       }
     }
   }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
