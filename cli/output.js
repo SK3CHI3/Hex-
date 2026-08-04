@@ -29,12 +29,12 @@ export class OutputFormatter {
 
     const preview = lines.slice(0, MAX_OUTPUT_LINES).join('\n');
     const remaining = lines.length - MAX_OUTPUT_LINES;
-    
+
     let formatted = chalk.dim(`\n  ⚡ ${toolName} output:\n`);
     formatted += this.indentOutput(preview);
     formatted += chalk.dim(`\n  ... ${remaining} more lines`);
-    formatted += chalk.cyan(` [Press 'e' to expand]`);
-    
+    formatted += chalk.cyan(` [Press Ctrl+E to expand]`);
+
     return formatted;
   }
 
@@ -59,7 +59,7 @@ export class OutputFormatter {
 
     let formatted = chalk.dim('\n  💭 Thinking');
     formatted += chalk.dim(` (${content.length} chars)`);
-    formatted += chalk.cyan(` [Press 't' to expand]`);
+    formatted += chalk.cyan(` [Press Ctrl+T to expand]`);
     formatted += '\n';
     formatted += this.indentOutput(preview);
     if (remaining > 0) {

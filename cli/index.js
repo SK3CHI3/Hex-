@@ -106,15 +106,15 @@ process.stdin.on('data', (key) => {
     return;
   }
 
-  // Handle 'e' key to expand tool output
-  if (key === 'e' && lastCollapsedToolOutput) {
+  // Handle Ctrl+E to expand tool output
+  if (key === '\u0005' && lastCollapsedToolOutput) {
     console.log(formatter.formatFullOutput(lastCollapsedToolOutput.name, lastCollapsedToolOutput.output));
     lastCollapsedToolOutput = null;
     return;
   }
 
-  // Handle 't' key to expand thinking content
-  if (key === 't' && lastCollapsedThinking) {
+  // Handle Ctrl+T to expand thinking content
+  if (key === '\u0014' && lastCollapsedThinking) {
     console.log(formatter.formatThinkingContent(lastCollapsedThinking, true));
     lastCollapsedThinking = null;
     return;
@@ -328,7 +328,7 @@ async function sendAndReceive(userMessage) {
             const formattedThinking = formatter.formatThinkingContent(thinkingContent, false);
             console.log(formattedThinking);
             // Track collapsed thinking for later expansion
-            if (formattedThinking.includes('[Press \'t\' to expand]')) {
+            if (formattedThinking.includes('[Press Ctrl+T to expand]')) {
               lastCollapsedThinking = thinkingContent;
             }
           }
@@ -397,7 +397,7 @@ async function sendAndReceive(userMessage) {
         const formattedOutput = formatter.formatToolOutput(tc.name, result.output, tc.id);
         console.log(formattedOutput);
         // Track collapsed tool output for later expansion
-        if (formattedOutput.includes('[Press \'e\' to expand]')) {
+        if (formattedOutput.includes('[Press Ctrl+E to expand]')) {
           lastCollapsedToolOutput = { name: tc.name, output: result.output };
         }
       }
