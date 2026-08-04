@@ -71,6 +71,10 @@ let messages = [{ role: 'system', content: SYSTEM_PROMPT }];
 let showThinking = false;
 let currentAbortController = null;
 
+// Track collapsed content for expand/collapse
+let lastCollapsedToolOutput = null;
+let lastCollapsedThinking = null;
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -80,6 +84,41 @@ const rl = readline.createInterface({
 rl.on('close', () => {
   console.log(C.dim('\nGoodbye.'));
   process.exit(0);
+});
+
+// Handle keyboard input for expand/collapse
+process.stdin.setRawMode(true);
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+process.stdin.on('data', (key) => {
+  // Handle Ctrl+C
+  if (key === '\u0003') {
+    if (currentAbortController) {
+      console.log(C.dim('\n\n  [Operation cancelled]'));
+      currentAbortController.abort();
+      currentAbortController = null;
+      clearStatus();
+    } else {
+      console.log(C.dim('\nGoodbye.'));
+      process.exit(0);
+    }
+    return;
+  }
+
+  // Handle 'e' key to expand tool output
+  if (key === 'e' && lastCollapsedToolOutput) {
+    console.log(formatter.formatFullOutput(lastCollapsedToolOutput.name, lastCollapsedToolOutput.output));
+    lastCollapsedToolOutput = null;
+    return;
+  }
+
+  // Handle 't' key to expand thinking content
+  if (key === 't' && lastCollapsedThinking) {
+    console.log(formatter.formatThinkingContent(lastCollapsedThinking, true));
+    lastCollapsedThinking = null;
+    return;
+  }
 });
 
 function prompt() {
@@ -286,7 +325,12 @@ async function sendAndReceive(userMessage) {
           if (showThinking) {
             console.log('\n');
           } else {
-            console.log(formatter.formatThinkingContent(thinkingContent, false));
+            const formattedThinking = formatter.formatThinkingContent(thinkingContent, false);
+            console.log(formattedThinking);
+            // Track collapsed thinking for later expansion
+            if (formattedThinking.includes('[Press \'t\' to expand]')) {
+              lastCollapsedThinking = thinkingContent;
+            }
           }
         }
         if (!assistantContent) {
@@ -350,7 +394,12 @@ async function sendAndReceive(userMessage) {
       if (result.error) {
         console.log(formatter.formatError(result.error));
       } else {
-        console.log(formatter.formatToolOutput(tc.name, result.output, tc.id));
+        const formattedOutput = formatter.formatToolOutput(tc.name, result.output, tc.id);
+        console.log(formattedOutput);
+        // Track collapsed tool output for later expansion
+        if (formattedOutput.includes('[Press \'e\' to expand]')) {
+          lastCollapsedToolOutput = { name: tc.name, output: result.output };
+        }
       }
 
       messages.push({
