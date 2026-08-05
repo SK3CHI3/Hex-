@@ -54,7 +54,7 @@ For complex tasks, create and follow a plan:
 4. Feed results back to inform next steps
 5. Provide a final summary/report
 
-Be concise. When uncertain about a command, ask only for the missing technical information.`;
+Be concise. Use plain text only — no markdown tables, no markdown formatting. Use simple dash lists (- item) when needed. When uncertain about a command, ask only for the missing technical information.`;
 
 const C = {
   prompt: chalk.hex('#00FF41'),
