@@ -320,20 +320,20 @@ async function sendAndReceive(userMessage) {
         }
       },
       onContent: (chunk) => {
-        clearStatus();
-        if (thinkingContent && !assistantContent) {
-          if (showThinking) {
-            console.log('\n');
-          } else {
-            const formattedThinking = formatter.formatThinkingContent(thinkingContent, false);
-            console.log(formattedThinking);
-            // Track collapsed thinking for later expansion
-            if (formattedThinking.includes('[Press Ctrl+T to expand]')) {
-              lastCollapsedThinking = thinkingContent;
+        if (!assistantContent) {
+          clearStatus();
+          if (thinkingContent) {
+            if (showThinking) {
+              console.log('\n');
+            } else {
+              const formattedThinking = formatter.formatThinkingContent(thinkingContent, false);
+              console.log(formattedThinking);
+              // Track collapsed thinking for later expansion
+              if (formattedThinking.includes('[Press Ctrl+T to expand]')) {
+                lastCollapsedThinking = thinkingContent;
+              }
             }
           }
-        }
-        if (!assistantContent) {
           process.stdout.write(C.ai('\n  '));
         }
         process.stdout.write(C.ai(chunk));
