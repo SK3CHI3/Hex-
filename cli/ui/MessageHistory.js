@@ -3,24 +3,59 @@
  * Displays user messages, AI responses, thinking, and tool outputs
  */
 
-import React, { useState } from 'react';
-import { Box, Text } from 'ink';
+import React, { useState, useEffect } from 'react';
+import { Box, Text, useInput } from 'ink';
 import { themeManager } from './themes.js';
 import ToolOutput from './ToolOutput.js';
 
 const MessageHistory = ({ messages = [], streaming = false }) => {
   const theme = themeManager.getTheme();
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(20);
+  
+  // Update viewport height on terminal resize
+  useEffect(() => {
+    const updateHeight = () => {
+      // Reserve space for banner (~15 lines) and input box (~5 lines)
+      const available = process.stdout.rows - 20;
+      setViewportHeight(Math.max(10, available));
+    };
+    
+    updateHeight();
+    process.stdout.on('resize', updateHeight);
+    return () => process.stdout.off('resize', updateHeight);
+  }, []);
+  
+  // Handle scroll keys
+  useInput((input, key) => {
+    if (key.pageUp || (key.ctrl && input === 'b')) {
+      setScrollOffset(Math.max(0, scrollOffset - viewportHeight));
+    } else if (key.pageDown || (key.ctrl && input === 'f')) {
+      setScrollOffset(Math.min(messages.length - 1, scrollOffset + viewportHeight));
+    } else if (key.upArrow && key.shift) {
+      setScrollOffset(Math.max(0, scrollOffset - 1));
+    } else if (key.downArrow && key.shift) {
+      setScrollOffset(Math.min(messages.length - 1, scrollOffset + 1));
+    }
+  });
   
   if (messages.length === 0) {
     return null;
   }
   
+  // Calculate visible messages
+  const visibleMessages = messages.slice(scrollOffset, scrollOffset + viewportHeight);
+  const hasMoreAbove = scrollOffset > 0;
+  const hasMoreBelow = scrollOffset + viewportHeight < messages.length;
+  
   const renderMessage = (msg, index) => {
+    const actualIndex = scrollOffset + index;
+    
     // User message
     if (msg.role === 'user') {
       return React.createElement(
         Box,
-        { key: index, flexDirection: 'column', marginTop: 1 },
+        { key: actualIndex, flexDirection: 'column', marginTop: 1 },
         React.createElement(
           Box,
           null,
@@ -76,7 +111,7 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
       
       return React.createElement(
         Box,
-        { key: index, flexDirection: 'column', marginTop: 1 },
+        { key: actualIndex, flexDirection: 'column', marginTop: 1 },
         ...children
       );
     }
@@ -84,7 +119,7 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
     // Tool result
     if (msg.role === 'tool') {
       return React.createElement(ToolOutput, {
-        key: index,
+        key: actualIndex,
         toolName: msg.name || 'tool',
         output: msg.content,
         error: msg.isError,
@@ -97,12 +132,25 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
   return React.createElement(
     Box,
     { flexDirection: 'column', paddingX: 1 },
-    ...messages.map((msg, index) => renderMessage(msg, index)),
+    // Scroll indicator (top)
+    hasMoreAbove && React.createElement(
+      Box,
+      { key: 'scroll-top', justifyContent: 'center' },
+      React.createElement(Text, { color: theme.text.muted }, `↑ ${scrollOffset} more messages (Shift+Up/PageUp to scroll)`)
+    ),
+    // Messages
+    ...visibleMessages.map((msg, index) => renderMessage(msg, index)),
     // Streaming indicator
     streaming && React.createElement(
       Box,
       { key: 'streaming', marginTop: 1, marginLeft: 2 },
       React.createElement(Text, { color: theme.status.thinking }, '⠋ AI is thinking...')
+    ),
+    // Scroll indicator (bottom)
+    hasMoreBelow && React.createElement(
+      Box,
+      { key: 'scroll-bottom', justifyContent: 'center' },
+      React.createElement(Text, { color: theme.text.muted }, `↓ ${messages.length - scrollOffset - viewportHeight} more messages (Shift+Down/PageDown to scroll)`)
     )
   );
 };

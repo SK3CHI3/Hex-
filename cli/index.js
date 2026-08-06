@@ -114,9 +114,19 @@ const HexApp = () => {
         executeSkill: async () => {},
       };
       
-      await handleCommand(userMessage, context);
+      const result = await handleCommand(userMessage, context);
       setConversationId(context.conversationId);
       setMessages([...context.messages]);
+      
+      // If command returned a result, add it to messages
+      if (result) {
+        const resultMsg = {
+          role: 'assistant',
+          content: result.content,
+          isCommandResult: true,
+        };
+        setMessages(prev => [...prev, resultMsg]);
+      }
       return;
     }
     

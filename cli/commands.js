@@ -23,8 +23,9 @@ export async function handleCommand(input, context) {
 
   switch (cmd) {
     case '/help':
-      console.log(`
-${C.bold('Commands:')}
+      return {
+        type: 'info',
+        content: `${C.bold('Commands:')}
   /help        Show this help
   /clear       Clear conversation and start fresh
   /history     List saved conversations
@@ -39,176 +40,161 @@ ${C.bold('Commands:')}
   /thinking    Toggle thinking display (collapsed/expanded)
   /tokens      Show token usage
   /summarize   Manually summarize conversation
-  /quit        Exit Hex
-`);
-      return true;
+  /quit        Exit Hex`
+      };
 
     case '/clear':
       context.conversationId = randomUUID();
       context.messages = [{ role: 'system', content: context.SYSTEM_PROMPT }];
-      console.log(C.dim('Conversation cleared.'));
-      return true;
+      return { type: 'info', content: C.dim('Conversation cleared.') };
 
     case '/history': {
       const convos = listConversations();
       if (convos.length === 0) {
-        console.log(C.dim('No saved conversations.'));
-      } else {
-        console.log(C.bold('\n  Saved conversations:'));
-        for (const c of convos.slice(0, 10)) {
-          console.log(C.dim(`  ${c.id.slice(0, 8)}  ${c.messageCount} msgs  ${c.updatedAt}`));
-        }
-        console.log('');
+        return { type: 'info', content: C.dim('No saved conversations.') };
       }
-      return true;
+      let output = C.bold('\n  Saved conversations:\n');
+      for (const c of convos.slice(0, 10)) {
+        output += C.dim(`  ${c.id.slice(0, 8)}  ${c.messageCount} msgs  ${c.updatedAt}\n`);
+      }
+      return { type: 'info', content: output };
     }
 
     case '/resume': {
       const id = parts[1];
       if (!id) {
-        console.log(C.error('Usage: /resume <conversation-id>'));
-        return true;
+        return { type: 'error', content: C.error('Usage: /resume <conversation-id>') };
       }
       const convos = listConversations();
       const match = convos.find(c => c.id === id || c.id.startsWith(id));
       if (!match) {
-        console.log(C.error('Conversation not found.'));
-        return true;
+        return { type: 'error', content: C.error('Conversation not found.') };
       }
       const convo = loadConversation(match.id);
       if (convo) {
         context.conversationId = convo.id;
         context.messages = convo.messages;
-        console.log(C.dim(`Resumed conversation ${convo.id.slice(0, 8)} (${convo.messages.length} messages).`));
+        return { type: 'info', content: C.dim(`Resumed conversation ${convo.id.slice(0, 8)} (${convo.messages.length} messages).`) };
       }
-      return true;
+      return { type: 'error', content: C.error('Failed to load conversation.') };
     }
 
-    case '/tools':
-      console.log(C.bold('\n  Available tools:'));
+    case '/tools': {
+      let output = C.bold('\n  Available tools:\n');
       for (const t of tools) {
-        console.log(C.tool(`  ${t.function.name}`) + C.dim(` — ${t.function.description}`));
+        output += C.tool(`  ${t.function.name}`) + C.dim(` — ${t.function.description}\n`);
       }
-      console.log('');
-      return true;
+      return { type: 'info', content: output };
+    }
 
     case '/config': {
       const config = loadConfig();
       const provider = getProvider();
       const apiKey = getApiKey(config.provider);
       const hasKey = apiKey || config.provider === 'ollama';
-      console.log(C.bold('\n  Current Configuration:'));
-      console.log(`  Provider: ${C.tool(provider.name)}`);
-      console.log(`  Model: ${C.tool(config.model || provider.defaultModel)}`);
-      console.log(`  Base URL: ${C.dim(provider.baseUrl)}`);
-      console.log(`  API Key: ${C.dim(hasKey ? '***' + (apiKey || 'local').slice(-4) : 'Not set')}`);
-      console.log(`  Execution: ${C.tool(config.executionMode)}`);
+      
+      let output = C.bold('\n  Current Configuration:\n');
+      output += `  Provider: ${C.tool(provider.name)}\n`;
+      output += `  Model: ${C.tool(config.model || provider.defaultModel)}\n`;
+      output += `  Base URL: ${C.dim(provider.baseUrl)}\n`;
+      output += `  API Key: ${C.dim(hasKey ? '***' + (apiKey || 'local').slice(-4) : 'Not set')}\n`;
+      output += `  Execution: ${C.tool(config.executionMode)}`;
+      
       if (provider.envKey && process.env[provider.envKey]) {
-        console.log(`  ${C.green('✓')} ${provider.envKey} set via environment`);
+        output += `\n  ${C.green('✓')} ${provider.envKey} set via environment`;
       }
-      console.log('');
-      return true;
+      
+      return { type: 'info', content: output };
     }
 
     case '/provider': {
       const providerKeys = Object.keys(PROVIDERS);
-      console.log(C.bold('\n  Available providers:'));
+      let output = C.bold('\n  Available providers:\n');
       providerKeys.forEach((key, i) => {
         const envKey = PROVIDERS[key].envKey;
         const hasEnvKey = envKey && process.env[envKey];
         const marker = hasEnvKey ? C.green(' (env set)') : '';
-        console.log(`  ${i + 1}. ${PROVIDERS[key].name}${marker}`);
+        output += `  ${i + 1}. ${PROVIDERS[key].name}${marker}\n`;
       });
-      const choice = await context.prompt();
-      const idx = parseInt(choice.trim()) - 1;
-      const newProvider = providerKeys[idx];
+      
+      return { 
+        type: 'prompt', 
+        content: output,
+        handler: async (choice) => {
+          const idx = parseInt(choice.trim()) - 1;
+          const newProvider = providerKeys[idx];
 
-      if (newProvider && PROVIDERS[newProvider]) {
-        const config = loadConfig();
-        config.provider = newProvider;
-        config.model = PROVIDERS[newProvider].defaultModel;
-        saveConfig(config);
-        console.log(C.green(`\n  ✓ Switched to ${PROVIDERS[newProvider].name}`));
-        console.log(C.dim('  Restart Hex or run /setup to configure API key.\n'));
-      } else {
-        console.log(C.error('  Invalid selection.'));
-      }
-      return true;
+          if (newProvider && PROVIDERS[newProvider]) {
+            const config = loadConfig();
+            config.provider = newProvider;
+            config.model = PROVIDERS[newProvider].defaultModel;
+            saveConfig(config);
+            return { type: 'info', content: C.green(`\n  ✓ Switched to ${PROVIDERS[newProvider].name}\n`) + C.dim('Restart Hex or run /setup to configure API key.') };
+          }
+          return { type: 'error', content: C.error('  Invalid selection.') };
+        }
+      };
     }
 
     case '/setup':
       await setupWizard();
-      console.log(C.dim('Restart Hex to apply changes.'));
-      return true;
+      return { type: 'info', content: C.dim('Restart Hex to apply changes.') };
 
-    case '/status':
-      await checkStatus();
-      return true;
+    case '/status': {
+      const config = loadConfig();
+      let output = '';
+      
+      if (config.executionMode === 'docker') {
+        const running = await isDockerAvailable();
+        if (running) {
+          output += C.ai('  ✓ Docker container is running');
+        } else {
+          output += C.error('  ✗ Docker container is NOT running');
+          output += C.dim('\n  Start it with: npm run docker:up');
+        }
+      } else {
+        output += C.ai('  ✓ Direct execution mode (tools run on your machine)');
+        
+        const testTools = ['nmap', 'curl', 'whois'];
+        for (const tool of testTools) {
+          const available = await isToolAvailable(tool);
+          if (available) {
+            output += C.ai(`\n  ✓ ${tool} is available`);
+          } else {
+            output += C.error(`\n  ✗ ${tool} not found`);
+          }
+        }
+      }
+      
+      return { type: 'info', content: output };
+    }
 
     case '/thinking':
       context.showThinking = !context.showThinking;
-      console.log(C.dim(`  Thinking display: ${context.showThinking ? 'expanded' : 'collapsed'}`));
-      return true;
-
-    case '/tokens': {
-      const config = loadConfig();
-      const model = config.model || getProvider().defaultModel;
-      const usage = getTokenUsage(context.messages, model);
-      console.log(C.bold('\n  Token Usage:'));
-      console.log(`  Used: ${C.tool(usage.used.toLocaleString())} / ${usage.limit.toLocaleString()}`);
-      console.log(`  Progress: ${C.tool(usage.percentage)}%`);
-      
-      const barWidth = 30;
-      const filled = Math.round((usage.percentage / 100) * barWidth);
-      const empty = barWidth - filled;
-      const bar = '█'.repeat(filled) + '░'.repeat(empty);
-      
-      let color = C.green;
-      if (usage.percentage > 70) color = C.tool;
-      if (usage.percentage > 90) color = C.error;
-      
-      console.log(`  ${color(bar)} ${usage.percentage}%\n`);
-      return true;
-    }
-
-    case '/summarize': {
-      const { summarizeOldMessages } = await import('./summary.js');
-      const config = loadConfig();
-      const model = config.model || getProvider().defaultModel;
-      const beforeCount = context.messages.length;
-      context.messages = summarizeOldMessages(context.messages, model);
-      const afterCount = context.messages.length;
-      console.log(C.green(`  ✓ Summarized conversation (${beforeCount} → ${afterCount} messages)`));
-      return true;
-    }
+      return { type: 'info', content: C.dim(`  Thinking display: ${context.showThinking ? 'expanded' : 'collapsed'}`) };
 
     case '/skills': {
       const skills = listSkills();
       if (skills.length === 0) {
-        console.log(C.dim('No skills available.'));
-      } else {
-        console.log(C.bold('\n  Available skills:'));
-        for (const s of skills) {
-          console.log(C.tool(`  ${s.name}`) + C.dim(` — ${s.description}`));
-        }
-        console.log('');
+        return { type: 'info', content: C.dim('No skills available.') };
       }
-      return true;
+      let output = C.bold('\n  Available skills:\n');
+      for (const s of skills) {
+        output += C.tool(`  ${s.name}`) + C.dim(` — ${s.description}\n`);
+      }
+      return { type: 'info', content: output };
     }
 
     case '/skill': {
       const skillName = parts[1];
       if (!skillName) {
-        console.log(C.error('Usage: /skill <name> [var1=value1 var2=value2 ...]'));
-        return true;
+        return { type: 'error', content: C.error('Usage: /skill <name> [var1=value1 var2=value2 ...]') };
       }
       const skill = getSkill(skillName);
       if (!skill) {
-        console.log(C.error(`Skill '${skillName}' not found. Use /skills to list available skills.`));
-        return true;
+        return { type: 'error', content: C.error(`Skill '${skillName}' not found. Use /skills to list available skills.`) };
       }
 
-      // Parse variables from command line
       const vars = {};
       for (let i = 2; i < parts.length; i++) {
         const [key, value] = parts[i].split('=');
@@ -218,43 +204,35 @@ ${C.bold('Commands:')}
       }
 
       await context.executeSkill(skill, vars);
-      return true;
+      return null;
+    }
+
+    case '/tokens': {
+      const config = loadConfig();
+      const model = config.model || getProvider().defaultModel;
+      const usage = getTokenUsage(context.messages, model);
+      
+      let output = C.bold('\n  Token Usage:\n');
+      output += `  Used: ${C.tool(usage.used.toLocaleString())}\n`;
+      output += `  Limit: ${C.tool(usage.limit.toLocaleString())}\n`;
+      output += `  Usage: ${C.tool(usage.percentage + '%')}`;
+      
+      return { type: 'info', content: output };
+    }
+
+    case '/summarize': {
+      const config = loadConfig();
+      const model = config.model || getProvider().defaultModel;
+      const { summarizeOldMessages } = await import('./summary.js');
+      context.messages = summarizeOldMessages(context.messages, model);
+      return { type: 'info', content: C.green('  ✓ Conversation summarized') };
     }
 
     case '/quit':
     case '/exit':
-      console.log(C.dim('\nGoodbye.'));
       process.exit(0);
 
     default:
-      console.log(C.error(`Unknown command: ${cmd}. Type /help for commands.`));
-      return true;
-  }
-}
-
-async function checkStatus() {
-  const config = loadConfig();
-
-  if (config.executionMode === 'docker') {
-    const running = await isDockerAvailable();
-    if (running) {
-      console.log(C.ai('  ✓ Docker container is running'));
-    } else {
-      console.log(C.error('  ✗ Docker container is NOT running'));
-      console.log(C.dim('  Start it with: npm run docker:up'));
-    }
-  } else {
-    console.log(C.ai('  ✓ Direct execution mode (tools run on your machine)'));
-
-    // Check a few common tools
-    const testTools = ['nmap', 'curl', 'whois'];
-    for (const tool of testTools) {
-      const available = await isToolAvailable(tool);
-      if (available) {
-        console.log(C.ai(`  ✓ ${tool} is available`));
-      } else {
-        console.log(C.error(`  ✗ ${tool} not found`));
-      }
-    }
+      return { type: 'error', content: C.error(`Unknown command: ${cmd}. Type /help for commands.`) };
   }
 }
