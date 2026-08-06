@@ -15,7 +15,7 @@ const parseAnsi = (text) => {
   const parts = [];
   let lastIndex = 0;
   let match;
-  
+
   while ((match = ansiRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
       parts.push({ text: text.slice(lastIndex, match.index), codes: [] });
@@ -23,17 +23,17 @@ const parseAnsi = (text) => {
     parts.push({ text: '', codes: match[0] });
     lastIndex = match.index + match[0].length;
   }
-  
+
   if (lastIndex < text.length) {
     parts.push({ text: text.slice(lastIndex), codes: [] });
   }
-  
+
   return parts;
 };
 
 // Apply ANSI color codes
-const applyAnsiCodes = (text, codes) => {
-  if (!codes || !text) return React.createElement(Text, null, text || '');
+const applyAnsiCodes = (text, codes, key) => {
+  if (!codes || !text) return React.createElement(Text, { key }, text || '');
 
   const codeMap = {
     '30': 'black',
@@ -58,21 +58,21 @@ const applyAnsiCodes = (text, codes) => {
   const color = codeMap[codeNumbers[0]];
 
   if (color) {
-    return React.createElement(Text, { color, key: text }, text);
+    return React.createElement(Text, { color, key }, text);
   }
 
-  return React.createElement(Text, { key: text }, text);
+  return React.createElement(Text, { key }, text);
 };
 
-const ToolOutput = ({ 
-  toolName, 
-  output, 
+const ToolOutput = ({
+  toolName,
+  output,
   error = false,
   expandable = true,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = getTheme();
-  
+
   if (!output) {
     return React.createElement(
       Box,
@@ -80,13 +80,13 @@ const ToolOutput = ({
       React.createElement(Text, { color: theme.text.muted }, '[No output]')
     );
   }
-  
+
   const lines = output.split('\n');
   const isLong = lines.length > MAX_LINES;
   const shouldCollapse = isLong && !expanded && expandable;
   const displayLines = shouldCollapse ? lines.slice(0, MAX_LINES) : lines;
   const remainingLines = lines.length - MAX_LINES;
-  
+
   // Render line with ANSI support
   const renderLine = (line, i) => {
     // Check if line contains ANSI codes
@@ -94,19 +94,19 @@ const ToolOutput = ({
       const parts = parseAnsi(line);
       return React.createElement(
         Box,
-        { key: i },
+        { key: `line-${i}` },
         ...parts.map((part, j) => {
-          if (part.codes) {
-            return applyAnsiCodes(part.text, part.codes);
+          if (part.codes && part.codes.length > 0) {
+            return applyAnsiCodes(part.text, part.codes, `part-${i}-${j}`);
           }
-          return React.createElement(Text, { key: j, color: error ? theme.status.error : theme.text.primary }, part.text);
+          return React.createElement(Text, { key: `part-${i}-${j}`, color: error ? theme.status.error : theme.text.primary }, part.text);
         })
       );
     }
-    
-    return React.createElement(Text, { key: i, color: error ? theme.status.error : theme.text.primary }, line || ' ');
+
+    return React.createElement(Text, { key: `line-${i}`, color: error ? theme.status.error : theme.text.primary }, line || ' ');
   };
-  
+
   return React.createElement(
     Box,
     { flexDirection: 'column', marginLeft: 2, marginTop: 1 },

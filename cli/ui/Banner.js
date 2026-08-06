@@ -9,7 +9,7 @@ import { getTheme } from './themes.js';
 const Banner = ({ provider, model, executionMode, tokenCount, tokenLimit }) => {
   const theme = getTheme();
   const percentage = tokenLimit > 0 ? Math.round((tokenCount / tokenLimit) * 100) : 0;
-  
+
   return React.createElement(
     Box,
     { flexDirection: 'column', paddingX: 1, paddingTop: 1 },

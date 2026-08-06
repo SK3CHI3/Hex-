@@ -10,11 +10,11 @@ import ToolOutput from './ToolOutput.js';
 
 const MessageHistory = ({ messages = [], streaming = false }) => {
   const theme = getTheme();
-  
+
   if (messages.length === 0) {
     return null;
   }
-  
+
   const renderMessage = (msg, index) => {
     // User message
     if (msg.role === 'user') {
@@ -29,11 +29,11 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
         )
       );
     }
-    
+
     // Assistant message
     if (msg.role === 'assistant') {
       const children = [];
-      
+
       // Command result - render differently
       if (msg.isCommandResult) {
         children.push(
@@ -49,7 +49,7 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
           ...children
         );
       }
-      
+
       // Thinking content (if present)
       if (msg.thinking) {
         children.push(
@@ -65,7 +65,7 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
           )
         );
       }
-      
+
       // AI response
       if (msg.content) {
         children.push(
@@ -76,7 +76,7 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
           )
         );
       }
-      
+
       // Tool calls
       if (msg.tool_calls) {
         msg.tool_calls.forEach((tc, tcIndex) => {
@@ -89,14 +89,14 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
           );
         });
       }
-      
+
       return React.createElement(
         Box,
         { key: `assistant-${index}`, flexDirection: 'column', marginTop: 1 },
         ...children
       );
     }
-    
+
     // Tool result
     if (msg.role === 'tool') {
       return React.createElement(ToolOutput, {
@@ -106,10 +106,10 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
         error: msg.isError,
       });
     }
-    
+
     return null;
   };
-  
+
   return React.createElement(
     Box,
     { flexDirection: 'column', paddingX: 1 },
