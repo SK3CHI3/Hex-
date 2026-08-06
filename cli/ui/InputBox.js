@@ -435,7 +435,7 @@ const InputBox = ({
     );
   };
 
-  const borderColor = streaming ? theme.status.thinking : theme.text.muted;
+  const borderColor = theme.text.muted;
   const terminalWidth = process.stdout.columns || 80;
   const borderWidth = terminalWidth - 2;
 
@@ -487,7 +487,7 @@ const InputBox = ({
     !streaming && React.createElement(
       Box,
       { marginTop: 0 },
-      React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens | Ctrl+T: thinking`)
+      React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens`)
     )
   );
 };
