@@ -65,7 +65,7 @@ const MessageHistory = ({ messages = [], streaming = false, showThinking = false
               React.createElement(Text, { color: theme.status.thinking }, '💭 Thinking:'),
               !showThinking
                 ? React.createElement(Text, { color: theme.text.muted }, ` ${preview} [Ctrl+T to expand]`)
-                : null
+                : React.createElement(Text, { color: theme.text.muted }, ' [Ctrl+T to collapse]')
             ),
             showThinking
               ? React.createElement(
@@ -73,9 +73,6 @@ const MessageHistory = ({ messages = [], streaming = false, showThinking = false
                   { marginLeft: 2 },
                   React.createElement(Text, { color: theme.text.muted }, msg.thinking)
                 )
-              : null,
-            showThinking
-              ? React.createElement(Text, { color: theme.text.muted }, '  [Ctrl+T to collapse]')
               : null
           )
         );
