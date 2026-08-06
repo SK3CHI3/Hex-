@@ -4,10 +4,10 @@
 
 import React from 'react';
 import { Box, Text } from 'ink';
-import { themeManager } from './themes.js';
+import { getTheme } from './themes.js';
 
 const Banner = ({ provider, model, executionMode, tokenCount, tokenLimit }) => {
-  const theme = themeManager.getTheme();
+  const theme = getTheme();
   const percentage = tokenLimit > 0 ? Math.round((tokenCount / tokenLimit) * 100) : 0;
   
   return React.createElement(

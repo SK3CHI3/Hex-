@@ -17,11 +17,7 @@ import { randomUUID } from 'crypto';
 import { platform } from 'os';
 import App from './ui/App.js';
 import Banner from './ui/Banner.js';
-import { themeManager } from './ui/themes.js';
-import { fullScreenManager } from './ui/fullScreen.js';
-import { editInExternalEditor } from './ui/externalEditor.js';
-import { handlePaste, expandPastePlaceholders } from './ui/pasteHandler.js';
-import { isTmux, getSpinnerFrames, getSpinnerInterval } from './ui/terminalEnv.js';
+import { getTheme } from './ui/themes.js';
 
 const currentPlatform = platform();
 const platformInfo = currentPlatform === 'win32'
@@ -62,46 +58,37 @@ For complex tasks, create and follow a plan:
 
 Be concise. Use plain text only — no markdown tables, no markdown formatting. Use simple dash lists (- item) when needed. When uncertain about a command, ask only for the missing technical information.`;
 
+// Pre-initialization: run setup wizard BEFORE Ink renders
+const preInit = async () => {
+  const cfg = loadConfig();
+  const apiKey = getApiKey(cfg.provider);
+  
+  if (!apiKey && cfg.provider !== 'ollama') {
+    await setupWizard();
+  }
+  
+  initBuiltinSkills();
+  
+  return {
+    config: cfg,
+    provider: getProvider(),
+    model: cfg.model || getProvider().defaultModel,
+  };
+};
+
 // Main Hex application component
-const HexApp = () => {
+const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [conversationId, setConversationId] = useState(randomUUID());
   const [messages, setMessages] = useState([{ role: 'system', content: SYSTEM_PROMPT }]);
   const [streaming, setStreaming] = useState(false);
-  const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null);
+  const messagesRef = useRef(messages);
   
-  // Configuration state
-  const [config, setConfig] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [model, setModel] = useState('');
-  
-  // Initialize on mount
+  // Keep messagesRef in sync
   useEffect(() => {
-    const init = async () => {
-      try {
-        const cfg = loadConfig();
-        const apiKey = getApiKey(cfg.provider);
-        
-        if (!apiKey && cfg.provider !== 'ollama') {
-          await setupWizard();
-        }
-        
-        // Initialize built-in skills
-        initBuiltinSkills();
-        
-        const prov = getProvider();
-        setConfig(cfg);
-        setProvider(prov);
-        setModel(cfg.model || prov.defaultModel);
-        setInitialized(true);
-      } catch (err) {
-        setError(err.message);
-      }
-    };
-    
-    init();
-  }, []);
+    messagesRef.current = messages;
+  }, [messages]);
   
   // Handle sending a message
   const handleSendMessage = useCallback(async (userMessage) => {
@@ -109,9 +96,10 @@ const HexApp = () => {
     
     // Handle slash commands
     if (userMessage.startsWith('/')) {
+      const currentMessages = messagesRef.current;
       const context = {
         conversationId,
-        messages,
+        messages: [...currentMessages],
         SYSTEM_PROMPT,
         showThinking: false,
         prompt: async () => '',
@@ -120,10 +108,10 @@ const HexApp = () => {
       
       const result = await handleCommand(userMessage, context);
       setConversationId(context.conversationId);
-      setMessages([...context.messages]);
+      setMessages(context.messages);
       
       // If command returned a result, add it to messages
-      if (result) {
+      if (result && result.content) {
         const resultMsg = {
           role: 'assistant',
           content: result.content,
@@ -136,37 +124,39 @@ const HexApp = () => {
     
     // Send to AI
     await sendAndReceive(userMessage);
-  }, [conversationId, messages]);
+  }, [conversationId]);
   
   // Send message and receive response
   const sendAndReceive = async (userMessage) => {
-    const newMessages = [...messages, { role: 'user', content: userMessage }];
+    const currentMessages = messagesRef.current;
+    const newMessages = [...currentMessages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
     setStreaming(true);
     
     // Check if we need to summarize
-    const currentModel = model;
-    if (shouldSummarize(newMessages, currentModel)) {
-      const summarized = summarizeOldMessages(newMessages, currentModel);
+    if (shouldSummarize(newMessages, initialModel)) {
+      const summarized = summarizeOldMessages(newMessages, initialModel);
       setMessages(summarized);
+      newMessages.length = 0;
+      newMessages.push(...summarized);
     }
     
     const MAX_ROUNDS = 100;
     let round = 0;
-    let currentMessages = [...newMessages];
+    let workingMessages = [...newMessages];
     
     abortControllerRef.current = new AbortController();
     
-    while (round < MAX_ROUNDS) {
-      round++;
-      let assistantContent = '';
-      let thinkingContent = '';
-      const toolCalls = [];
-      let error = null;
-      
-      try {
+    try {
+      while (round < MAX_ROUNDS) {
+        round++;
+        let assistantContent = '';
+        let thinkingContent = '';
+        const toolCalls = [];
+        let chatError = null;
+        
         await chat({
-          messages: currentMessages,
+          messages: workingMessages,
           tools,
           abortSignal: abortControllerRef.current.signal,
           onThinking: (chunk) => {
@@ -179,15 +169,15 @@ const HexApp = () => {
             toolCalls.push(tc);
           },
           onError: (err) => {
-            error = err;
+            chatError = err;
           },
         });
         
-        if (error) {
-          if (error.message === 'Request cancelled by user.') {
+        if (chatError) {
+          if (chatError.message === 'Request cancelled by user.') {
             break;
           }
-          throw error;
+          throw chatError;
         }
         
         // Add assistant message
@@ -206,8 +196,8 @@ const HexApp = () => {
             }));
           }
           
-          currentMessages = [...currentMessages, assistantMsg];
-          setMessages(currentMessages);
+          workingMessages = [...workingMessages, assistantMsg];
+          setMessages(workingMessages);
         }
         
         // If no tool calls, we're done
@@ -227,22 +217,22 @@ const HexApp = () => {
             isError: !!result.error,
           };
           
-          currentMessages = [...currentMessages, toolMsg];
-          setMessages(currentMessages);
+          workingMessages = [...workingMessages, toolMsg];
+          setMessages(workingMessages);
         }
-      } catch (err) {
-        setError(err.message);
-        break;
       }
+      
+      if (round >= MAX_ROUNDS) {
+        console.error('Max rounds reached');
+      }
+      
+      saveConversation(conversationId, workingMessages);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setStreaming(false);
+      abortControllerRef.current = null;
     }
-    
-    if (round >= MAX_ROUNDS) {
-      console.error('Max rounds reached');
-    }
-    
-    setStreaming(false);
-    abortControllerRef.current = null;
-    saveConversation(conversationId, currentMessages);
   };
   
   // Handle exit
@@ -266,32 +256,41 @@ const HexApp = () => {
     );
   }
   
-  if (!initialized) {
-    return React.createElement(
-      Box,
-      { padding: 1 },
-      React.createElement(Text, null, 'Initializing Hex...')
-    );
-  }
-  
   const tokenCount = countMessagesTokens(messages);
-  const tokenLimit = getTokenLimit(model);
+  const tokenLimit = getTokenLimit(initialModel);
   
   return React.createElement(App, {
     messages: messages.slice(1), // Skip system message
     onSendMessage: handleSendMessage,
     streaming,
     banner: React.createElement(Banner, {
-      provider: provider.name,
-      model,
-      executionMode: config.executionMode === 'docker' ? 'Docker' : 'Direct',
+      provider: initialProvider.name,
+      model: initialModel,
+      executionMode: initialConfig.executionMode === 'docker' ? 'Docker' : 'Direct',
       tokenCount,
       tokenLimit,
     }),
   });
 };
 
-// Render the app
-render(React.createElement(HexApp), {
-  exitOnCtrlC: true,
-});
+// Main entry point
+const main = async () => {
+  try {
+    // Run setup wizard BEFORE Ink takes over the terminal
+    const { config, provider, model } = await preInit();
+    
+    // Now render the Ink app
+    render(React.createElement(HexApp, {
+      initialConfig: config,
+      initialProvider: provider,
+      initialModel: model,
+    }), {
+      exitOnCtrlC: true,
+    });
+  } catch (err) {
+    console.error('Fatal error:', err.message);
+    process.exit(1);
+  }
+};
+
+main();

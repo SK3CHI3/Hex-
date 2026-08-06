@@ -121,5 +121,5 @@ export const themeManager = {
   },
 };
 
-// Convenience export for current theme
-export const theme = themeManager.getTheme();
+// Get current theme (call this, don't use static export)
+export const getTheme = () => themeManager.getTheme();

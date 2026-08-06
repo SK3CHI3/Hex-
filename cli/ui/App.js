@@ -5,17 +5,17 @@
 
 import React from 'react';
 import { Box, Text } from 'ink';
-import { themeManager } from './themes.js';
+import { getTheme } from './themes.js';
 import InputBox from './InputBox.js';
 import MessageHistory from './MessageHistory.js';
 
-const App = ({ 
+const App = ({
   messages = [],
   onSendMessage,
   streaming = false,
   banner = null,
 }) => {
-  const theme = themeManager.getTheme();
+  const theme = getTheme();
   
   return React.createElement(
     Box,

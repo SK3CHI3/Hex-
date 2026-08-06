@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import { themeManager } from './themes.js';
+import { getTheme } from './themes.js';
 
 const MAX_LINES = 15;
 
@@ -33,8 +33,8 @@ const parseAnsi = (text) => {
 
 // Apply ANSI color codes
 const applyAnsiCodes = (text, codes) => {
-  if (!codes) return text;
-  
+  if (!codes || !text) return React.createElement(Text, null, text || '');
+
   const codeMap = {
     '30': 'black',
     '31': 'red',
@@ -53,15 +53,15 @@ const applyAnsiCodes = (text, codes) => {
     '96': 'cyanBright',
     '97': 'whiteBright',
   };
-  
+
   const codeNumbers = codes.match(/\d+/g) || [];
   const color = codeMap[codeNumbers[0]];
-  
+
   if (color) {
-    return React.createElement(Text, { color }, text);
+    return React.createElement(Text, { color, key: text }, text);
   }
-  
-  return text;
+
+  return React.createElement(Text, { key: text }, text);
 };
 
 const ToolOutput = ({ 
@@ -71,7 +71,7 @@ const ToolOutput = ({
   expandable = true,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const theme = themeManager.getTheme();
+  const theme = getTheme();
   
   if (!output) {
     return React.createElement(

@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { themeManager } from './themes.js';
+import { getTheme } from './themes.js';
 import { keyMatchers, Command } from './keyBindings.js';
 import { editInExternalEditor } from './externalEditor.js';
 import { handlePaste, expandPastePlaceholders } from './pasteHandler.js';
@@ -29,7 +29,7 @@ const InputBox = ({
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
   
-  const theme = themeManager.getTheme();
+  const theme = getTheme();
   
   // Keep ref in sync
   useEffect(() => {
@@ -58,7 +58,7 @@ const InputBox = ({
     // Handle Ctrl+X Ctrl+E for external editor
     if (waitingForEditorKey) {
       setWaitingForEditorKey(false);
-      if (input === 'e' && key.ctrl) {
+      if (input === 'e') {
         // Open external editor
         editInExternalEditor(value).then(editedContent => {
           setValue(editedContent);
@@ -127,9 +127,10 @@ const InputBox = ({
           setValue(newValue);
           return;
         }
-        if (input === 'd' && key.ctrl) {
-          // Delete to end of line
-          setValue(value.slice(0, cursorPosition));
+        if (input === 'd') {
+          // Delete line (dd in vim normal mode)
+          setValue('');
+          setCursorPosition(0);
           return;
         }
         return;

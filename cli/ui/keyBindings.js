@@ -61,7 +61,6 @@ export const defaultKeyBindings = {
   ],
   [Command.CLEAR_INPUT]: [
     { key: 'c', ctrl: true },
-    { key: 'u', ctrl: true },
   ],
   
   // Cursor movement
