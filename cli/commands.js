@@ -6,6 +6,7 @@ import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS 
 import { listSkills, getSkill } from './skills.js';
 import { randomUUID } from 'crypto';
 import { getTokenUsage } from './tokens.js';
+import { themeManager } from './ui/themes.js';
 
 const C = {
   prompt: chalk.hex('#00FF41'),
@@ -40,7 +41,24 @@ export async function handleCommand(input, context) {
   /thinking    Toggle thinking display (collapsed/expanded)
   /tokens      Show token usage
   /summarize   Manually summarize conversation
-  /quit        Exit Hex`
+  /theme       Switch color theme (dark/light)
+  /fullscreen  Toggle fullscreen mode
+  /editor      Show external editor info
+  /quit        Exit Hex
+
+${C.bold('Keyboard Shortcuts:')}
+  Tab          Autocomplete commands
+  Ctrl+R       Search history
+  Ctrl+V       Toggle vim mode
+  Up/Down      Navigate history
+  Shift+Enter  New line
+  Ctrl+C       Cancel input
+  Ctrl+A       Move to start
+  Ctrl+E       Move to end
+  Ctrl+W       Delete word
+  Ctrl+U       Clear line
+  Ctrl+K       Delete to end
+  PageUp/Down  Scroll history`
       };
 
     case '/clear':
@@ -226,6 +244,49 @@ export async function handleCommand(input, context) {
       const { summarizeOldMessages } = await import('./summary.js');
       context.messages = summarizeOldMessages(context.messages, model);
       return { type: 'info', content: C.green('  ✓ Conversation summarized') };
+    }
+
+    case '/theme': {
+      const themeName = parts[1];
+      
+      if (!themeName) {
+        const available = themeManager.getAvailableThemes();
+        const current = themeManager.getCurrentThemeName();
+        
+        let output = C.bold('\n  Available themes:\n');
+        for (const theme of available) {
+          const marker = theme === current ? C.green(' (current)') : '';
+          output += `  ${theme}${marker}\n`;
+        }
+        output += C.dim('\n  Usage: /theme <name>');
+        
+        return { type: 'info', content: output };
+      }
+      
+      const success = themeManager.setTheme(themeName);
+      if (success) {
+        return { type: 'info', content: C.green(`  ✓ Switched to ${themeName} theme`) };
+      }
+      return { type: 'error', content: C.error(`  Theme '${themeName}' not found`) };
+    }
+
+    case '/fullscreen': {
+      const { fullScreenManager } = await import('./ui/fullScreen.js');
+      fullScreenManager.toggle();
+      const state = fullScreenManager.isActive() ? 'enabled' : 'disabled';
+      return { type: 'info', content: C.dim(`  Fullscreen mode ${state}`) };
+    }
+
+    case '/editor': {
+      const { getEditorInfo } = await import('./ui/externalEditor.js');
+      const info = getEditorInfo();
+      
+      let output = C.bold('\n  External Editor:\n');
+      output += `  Editor: ${C.tool(info.name)}\n`;
+      output += `  Source: ${C.dim(info.envVar)}\n`;
+      output += C.dim('\n  Press Ctrl+X Ctrl+E in input to open editor');
+      
+      return { type: 'info', content: output };
     }
 
     case '/quit':

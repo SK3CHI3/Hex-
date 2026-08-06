@@ -18,6 +18,10 @@ import { platform } from 'os';
 import App from './ui/App.js';
 import Banner from './ui/Banner.js';
 import { themeManager } from './ui/themes.js';
+import { fullScreenManager } from './ui/fullScreen.js';
+import { editInExternalEditor } from './ui/externalEditor.js';
+import { handlePaste, expandPastePlaceholders } from './ui/pasteHandler.js';
+import { isTmux, getSpinnerFrames, getSpinnerInterval } from './ui/terminalEnv.js';
 
 const currentPlatform = platform();
 const platformInfo = currentPlatform === 'win32'
