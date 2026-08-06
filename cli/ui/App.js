@@ -14,6 +14,8 @@ const App = ({
   onSendMessage,
   streaming = false,
   banner = null,
+  model = '',
+  tokenCount = 0,
 }) => {
   const theme = getTheme();
   
@@ -38,6 +40,8 @@ const App = ({
       onSubmit: onSendMessage,
       disabled: streaming,
       streaming,
+      model,
+      tokenCount,
     })
   );
 };

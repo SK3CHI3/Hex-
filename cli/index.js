@@ -263,6 +263,8 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     messages: messages.slice(1), // Skip system message
     onSendMessage: handleSendMessage,
     streaming,
+    model: initialModel,
+    tokenCount,
     banner: React.createElement(Banner, {
       provider: initialProvider.name,
       model: initialModel,

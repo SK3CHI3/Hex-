@@ -10,11 +10,13 @@ import { keyMatchers, Command } from './keyBindings.js';
 import { editInExternalEditor } from './externalEditor.js';
 import { handlePaste, expandPastePlaceholders } from './pasteHandler.js';
 
-const InputBox = ({ 
-  onSubmit, 
+const InputBox = ({
+  onSubmit,
   placeholder = 'Type a command or /help',
   disabled = false,
   streaming = false,
+  model = '',
+  tokenCount = 0,
 }) => {
   const [value, setValue] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -425,23 +427,21 @@ const InputBox = ({
     );
   };
 
-  const borderColor = streaming ? theme.status.thinking : theme.border.focused;
+  const borderColor = streaming ? theme.status.thinking : theme.text.muted;
   const terminalWidth = process.stdout.columns || 80;
   const borderWidth = terminalWidth - 2;
 
   return React.createElement(
     Box,
     { flexDirection: 'column', marginTop: 1 },
-    // Top border with label
+    // Top border (no label)
     React.createElement(
       Box,
       null,
       React.createElement(
         Text,
         { color: borderColor },
-        '─'.repeat(borderWidth - 8) + ' ',
-        React.createElement(Text, { color: theme.text.secondary }, 'Input'),
-        ' ' + '─'.repeat(3)
+        '─'.repeat(borderWidth)
       )
     ),
     // Input area
@@ -479,7 +479,7 @@ const InputBox = ({
     !streaming && React.createElement(
       Box,
       { marginTop: 0 },
-      React.createElement(Text, { color: theme.text.muted }, 'Tab: autocomplete | Ctrl+R: search | Ctrl+V: vim | Ctrl+X Ctrl+E: editor')
+      React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens`)
     )
   );
 };
