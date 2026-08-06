@@ -17,6 +17,8 @@ const InputBox = ({
   streaming = false,
   model = '',
   tokenCount = 0,
+  showThinking = false,
+  onToggleThinking = () => {},
 }) => {
   const [value, setValue] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -173,7 +175,13 @@ const InputBox = ({
       setVimInsertMode(true);
       return;
     }
-    
+
+    // Toggle thinking display (Ctrl+T)
+    if (key.ctrl && input === 't') {
+      onToggleThinking();
+      return;
+    }
+
     // Reverse search (Ctrl+R)
     if (key.ctrl && input === 'r') {
       setReverseSearchActive(true);
@@ -479,7 +487,7 @@ const InputBox = ({
     !streaming && React.createElement(
       Box,
       { marginTop: 0 },
-      React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens`)
+      React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens | Ctrl+T: thinking`)
     )
   );
 };

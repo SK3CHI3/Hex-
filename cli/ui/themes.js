@@ -40,7 +40,7 @@ export const themes = {
       error: '#E06C75',        // Error messages
       warning: '#E5C07B',      // Warning messages
       info: '#61AFEF',         // Info messages
-      thinking: '#C678DD',     // AI thinking state
+      thinking: '#61AFEF',     // AI thinking state (blue instead of purple)
       tool: '#E5C07B',         // Tool execution
     },
     

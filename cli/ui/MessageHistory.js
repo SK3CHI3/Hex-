@@ -1,6 +1,6 @@
 /**
  * MessageHistory component - renders conversation messages
- * NO useInput here - scroll is handled by parent to avoid conflicts
+ * Thinking blocks are collapsed by default, Ctrl+T toggles expansion
  */
 
 import React from 'react';
@@ -8,7 +8,7 @@ import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 import ToolOutput from './ToolOutput.js';
 
-const MessageHistory = ({ messages = [], streaming = false }) => {
+const MessageHistory = ({ messages = [], streaming = false, showThinking = false }) => {
   const theme = getTheme();
 
   if (messages.length === 0) {
@@ -52,16 +52,31 @@ const MessageHistory = ({ messages = [], streaming = false }) => {
 
       // Thinking content (if present)
       if (msg.thinking) {
+        const thinkingLines = msg.thinking.split('\n');
+        const preview = thinkingLines[0] + (thinkingLines.length > 1 ? '...' : '');
+
         children.push(
           React.createElement(
             Box,
             { key: 'thinking', flexDirection: 'column', marginLeft: 2 },
-            React.createElement(Text, { color: theme.status.thinking }, '💭 Thinking:'),
             React.createElement(
               Box,
-              { marginLeft: 2 },
-              React.createElement(Text, { color: theme.text.muted }, msg.thinking)
-            )
+              null,
+              React.createElement(Text, { color: theme.status.thinking }, '💭 Thinking:'),
+              !showThinking
+                ? React.createElement(Text, { color: theme.text.muted }, ` ${preview} [Ctrl+T to expand]`)
+                : null
+            ),
+            showThinking
+              ? React.createElement(
+                  Box,
+                  { marginLeft: 2 },
+                  React.createElement(Text, { color: theme.text.muted }, msg.thinking)
+                )
+              : null,
+            showThinking
+              ? React.createElement(Text, { color: theme.text.muted }, '  [Ctrl+T to collapse]')
+              : null
           )
         );
       }

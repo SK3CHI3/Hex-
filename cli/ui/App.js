@@ -3,7 +3,7 @@
  * Manages the overall layout and state coordination
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 import InputBox from './InputBox.js';
@@ -18,7 +18,8 @@ const App = ({
   tokenCount = 0,
 }) => {
   const theme = getTheme();
-  
+  const [showThinking, setShowThinking] = useState(false);
+
   return React.createElement(
     Box,
     { flexDirection: 'column', height: '100%' },
@@ -32,7 +33,7 @@ const App = ({
     React.createElement(
       Box,
       { key: 'history', flexDirection: 'column', flexGrow: 1 },
-      React.createElement(MessageHistory, { messages, streaming })
+      React.createElement(MessageHistory, { messages, streaming, showThinking })
     ),
     // Input box at bottom
     React.createElement(InputBox, {
@@ -42,6 +43,8 @@ const App = ({
       streaming,
       model,
       tokenCount,
+      showThinking,
+      onToggleThinking: () => setShowThinking(!showThinking),
     })
   );
 };
