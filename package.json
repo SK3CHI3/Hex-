@@ -1,6 +1,6 @@
 {
   "name": "hex-ai",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Terminal-native AI pentesting assistant with 42+ tools, multi-provider AI support, autonomous planning, and web search. Install any security tool, run complex assessments, and get intelligent analysis through natural language.",
   "type": "module",
   "bin": {
