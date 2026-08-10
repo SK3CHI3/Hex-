@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { loadConfig } from './config.js';
+import { loadConfig } from '../core/config.js';
 
 const CONTAINER = 'hex-kali-tools';
 const USER = 'hexagent';

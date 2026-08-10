@@ -1,12 +1,12 @@
 import chalk from 'chalk';
-import { tools } from './tools.js';
-import { isDockerAvailable, isToolAvailable } from './docker.js';
-import { loadConversation, listConversations } from './storage.js';
+import { tools } from '../tools/tools.js';
+import { isDockerAvailable, isToolAvailable } from '../tools/docker.js';
+import { loadConversation, listConversations } from '../storage/storage.js';
 import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS, isLocalProvider } from './config.js';
-import { listSkills, getSkill } from './skills.js';
+import { listSkills, getSkill } from '../storage/skills.js';
 import { randomUUID } from 'crypto';
-import { getTokenUsage } from './tokens.js';
-import { themeManager } from './ui/themes.js';
+import { getTokenUsage } from '../ai/tokens.js';
+import { themeManager } from '../ui/themes.js';
 
 const C = {
   prompt: chalk.hex('#00FF41'),
