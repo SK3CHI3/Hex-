@@ -13,6 +13,7 @@ const App = ({
   messages = [],
   onSendMessage,
   streaming = false,
+  processing = false,
   banner = null,
   model = '',
   tokenCount = 0,
@@ -33,13 +34,13 @@ const App = ({
     React.createElement(
       Box,
       { key: 'history', flexDirection: 'column', flexGrow: 1 },
-      React.createElement(MessageHistory, { messages, streaming, showThinking })
+      React.createElement(MessageHistory, { messages, streaming, processing, showThinking })
     ),
     // Input box at bottom
     React.createElement(InputBox, {
       key: 'input',
       onSubmit: onSendMessage,
-      disabled: streaming,
+      disabled: streaming || processing,
       streaming,
       model,
       tokenCount,

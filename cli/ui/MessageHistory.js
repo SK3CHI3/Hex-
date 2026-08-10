@@ -3,13 +3,23 @@
  * Thinking blocks are collapsed by default, Ctrl+T toggles expansion
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 import ToolOutput from './ToolOutput.js';
 
-const MessageHistory = ({ messages = [], streaming = false, showThinking = false }) => {
+const BRAILLE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false }) => {
   const theme = getTheme();
+  const [frame, setFrame] = useState(0);
+  const isActive = streaming || processing;
+
+  useEffect(() => {
+    if (!isActive) return;
+    const id = setInterval(() => setFrame(f => (f + 1) % BRAILLE_FRAMES.length), 80);
+    return () => clearInterval(id);
+  }, [isActive]);
 
   if (messages.length === 0) {
     return null;
@@ -127,11 +137,11 @@ const MessageHistory = ({ messages = [], streaming = false, showThinking = false
     Box,
     { flexDirection: 'column', paddingX: 1 },
     ...messages.map((msg, index) => renderMessage(msg, index)),
-    // Streaming indicator
-    streaming && React.createElement(
+    // Streaming/processing indicator
+    isActive && React.createElement(
       Box,
       { key: 'streaming', marginTop: 1, marginLeft: 2 },
-      React.createElement(Text, { color: theme.status.thinking }, '⠋ AI is thinking...')
+      React.createElement(Text, { color: theme.status.thinking }, `${BRAILLE_FRAMES[frame]} ${processing && !streaming ? 'Processing...' : 'AI is thinking...'}`)
     )
   );
 };

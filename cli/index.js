@@ -111,6 +111,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [conversationId, setConversationId] = useState(randomUUID());
   const [messages, setMessages] = useState([{ role: 'system', content: SYSTEM_PROMPT }]);
   const [streaming, setStreaming] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null);
   const messagesRef = useRef(messages);
@@ -122,6 +123,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     
     // Handle slash commands
     if (userMessage.startsWith('/')) {
+      setProcessing(true);
       setMessages(currentMessages => {
         const context = {
           conversationId,
@@ -131,11 +133,11 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
           prompt: async () => '',
           executeSkill: async () => {},
         };
-        
+
         handleCommand(userMessage, context).then(result => {
           setConversationId(context.conversationId);
           setMessages(context.messages);
-          
+
           // If command returned a result, add it to messages
           if (result && result.content) {
             const resultMsg = {
@@ -145,8 +147,11 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
             };
             setMessages(prev => [...prev, resultMsg]);
           }
+          setProcessing(false);
+        }).catch(() => {
+          setProcessing(false);
         });
-        
+
         return currentMessages;
       });
       return;
@@ -293,6 +298,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     messages: messages.slice(1), // Skip system message
     onSendMessage: handleSendMessage,
     streaming,
+    processing,
     model: initialModel,
     tokenCount,
     banner: React.createElement(Banner, {
