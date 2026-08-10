@@ -1,112 +1,66 @@
 # Hex AI - Complete Tool Arsenal
 
-## Total: 42 Professional Red Teaming Tools
+## 17 Built-in Tools
 
-All tools are **installed in Docker** and **integrated with AI**!
+Hex comes with 17 pre-configured pentesting tools. If you need more, Hex can install them automatically.
 
 ---
 
-## Network Scanning & Reconnaissance (7)
+## Reconnaissance (4)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
 | `nmap_scan` | Port scanning & service detection | Network mapping, vulnerability discovery |
-| `rustscan` | Ultra-fast port scanner (65k ports in <10s) | Initial recon, time-sensitive engagements |
-| `masscan` | Internet-scale port scanner | Large IP range scanning |
-| `subfinder_enum` | Passive subdomain enumeration | Asset discovery via OSINT |
-| `amass_enum` | Attack surface mapping | Comprehensive subdomain/DNS enumeration |
-| `httpx_probe` | HTTP probing & tech detection | Identify live web services |
-| `dns_lookup` | DNS enumeration | Domain information gathering |
+| `whois_lookup` | Domain registration info | OSINT, target profiling |
+| `dns_lookup` | DNS enumeration (A, AAAA, MX, NS, TXT, CNAME, SOA, ANY) | Domain information gathering |
+| `sslscan` | SSL/TLS configuration testing | Certificate & cipher analysis |
 
 ---
 
-## Web Application Testing (10)
+## Web Application Testing (5)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
 | `sqlmap_test` | SQL injection detection & exploitation | Database extraction, auth bypass |
-| `nuclei_scan` | CVE & vulnerability scanner (5000+ templates) | Automated vuln detection |
-| `ffuf_fuzz` | Fast web fuzzer | Directory discovery, parameter fuzzing |
-| `feroxbuster_scan` | Recursive content discovery | Hidden file/directory enumeration |
-| `gobuster_scan` | Directory brute-forcing | Web content discovery |
 | `nikto_scan` | Web server vulnerability scanner | Misconfiguration detection |
+| `gobuster_scan` | Directory/file brute-forcing | Web content discovery |
 | `wpscan` | WordPress vulnerability scanner | WP plugin/theme exploitation |
-| `curl_request` | HTTP requests | API testing, header manipulation |
-| `sslscan` | SSL/TLS testing | Certificate & cipher analysis |
-| `whatweb` | Technology fingerprinting | Tech stack identification |
+| `curl_request` | HTTP/HTTPS requests | API testing, header manipulation |
 
 ---
 
-## Active Directory & Windows (8)
+## Password Attacks (2)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
-| `crackmapexec` | SMB/WinRM/LDAP exploitation | AD enumeration, credential dumping |
-| `bloodhound_collect` | AD attack path mapping | Privilege escalation paths |
-| `kerbrute` | Kerberos brute-forcing | User enumeration, ASREPRoasting |
-| `responder` | LLMNR/NBT-NS poisoning | Credential capture, MITM |
-| `impacket_tool` | Network protocol exploitation | secretsdump, psexec, wmiexec |
-| `enum4linux_ng` | SMB/LDAP enumeration | Windows share/user enumeration |
-| `ldapsearch_query` | LDAP queries | AD reconnaissance |
-| `rpcclient_enum` | MS-RPC enumeration | Windows system enumeration |
+| `hydra_attack` | Network login brute-forcing (ssh, ftp, http-get, mysql, postgres, rdp, vnc) | Online password cracking |
+| `hashcat_crack` | Hash cracking (md5, sha1, sha256, sha512, ntlm, bcrypt) | Offline hash cracking |
 
 ---
 
-## Password Cracking (2)
+## Enumeration (2)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
-| `hydra_attack` | Network login brute-forcing | SSH, FTP, HTTP, RDP attacks |
-| `hashcat_crack` | Hash cracking | NTLM, MD5, SHA, bcrypt cracking |
+| `enum4linux` | Windows/SMB enumeration (users, shares, groups, all) | AD reconnaissance |
+| `smbmap` | SMB enumeration with authentication | Windows share/user enumeration |
 
 ---
 
-## Exploitation & Post-Exploitation (1)
+## Utilities (4)
 
 | Tool | Function | Use Case |
 |------|----------|----------|
-| `metasploit_search` | Exploit framework | Vulnerability exploitation |
+| `web_search` | DuckDuckGo search (no API key required) | OSINT, CVE research, documentation |
+| `install_tool` | Install missing tools (apt, pip, npm, go, git) | Add tools on-the-fly |
+| `raw_command` | Execute any shell command directly | Custom commands, scripts |
+| `skill_manage` | Create/delete/list reusable attack workflows | Skill management |
 
 ---
 
-## WiFi / Wireless Hacking (8)
+## Automatic Tool Installation
 
-| Tool | Function | Use Case |
-|------|----------|----------|
-| `aircrack_ng` | WEP/WPA cracking | WiFi password recovery |
-| `wifite` | Automated wireless attacks | Mass WiFi penetration testing |
-| `bettercap` | Network MITM & attacks | ARP spoofing, packet sniffing |
-| `reaver_wps` | WPS PIN brute-forcing | WPS exploitation |
-| `wash_wps` | WPS scanner | Identify WPS-enabled APs |
-| `mdk4_attack` | Wireless DoS | Deauth attacks, beacon flooding |
-| `hostapd_evil_twin` | Rogue AP creation | Credential harvesting |
-| `kismet_scan` | Wireless IDS | WiFi network detection |
-
----
-
-## Pivoting & Tunneling (4)
-
-| Tool | Function | Use Case |
-|------|----------|----------|
-| `chisel_tunnel` | TCP/UDP tunneling over HTTP | Port forwarding, pivoting |
-| `socat_relay` | Bidirectional relay | Network redirection |
-| `netcat_listener` | Network Swiss army knife | Reverse shells, port forwarding |
-| `proxychains` | Proxy routing | Traffic anonymization, pivoting |
-
----
-
-## Utilities & Reporting (2)
-
-| Tool | Function | Use Case |
-|------|----------|----------|
-| `whois_lookup` | Domain registration info | OSINT, target profiling |
-| `generate_report` | Professional pentesting reports | Documentation, deliverables |
-
----
-
-## Beyond the Built-in Tools
-
-**You're not limited to these 42 tools.** Hex can install and use any pentesting tool you need.
+**You're not limited to these 17 tools.** Hex can install any tool you need automatically.
 
 ### Ask Hex to Install Tools
 
@@ -117,62 +71,94 @@ All tools are **installed in Docker** and **integrated with AI**!
 ❯ Install the latest version of sqlmap
 ```
 
-Hex will handle the installation and configuration for you. Once installed, use them just like built-in tools:
+Hex uses the `install_tool` function with automatic method detection:
+
+```javascript
+// AI calls install_tool
+install_tool({ tool_name: "rustscan" })
+install_tool({ tool_name: "requests", install_method: "pip" })
+install_tool({ tool_name: "lodash", install_method: "npm" })
+install_tool({ tool_name: "github.com/user/tool", install_method: "go" })
+```
+
+**Supported installation methods:**
+- `apt` — Debian/Kali packages (default for Docker)
+- `pip` — Python packages
+- `npm` — Node.js packages
+- `go` — Go tools
+- `git` — Clone from repository
+- `auto` — Detect best method based on tool name
+
+### How It Works
+
+**Docker Mode:**
+```bash
+# Hex runs inside Kali container
+docker exec hex-kali-tools apt-get install -y rustscan
+```
+
+**Direct Mode:**
+```bash
+# Hex runs on your machine
+sudo apt-get install -y rustscan
+# or
+pip3 install requests
+# or
+npm install -g lodash
+```
+
+### Using Installed Tools
+
+Once installed, use them just like built-in tools:
 
 ```
 ❯ Use rustscan to scan 192.168.1.1
 ❯ Run ffuf against https://target.com
 ```
 
-See [Custom Tools Guide](CUSTOM_TOOLS.md) for detailed instructions on installing and managing additional tools.
+Hex will automatically detect and use the tool via `raw_command`.
 
 ---
 
-## Quick Use Examples
+## Tool Execution Flow
 
-### Network Recon
 ```
-"Scan 192.168.1.0/24 for open ports using rustscan"
-"Enumerate subdomains for example.com with subfinder"
-```
-
-### Web Testing
-```
-"Use nuclei to scan https://target.com for CVEs"
-"Fuzz https://target.com/FUZZ with ffuf using common wordlist"
-"Test https://target.com for SQL injection with sqlmap"
-```
-
-### Active Directory
-```
-"Use crackmapexec to enumerate SMB shares on 10.10.10.10"
-"Run bloodhound collection against CORP.LOCAL domain"
-"Use kerbrute to enumerate users on domain DC 10.10.10.5"
-```
-
-### WiFi Hacking
-```
-"Use wifite to attack wireless networks on wlan0"
-"Perform WPS attack with reaver on BSSID AA:BB:CC:DD:EE:FF"
-"Create evil twin AP named 'Free WiFi' on channel 6"
-```
-
-### Password Attacks
-```
-"Use hydra to brute-force SSH on 192.168.1.10"
-"Crack NTLM hash with hashcat"
+┌─────────────────────────────────────────┐
+│  AI decides to use a tool               │
+│  Example: nmap_scan(target, scan_type)  │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  executor.js maps tool → command        │
+│  nmap_scan → nmap -F 192.168.1.1       │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  docker.js executes via mode            │
+│  Direct: spawn('nmap', ['-F', '...'])   │
+│  Docker: docker exec hex-kali-tools ... │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│  Output streams to terminal + AI        │
+│  AI analyzes results, may call more     │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## Docker Container
+## Docker Container Tools
 
-All tools are pre-installed in **Kali Linux Docker container** (`hex-kali-tools`):
+When using Docker mode, the Kali container comes with 42+ pre-installed tools:
 
 ### Installed via APT:
-- Standard Kali tools (nmap, aircrack-ng, hydra, etc.)
-- WiFi tools (bettercap, kismet, mdk4)
-- Windows tools (crackmapexec, responder)
+- nmap, sqlmap, hydra, hashcat, john, nikto, gobuster, wpscan
+- aircrack-ng, bettercap, kismet, mdk4
+- crackmapexec, responder, enum4linux-ng
+- impacket suite, bloodhound, pwntools
 
 ### Installed via Go:
 - nuclei, subfinder, httpx (ProjectDiscovery suite)
@@ -181,12 +167,92 @@ All tools are pre-installed in **Kali Linux Docker container** (`hex-kali-tools`
 ### Installed via Binary:
 - feroxbuster (Rust)
 - chisel (tunneling)
-- enum4linux-ng
 
 ### Installed via Python:
 - impacket suite
 - bloodhound
 - pwntools
+
+**Note:** These tools are available in Docker mode regardless of what's installed on your host machine.
+
+---
+
+## Quick Use Examples
+
+### Network Recon
+```
+❯ Scan 192.168.1.0/24 for open ports
+❯ Enumerate DNS records for example.com
+❯ Check SSL configuration for target.com
+```
+
+### Web Testing
+```
+❯ Test https://target.com for SQL injection
+❯ Find hidden directories on http://testsite.local
+❯ Scan WordPress site for vulnerable plugins
+```
+
+### Password Attacks
+```
+❯ Brute force SSH on 192.168.1.10 with common passwords
+❯ Crack this NTLM hash: abc123...
+❯ Test FTP login with username admin
+```
+
+### Active Directory
+```
+❯ Enumerate SMB shares on 192.168.1.100
+❯ List domain users on CORP.LOCAL
+```
+
+### Research & OSINT
+```
+❯ Search for recent CVEs in Apache
+❯ Find information about Log4j vulnerability
+❯ Research target.com technology stack
+```
+
+---
+
+## Beyond the Built-in Tools
+
+**You're not limited to these 17 tools.** Hex can install and use any pentesting tool you need.
+
+### Popular Tools to Install
+
+**Network Scanning:**
+- rustscan — Ultra-fast port scanner
+- masscan — Internet-scale scanner
+- naabu — Fast port discovery
+
+**Web Testing:**
+- ffuf — Fast web fuzzer
+- feroxbuster — Recursive content discovery
+- katana — Next-gen crawler
+
+**Enumeration:**
+- crackmapexec — Network pentesting
+- bloodhound — AD attack path mapping
+
+**Exploitation:**
+- metasploit — Exploit framework
+- exploitdb — Exploit database
+
+### Install and Use
+
+```
+❯ Install rustscan
+
+✓ Successfully installed rustscan
+
+❯ Use rustscan to scan 192.168.1.1
+
+$ rustscan -a 192.168.1.1
+...
+```
+
+See [Custom Tools Guide](CUSTOM_TOOLS.md) for detailed instructions.
 
 ---
 
@@ -194,55 +260,98 @@ All tools are pre-installed in **Kali Linux Docker container** (`hex-kali-tools`
 
 Hex AI automatically:
 - Detects tool needs based on your requests
-- Selects appropriate tools using smart keyword matching
-- Executes tools in isolated Docker environment
+- Selects appropriate tools from the 17 built-in options
+- Installs missing tools via `install_tool` when needed
+- Executes tools in isolated Docker environment (if using Docker mode)
 - Parses results and provides analysis
-- Optimizes payload (only sends tools when needed)
+- Chains multiple tools in agentic loop (up to 100 rounds)
 
 ### Smart Tool Loading
 
 ```
 User: "Hello"
--> AI skips sending tools (saved 50KB payload)
+→ AI skips sending tools (saved payload size)
 
 User: "Scan example.com for vulnerabilities"
--> AI loads nuclei, nmap, httpx tools automatically
+→ AI uses nmap_scan, nikto_scan, sqlmap_test
 
-User: "Crack WiFi password"
--> AI loads aircrack-ng, wifite, bettercap tools
+User: "Crack this hash"
+→ AI uses hashcat_crack
+```
+
+### Agentic Loop Example
+
+```
+❯ Pentest example.com
+
+I'll create a plan:
+  1. Reconnaissance - scan ports, enumerate subdomains
+  2. Web testing - check for vulnerabilities
+  3. Analysis - compile findings
+
+Executing Step 1/3: Reconnaissance...
+[nmap_scan("example.com", "quick")]
+→ Found 3 open ports: 22, 80, 443
+
+[dns_lookup("example.com", "A")]
+→ IP: 93.184.216.34
+
+Executing Step 2/3: Web Testing...
+[nikto_scan("example.com")]
+→ Found 5 vulnerabilities
+
+[sqlmap_test("http://example.com/login", level=3)]
+→ SQL injection found in 'username' parameter
+
+Executing Step 3/3: Analysis...
+→ Compiled findings into report
 ```
 
 ---
 
-## Statistics
+## Tool Definitions
 
-| Category | Tools | Installed |
-|----------|-------|-----------|
-| Network Recon | 7 | Yes |
-| Web Testing | 10 | Yes |
-| Active Directory | 8 | Yes |
-| Password Cracking | 2 | Yes |
-| Exploitation | 1 | Yes |
-| WiFi Hacking | 8 | Yes |
-| Pivoting | 4 | Yes |
-| Utilities | 2 | Yes |
-| **TOTAL** | **42** | **Yes** |
+Tools are defined in `cli/tools/tools.js` using OpenAI-compatible function calling format:
+
+```javascript
+{
+  type: 'function',
+  function: {
+    name: 'nmap_scan',
+    description: 'Perform network reconnaissance using Nmap...',
+    parameters: {
+      type: 'object',
+      properties: {
+        target: { type: 'string', description: 'Target IP or domain' },
+        scan_type: {
+          type: 'string',
+          enum: ['ping', 'quick', 'port', 'service', 'full', 'stealth', 'vuln']
+        },
+        ports: { type: 'string', description: 'Port spec (e.g. "80,443")' }
+      },
+      required: ['target', 'scan_type']
+    }
+  }
+}
+```
+
+The AI sees these definitions and knows exactly how to call each tool.
 
 ---
 
 ## Security Notes
 
-- All tools run in **isolated Docker container**
-- **Non-root user** (`hexagent`) for security
-- **Resource limits** enforced (2GB RAM, 2 CPUs)
-- **Timeout protection** (300s default)
-- **Ethical use only** - for authorized testing
+- All tools run in **isolated Docker container** (if using Docker mode)
+- **Non-root user** (`hexagent`) for security in Docker
+- **No timeout** — tools can run as long as needed
+- **Ethical use only** — for authorized testing
+- **Local execution** in Direct mode (tools run on your machine)
 
 ---
 
 ## Rebuild Docker Container
 
-If you need to rebuild with all new tools:
+If you need to rebuild with all tools:
 
 ```bash
 cd server/docker
@@ -250,9 +359,3 @@ docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
 ```
-
-**Build time:** ~15-20 minutes (downloads Go, compiles tools)
-
----
-
-**Built by Victor** | Powered by ModelScope (Qwen3.7-Plus) | Kali Linux Tools

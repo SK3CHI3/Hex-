@@ -2,77 +2,206 @@
 
 ## Overview
 
-Hex comes with 42+ pre-configured tools, but you're not limited to those. You can ask the AI to install and use **any pentesting tool** you need. Hex will handle the installation and execution for you.
+Hex comes with 17 built-in tools, but you're not limited to those. Hex can **automatically install** any tool you need using the `install_tool` function, or you can ask the AI to install tools manually.
 
 ---
 
-## Installing Custom Tools
+## Automatic Tool Installation
 
-### Direct Mode
+### The install_tool Function
 
-When using Direct mode (default), you can ask Hex to install tools on your machine:
+Hex has a built-in `install_tool` function that the AI can call to install missing tools:
 
-```
-❯ Install gobuster on my machine
-
-I'll install gobuster for you. This will download the latest release from GitHub.
-
-$ wget https://github.com/OJ/gobuster/releases/download/v3.6.0/gobuster_Linux_x86_64.tar.gz
-$ tar -xzf gobuster_Linux_x86_64.tar.gz
-$ sudo mv gobuster /usr/local/bin/
-
-✓ gobuster installed successfully. You can now use it for directory brute-forcing.
+```javascript
+// AI calls install_tool
+install_tool({ tool_name: "rustscan" })
+install_tool({ tool_name: "requests", install_method: "pip" })
+install_tool({ tool_name: "lodash", install_method: "npm" })
+install_tool({ tool_name: "github.com/user/tool", install_method: "go" })
 ```
 
-**Examples:**
-- "Install rustscan"
-- "Install ffuf"
-- "Install nuclei"
-- "Install the latest version of sqlmap"
-- "Install impacket tools"
+**Supported installation methods:**
+- `apt` — Debian/Kali packages (default for Docker)
+- `pip` — Python packages
+- `npm` — Node.js packages
+- `go` — Go tools
+- `git` — Clone from repository
+- `auto` — Detect best method based on tool name (default)
 
-### Docker Mode
+### How Auto-Detection Works
 
-When using Docker mode, you can ask Hex to install tools inside the Kali container:
-
+```javascript
+if (install_method === 'auto') {
+  if (tool_name.includes('git+') || tool_name.startsWith('http')) {
+    // Git clone
+    command = 'git';
+  } else if (tool_name.includes('/') && !tool_name.includes(' ')) {
+    // Go package (e.g. github.com/user/tool)
+    command = 'go';
+  } else {
+    // Default to apt
+    command = 'apt-get';
+  }
+}
 ```
-❯ Install rustscan in the container
 
-I'll install rustscan inside the Kali container.
+### Execution Modes
 
-$ docker exec hex-kali-tools bash -c "curl -sL https://github.com/RustScan/RustScan/releases/download/2.2.3/rustscan_2.2.3_amd64.deb | dpkg -i -"
-
-✓ rustscan installed in container. Ready to use.
+**Docker Mode:**
+```bash
+# Hex runs inside Kali container
+docker exec hex-kali-tools apt-get install -y rustscan
 ```
 
-**Note:** Tools installed in the container are ephemeral. If you rebuild the container, you'll need to reinstall them. To make tools permanent, add them to `server/docker/Dockerfile.kali`.
+**Direct Mode:**
+```bash
+# Hex runs on your machine
+sudo apt-get install -y rustscan
+# or
+pip3 install requests
+# or
+npm install -g lodash
+```
 
 ---
 
-## Using Custom Tools
+## Asking Hex to Install Tools
 
-Once installed, you can use custom tools just like built-in ones:
+### Simple Installation
+
+```
+❯ Install rustscan
+
+I'll install rustscan for you.
+
+[install_tool({ tool_name: "rustscan" })]
+✓ Successfully installed rustscan
+```
+
+### Install and Use
+
+```
+❯ Install ffuf and use it to fuzz https://target.com
+
+I'll install ffuf first, then run it.
+
+[install_tool({ tool_name: "ffuf" })]
+✓ Successfully installed ffuf
+
+[raw_command("ffuf -u https://target.com/FUZZ -w /usr/share/wordlists/common.txt")]
+...
+```
+
+### Batch Installation
+
+```
+❯ Install rustscan, ffuf, and nuclei
+
+I'll install all three tools for you.
+
+[1/3] Installing rustscan...
+[install_tool({ tool_name: "rustscan" })]
+✓ rustscan installed
+
+[2/3] Installing ffuf...
+[install_tool({ tool_name: "ffuf" })]
+✓ ffuf installed
+
+[3/3] Installing nuclei...
+[install_tool({ tool_name: "nuclei" })]
+✓ nuclei installed
+
+All tools installed successfully.
+```
+
+---
+
+## Installation Methods
+
+### APT Packages (Debian/Kali)
+
+```
+❯ Install nmap
+❯ Install sqlmap
+❯ Install hydra
+```
+
+Hex runs:
+```bash
+# Docker mode
+docker exec hex-kali-tools apt-get update -qq
+docker exec hex-kali-tools apt-get install -y nmap
+
+# Direct mode
+sudo apt-get update -qq
+sudo apt-get install -y nmap
+```
+
+### Python Packages (pip)
+
+```
+❯ Install requests using pip
+❯ Install pwntools
+❯ Install impacket
+```
+
+Hex runs:
+```bash
+pip3 install requests
+```
+
+Or specify the method:
+```
+❯ install_tool({ tool_name: "requests", install_method: "pip" })
+```
+
+### Node.js Packages (npm)
+
+```
+❯ Install lodash using npm
+❯ Install axios globally
+```
+
+Hex runs:
+```bash
+npm install -g lodash
+```
+
+### Go Tools
+
+```
+❯ Install github.com/projectdiscovery/nuclei/v3/cmd/nuclei
+❯ Install ffuf from Go
+```
+
+Hex runs:
+```bash
+go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+```
+
+### Git Repositories
+
+```
+❯ Clone https://github.com/user/tool
+❯ Install from git+https://github.com/user/tool
+```
+
+Hex runs:
+```bash
+git clone https://github.com/user/tool
+```
+
+---
+
+## Using Installed Tools
+
+Once installed, use tools via `raw_command`:
 
 ```
 ❯ Use rustscan to scan 192.168.1.1
 
-$ rustscan -a 192.168.1.1
-
-.----. .-. .-. .----..---.  .----. .---.   .--.  .-. .-.
-| {}  }| { } |{ {__ {_   _}{ {__  /  ___} / {} \ |  `| |
-| .-. \| {_} |.-._} } | |  .-._} }\     }/  /\  \| |\  |
-`-' `-'`-----'`----'  `-'  `----'  `---' `-'  `-'`-' `-'
-The Modern Day Port Scanner.
-________________________________________
-
-[~] The config file is expected to be at "/root/.rustscan.toml"
-[~] File limit higher than batch size. Can increase speed by increasing batch size.
-Open [192.168.1.1]
-22/tcp  ->  ssh
-80/tcp  ->  http
-443/tcp ->  https
-
-Found 3 open ports.
+[raw_command("rustscan -a 192.168.1.1")]
+...
 ```
 
 Hex will automatically detect and use the tool, even if it's not in the pre-configured list.
@@ -96,7 +225,9 @@ Add the tool directory to your system PATH environment variable.
 
 ### Docker Mode
 
-To permanently add tools to the Kali container, edit `server/docker/Dockerfile.kali`:
+Tools installed via `install_tool` in Docker mode are ephemeral. If you rebuild the container, you'll need to reinstall them.
+
+To make tools permanent, add them to `server/docker/Dockerfile.kali`:
 
 ```dockerfile
 # Example: Add rustscan
@@ -156,9 +287,8 @@ If you get permission errors:
 ❯ Install gobuster
 Error: Permission denied
 
-# Solution: Use sudo or install to user directory
-$ sudo apt install gobuster
-# OR
+# Solution: Hex uses sudo automatically for apt
+# Or install to user directory
 $ mkdir -p ~/.local/bin
 $ wget ... -O ~/.local/bin/gobuster
 $ chmod +x ~/.local/bin/gobuster
@@ -178,7 +308,7 @@ If not found, add the installation directory to your PATH.
 
 ### Docker Container Tool Lost After Rebuild
 
-Tools installed via `docker exec` are ephemeral. To make them permanent:
+Tools installed via `install_tool` in Docker mode are ephemeral. To make them permanent:
 
 1. Add the installation command to `server/docker/Dockerfile.kali`
 2. Rebuild: `npm run docker:build`
@@ -191,15 +321,26 @@ Some tools (especially Go tools) take time to compile. Options:
 - Install during off-peak hours
 - Use Docker mode with pre-built tools
 
+### Installation Method Detection Fails
+
+If auto-detection doesn't work, specify the method:
+
+```
+❯ install_tool({ tool_name: "requests", install_method: "pip" })
+❯ install_tool({ tool_name: "lodash", install_method: "npm" })
+❯ install_tool({ tool_name: "nuclei", install_method: "go" })
+```
+
 ---
 
 ## Best Practices
 
-1. **Test tools in isolation first** - Especially in Docker mode
-2. **Keep tools updated** - Ask Hex to update tools periodically
-3. **Document custom tools** - Add notes to your conversation history
-4. **Use wordlists wisely** - Download only what you need
-5. **Monitor resource usage** - Some tools are CPU/memory intensive
+1. **Use install_tool for missing tools** — Hex handles installation automatically
+2. **Test tools in isolation first** — Especially in Docker mode
+3. **Keep tools updated** — Ask Hex to update tools periodically
+4. **Document custom tools** — Add notes to your conversation history
+5. **Use wordlists wisely** — Download only what you need
+6. **Monitor resource usage** — Some tools are CPU/memory intensive
 
 ---
 
@@ -212,11 +353,10 @@ Many tools require wordlists. Hex can help you download them:
 
 I'll download popular wordlists to ~/.hex/wordlists/
 
-$ wget -O ~/.hex/wordlists/common.txt https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt
-$ wget -O ~/.hex/wordlists/rockyou.txt https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt
-$ wget -O ~/.hex/wordlists/subdomains-top1million.txt https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/subdomains-top1million-110000.txt
+[raw_command("wget -O ~/.hex/wordlists/common.txt https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/common.txt")]
+[raw_command("wget -O ~/.hex/wordlists/rockyou.txt https://github.com/brannondorsey/naive-hashcat/releases/download/data/rockyou.txt")]
 
-✓ Downloaded 3 wordlists (156 MB total)
+✓ Downloaded 2 wordlists
 ```
 
 **Popular wordlists:**
@@ -234,25 +374,13 @@ $ wget -O ~/.hex/wordlists/subdomains-top1million.txt https://raw.githubusercont
 ```
 ❯ Install naabu
 
-$ GO111MODULE=on go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
-
+[install_tool({ tool_name: "naabu", install_method: "go" })]
 ✓ naabu installed. Ready to use.
 
 ❯ Use naabu to scan example.com
 
-$ naabu -host example.com
-
-                  __
-  ___  ___  ___ _/ /
-  / __|/ _ \/ _ \_  /
-  \__ \  __/  __// /
-  |___/\___|\___/_/ v2.1.0
-
-[INF] Running scan on example.com
-[INF] Found 3 ports
-example.com:80
-example.com:443
-example.com:22
+[raw_command("naabu -host example.com")]
+...
 ```
 
 ### Batch Install Multiple Tools
@@ -260,21 +388,28 @@ example.com:22
 ```
 ❯ Install rustscan, ffuf, and nuclei
 
-I'll install all three tools for you.
-
-[1/3] Installing rustscan...
-$ curl -sL https://github.com/RustScan/RustScan/releases/download/2.2.3/rustscan_2.2.3_amd64.deb | sudo dpkg -i -
+[install_tool({ tool_name: "rustscan" })]
 ✓ rustscan installed
 
-[2/3] Installing ffuf...
-$ go install github.com/ffuf/ffuf/v2@latest
+[install_tool({ tool_name: "ffuf", install_method: "go" })]
 ✓ ffuf installed
 
-[3/3] Installing nuclei...
-$ go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+[install_tool({ tool_name: "nuclei", install_method: "go" })]
 ✓ nuclei installed
 
 All tools installed successfully.
+```
+
+### Install Python Tool and Use It
+
+```
+❯ Install impacket and dump hashes from 10.0.0.1
+
+[install_tool({ tool_name: "impacket", install_method: "pip" })]
+✓ impacket installed
+
+[raw_command("secretsdump.py CORP/admin@10.0.0.1")]
+...
 ```
 
 ---
@@ -315,4 +450,4 @@ Want me to install it for you?
 
 ---
 
-**Remember:** Hex is your assistant. If you need a tool that's not pre-configured, just ask. The AI will handle installation, configuration, and execution for you.
+**Remember:** Hex is your assistant. If you need a tool that's not pre-configured, just ask. The AI will handle installation, configuration, and execution for you using the `install_tool` function.

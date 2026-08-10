@@ -3,8 +3,8 @@
 ```
   ██╗  ██╗███████╗██╗  ██╗
   ██║  ██║██╔════╝╚██╗██╔╝
-  ███████║███████╗ ╚███╔╝ 
-  ██╔══██║██╔════╝ ██╔██╗ 
+  ███████║███████╗ ╚███╔╝
+  ██╔══██║██╔════╝ ██╔██╗
   ██║  ██║███████╗██╔╝ ██╗
   ╚═╝  ╚═╝╚══════╝ ╚═╝  ╚═╝
 ```
@@ -22,7 +22,7 @@
 
 ## About
 
-Hex is a terminal-native AI pentesting assistant that runs 42+ security tools through natural language. Chat with AI, execute nmap/sqlmap/hydra/hashcat, and get real-time results — all without leaving your terminal. Supports multiple AI providers (OpenAI, Anthropic, Google, Ollama) and optional Docker isolation.
+Hex is a terminal-native AI pentesting assistant built with React + Ink. Chat with AI, execute security tools through natural language, create reusable attack workflows with skills, and automatically install missing tools — all without leaving your terminal. Supports 14 AI providers (5 local + 9 cloud) and optional Docker isolation with Kali Linux.
 
 ---
 
@@ -65,19 +65,37 @@ Complete guides and references:
 | **[Features](docs/FEATURES.md)** | Complete feature overview |
 | **[Setup Guide](docs/SETUP_GUIDE.md)** | Installation, configuration, and first run |
 | **[Quick Start](docs/QUICK_START.md)** | CLI commands and usage examples |
-| **[Multi-Provider AI](docs/MULTI_PROVIDER.md)** | Configure OpenAI, Anthropic, Google, Ollama, or custom endpoints |
-| **[Tool Arsenal](docs/TOOL_ARSENAL.md)** | All 42+ pentesting tools available |
-| **[Custom Tools](docs/CUSTOM_TOOLS.md)** | Install and use additional tools beyond the built-in 42+ |
+| **[Multi-Provider AI](docs/MULTI_PROVIDER.md)** | Configure 14 AI providers (OpenAI, Anthropic, Ollama, etc.) |
+| **[Tool Arsenal](docs/TOOL_ARSENAL.md)** | 17 built-in tools + automatic tool installation |
+| **[Custom Tools](docs/CUSTOM_TOOLS.md)** | Install and use additional tools beyond the built-in set |
 | **[Architecture](docs/ARCHITECTURE.md)** | How Hex works under the hood |
+| **[Local LLM](docs/local-llm.md)** | Running AI models locally with Ollama, LM Studio, etc. |
 
 ---
 
 ## Tech Stack
 
-- **Runtime:** Node.js 18+ with readline + chalk
-- **AI:** OpenAI / Anthropic / Google Gemini / Ollama / Custom OpenAI-compatible
+- **Runtime:** Node.js 18+ with React + Ink for terminal UI
+- **UI:** Component-based architecture with semantic color themes
+- **AI:** 14 providers — OpenAI, Anthropic, Google, DeepSeek, Ollama, LM Studio, and more
 - **Execution:** Direct (default) or Docker + Kali Linux
 - **Storage:** Local JSON in `~/.hex/`
+- **Skills:** Reusable multi-step attack workflows
+
+---
+
+## Key Features
+
+- **17 Built-in Tools** — nmap, sqlmap, hydra, hashcat, nikto, gobuster, and more
+- **Automatic Tool Installation** — AI installs missing tools on-the-fly via `install_tool`
+- **Skills System** — Create reusable attack workflows with `/skill` command
+- **Agentic Loop** — Multi-step task execution with automatic tool chaining (up to 100 rounds)
+- **Web Search** — DuckDuckGo integration for OSINT, CVE research, and documentation
+- **Multi-Provider AI** — Switch between 14 providers with `/provider` command
+- **React + Ink UI** — Fixed input at bottom, scrolling output, syntax highlighting
+- **Thinking Models** — Support for models with reasoning capabilities
+- **Conversation Management** — Persistent history with `/resume` and `/history`
+- **Docker Isolation** — Optional Kali Linux container with 42+ pre-installed tools
 
 ---
 
