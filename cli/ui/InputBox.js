@@ -343,49 +343,54 @@ const InputBox = ({
   // Syntax highlighting for input
   const renderHighlightedText = () => {
     if (!value) return null;
-    
-    // Detect slash commands
-    if (value.startsWith('/')) {
-      const parts = value.split(' ');
-      const command = parts[0];
-      const rest = parts.slice(1).join(' ');
-      
-      return React.createElement(
-        Box,
-        null,
-        React.createElement(Text, { color: theme.syntax.command }, command),
-        rest && React.createElement(Text, { color: theme.text.primary }, ' ' + rest)
-      );
-    }
-    
-    // Detect @file paths
-    if (value.includes('@')) {
-      const parts = value.split(/(@[^\s]+)/);
-      return React.createElement(
-        Box,
-        null,
-        ...parts.map((part, i) => {
-          if (part.startsWith('@')) {
-            return React.createElement(Text, { key: i, color: theme.syntax.path }, part);
-          }
-          return React.createElement(Text, { key: i, color: theme.text.primary }, part);
-        })
-      );
-    }
-    
-    // Default: plain text
-    return React.createElement(Text, { color: theme.text.primary }, value);
-  };
 
-  // Render cursor
-  const renderCursor = () => {
-    if (disabled || !value) return null; // Don't show cursor when placeholder is shown
-    
+    // Split text at cursor position for proper cursor rendering
+    const beforeCursor = value.slice(0, cursorPosition);
     const cursorChar = value[cursorPosition] || ' ';
+    const afterCursor = value.slice(cursorPosition + 1);
+
+    const renderSegment = (text) => {
+      if (!text) return null;
+
+      // Detect slash commands
+      if (text.startsWith('/')) {
+        const parts = text.split(' ');
+        const command = parts[0];
+        const rest = parts.slice(1).join(' ');
+
+        return React.createElement(
+          Box,
+          { key: 'hl' },
+          React.createElement(Text, { color: theme.syntax.command }, command),
+          rest && React.createElement(Text, { color: theme.text.primary }, ' ' + rest)
+        );
+      }
+
+      // Detect @file paths
+      if (text.includes('@')) {
+        const parts = text.split(/(@[^\s]+)/);
+        return React.createElement(
+          Box,
+          { key: 'hl' },
+          ...parts.map((part, i) => {
+            if (part.startsWith('@')) {
+              return React.createElement(Text, { key: i, color: theme.syntax.path }, part);
+            }
+            return React.createElement(Text, { key: i, color: theme.text.primary }, part);
+          })
+        );
+      }
+
+      // Default: plain text
+      return React.createElement(Text, { key: 'hl', color: theme.text.primary }, text);
+    };
+
     return React.createElement(
-      Text,
-      { color: theme.ui.cursor, inverse: true },
-      cursorChar
+      Box,
+      null,
+      renderSegment(beforeCursor),
+      React.createElement(Text, { color: theme.ui.cursor, inverse: true }, cursorChar),
+      renderSegment(afterCursor)
     );
   };
 
@@ -498,7 +503,6 @@ const InputBox = ({
         renderPlaceholder(),
         value ? renderHighlightedText() : null,
         renderGhostText(),
-        renderCursor(),
         renderVimIndicator(),
         renderVimDeletePending(),
         renderEditorWaiting()
