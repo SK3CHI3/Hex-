@@ -250,4 +250,42 @@ export const tools = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'skill_manage',
+      description: 'Create, delete, or list reusable attack workflow skills. Skills are multi-step automation sequences that can be run with /skill command.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['create', 'delete', 'list'],
+            description: 'Action to perform: create a new skill, delete an existing skill, or list all skills',
+          },
+          name: {
+            type: 'string',
+            description: 'Skill name (required for create/delete). Use lowercase with hyphens (e.g. "web-recon", "network-scan")',
+          },
+          description: {
+            type: 'string',
+            description: 'Brief description of what the skill does (required for create)',
+          },
+          steps: {
+            type: 'array',
+            description: 'Array of tool execution steps (required for create). Each step has "tool" (tool name) and "args" (object with tool arguments). Use {{variable}} for user-provided values.',
+            items: {
+              type: 'object',
+              properties: {
+                tool: { type: 'string', description: 'Tool name to execute' },
+                args: { type: 'object', description: 'Tool arguments with {{variable}} placeholders' },
+              },
+              required: ['tool', 'args'],
+            },
+          },
+        },
+        required: ['action'],
+      },
+    },
+  },
 ];

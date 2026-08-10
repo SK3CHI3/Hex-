@@ -2,6 +2,8 @@
  * Converts AI tool calls into actual commands.
  */
 
+import { listSkills, getSkill, saveSkill, deleteSkill } from '../storage/skills.js';
+
 const WORDLIST_MAP = {
   common: '/usr/share/wordlists/common.txt',
   medium: '/usr/share/wordlists/medium.txt',
@@ -113,6 +115,75 @@ function buildCurl(a) {
   return { command: 'curl', args: cmd };
 }
 
+// Handle skill management operations
+function handleSkillManagement(args) {
+  const { action, name, description, steps } = args;
+
+  switch (action) {
+    case 'list': {
+      const skills = listSkills();
+      if (skills.length === 0) {
+        return { output: 'No skills available.' };
+      }
+      const skillList = skills.map(s => `- ${s.name}: ${s.description}`).join('\n');
+      return { output: `Available skills:\n${skillList}` };
+    }
+
+    case 'create': {
+      if (!name) {
+        return { error: 'Skill name is required for create action.' };
+      }
+      if (!description) {
+        return { error: 'Skill description is required for create action.' };
+      }
+      if (!steps || !Array.isArray(steps) || steps.length === 0) {
+        return { error: 'Steps array is required for create action.' };
+      }
+
+      // Validate steps
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        if (!step.tool || !step.args) {
+          return { error: `Step ${i + 1} is missing 'tool' or 'args' property.` };
+        }
+      }
+
+      // Check if skill already exists
+      const existing = getSkill(name);
+      if (existing) {
+        return { error: `Skill '${name}' already exists. Delete it first or use a different name.` };
+      }
+
+      const skill = {
+        name,
+        description,
+        steps,
+        createdAt: new Date().toISOString(),
+      };
+
+      saveSkill(skill);
+      return { output: `Skill '${name}' created successfully. Users can run it with: /skill ${name}` };
+    }
+
+    case 'delete': {
+      if (!name) {
+        return { error: 'Skill name is required for delete action.' };
+      }
+
+      const skill = getSkill(name);
+      if (!skill) {
+        return { error: `Skill '${name}' not found.` };
+      }
+
+      deleteSkill(name);
+      return { output: `Skill '${name}' deleted successfully.` };
+    }
+
+    default:
+      return { error: `Unknown skill action: ${action}. Use 'list', 'create', or 'delete'.` };
+  }
+}
+
 export async function executeToolCall(toolCall) {
   const { name, arguments: args } = toolCall;
 
@@ -121,6 +192,11 @@ export async function executeToolCall(toolCall) {
     const { webSearch, formatSearchResults } = await import('../utils/search.js');
     const result = await webSearch(args.query, args.max_results || 5);
     return { output: formatSearchResults(result) };
+  }
+
+  // Handle skill management
+  if (name === 'skill_manage') {
+    return handleSkillManagement(args);
   }
 
   const built = buildCommand(name, args);
