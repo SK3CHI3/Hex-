@@ -59,26 +59,25 @@ export const BUILTIN_SKILLS = [
       { tool: 'whois_lookup', args: { domain: '{{target}}' } },
       { tool: 'dns_lookup', args: { domain: '{{target}}', record_type: 'A' } },
       { tool: 'dns_lookup', args: { domain: '{{target}}', record_type: 'MX' } },
-      { tool: 'subfinder_enum', args: { domain: '{{target}}' } },
-      { tool: 'httpx_probe', args: { targets: ['{{target}}'] } },
-      { tool: 'nuclei_scan', args: { target: '{{target}}', templates: ['default'] } }
+      { tool: 'nikto_scan', args: { target: '{{target}}' } },
+      { tool: 'gobuster_scan', args: { url: 'http://{{target}}', wordlist: 'common' } }
     ]
   },
   {
     name: 'network-scan',
     description: 'Full network port scan with service detection',
     steps: [
-      { tool: 'nmap_scan', args: { target: '{{target}}', scan_type: '-sS', ports: '1-1000' } },
-      { tool: 'nmap_scan', args: { target: '{{target}}', scan_type: '-sV', ports: '{{open_ports}}' } },
-      { tool: 'nmap_scan', args: { target: '{{target}}', scan_type: '-sC', ports: '{{open_ports}}' } }
+      { tool: 'nmap_scan', args: { target: '{{target}}', scan_type: 'quick' } },
+      { tool: 'nmap_scan', args: { target: '{{target}}', scan_type: 'service' } },
+      { tool: 'nmap_scan', args: { target: '{{target}}', scan_type: 'vuln' } }
     ]
   },
   {
     name: 'password-audit',
     description: 'Password security assessment',
     steps: [
-      { tool: 'hydra_attack', args: { service: '{{service}}', target: '{{target}}', usernames: '{{usernames}}', wordlist: '{{wordlist}}' } },
-      { tool: 'hashcat_crack', args: { hash_file: '{{hash_file}}', attack_mode: '0', hash_type: '{{hash_type}}' } }
+      { tool: 'hydra_attack', args: { target: '{{target}}', service: '{{service}}', username: '{{username}}', password_list: 'common' } },
+      { tool: 'hashcat_crack', args: { hash: '{{hash}}', hash_type: '{{hash_type}}', attack_mode: 'dictionary', wordlist: 'rockyou' } }
     ]
   },
   {
@@ -86,8 +85,8 @@ export const BUILTIN_SKILLS = [
     description: 'Vulnerability scanning with multiple tools',
     steps: [
       { tool: 'nikto_scan', args: { target: '{{target}}' } },
-      { tool: 'nuclei_scan', args: { target: '{{target}}', templates: ['cves', 'default'] } },
-      { tool: 'sqlmap_test', args: { url: '{{target}}', level: '3' } }
+      { tool: 'sqlmap_test', args: { url: '{{url}}', level: 3 } },
+      { tool: 'sslscan', args: { target: '{{target}}' } }
     ]
   }
 ];

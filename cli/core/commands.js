@@ -50,7 +50,7 @@ export async function handleCommand(input, context) {
 ${C.bold('Keyboard Shortcuts:')}
   Tab          Autocomplete commands
   Ctrl+R       Search history
-  Ctrl+V       Toggle vim mode
+  Ctrl+T       Toggle thinking display
   Up/Down      Navigate history
   Shift+Enter  New line
   Ctrl+C       Cancel input
@@ -59,7 +59,7 @@ ${C.bold('Keyboard Shortcuts:')}
   Ctrl+W       Delete word
   Ctrl+U       Clear line
   Ctrl+K       Delete to end
-  PageUp/Down  Scroll history`
+  Ctrl+X Ctrl+E  Open external editor`
       };
 
     case '/clear':

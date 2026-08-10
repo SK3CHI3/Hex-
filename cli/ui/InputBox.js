@@ -37,7 +37,7 @@ const InputBox = ({
   const calculateGhostText = (currentValue, isReverseSearchActive) => {
     if (currentValue.startsWith('/') && !isReverseSearchActive) {
       const commands = [
-        '/help', '/clear', '/history', '/resume', '/tools', '/skills',
+        '/help', '/clear', '/clear-memory', '/history', '/resume', '/tools', '/skills',
         '/skill', '/config', '/provider', '/setup', '/status', '/thinking',
         '/tokens', '/summarize', '/theme', '/fullscreen', '/editor', '/quit'
       ];
