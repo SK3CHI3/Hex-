@@ -113,6 +113,8 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null);
+  const messagesRef = useRef(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
   
   // Handle sending a message
   const handleSendMessage = useCallback(async (userMessage) => {
