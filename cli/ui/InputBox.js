@@ -334,9 +334,34 @@ const InputBox = ({
     
     // Regular character input
     if (input && !key.ctrl && !key.meta) {
-      const newValue = value.slice(0, cursorPosition) + input + value.slice(cursorPosition);
-      setValue(newValue);
-      setCursorPosition(cursorPosition + 1);
+      // Detect paste: multi-character input arriving at once
+      if (input.length > 1) {
+        const pasteResult = handlePaste(input);
+
+        if (pasteResult.type === 'large') {
+          // Store full content in cache, show placeholder
+          const placeholder = pasteResult.display;
+          const newValue = value.slice(0, cursorPosition) + placeholder + value.slice(cursorPosition);
+          setValue(newValue);
+          setPasteCache(prev => {
+            const next = new Map(prev);
+            next.set(placeholder, pasteResult.original);
+            return next;
+          });
+          setCursorPosition(cursorPosition + placeholder.length);
+        } else {
+          // Regular paste — insert text directly
+          const displayText = pasteResult.display || pasteResult.original;
+          const newValue = value.slice(0, cursorPosition) + displayText + value.slice(cursorPosition);
+          setValue(newValue);
+          setCursorPosition(cursorPosition + displayText.length);
+        }
+      } else {
+        // Single character — normal typing
+        const newValue = value.slice(0, cursorPosition) + input + value.slice(cursorPosition);
+        setValue(newValue);
+        setCursorPosition(cursorPosition + 1);
+      }
     }
   });
 
