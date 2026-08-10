@@ -44,7 +44,7 @@ const App = ({
   return React.createElement(
     Box,
     { flexDirection: 'column', height: terminalHeight },
-    // Scrolling content area (banner + messages)
+    // Scrolling content area (banner + messages all scroll together)
     React.createElement(
       Box,
       {
@@ -52,26 +52,16 @@ const App = ({
         flexDirection: 'column',
         flexGrow: 1,
         height: terminalHeight - inputHeight,
-        overflow: 'hidden',
       },
-      // Banner
-      banner && React.createElement(
-        Box,
-        { key: 'banner', flexDirection: 'column' },
-        banner
-      ),
-      // Message history
-      React.createElement(
-        Box,
-        { key: 'history', flexDirection: 'column', flexGrow: 1 },
-        React.createElement(MessageHistory, {
-          messages,
-          streaming,
-          processing,
-          showThinking,
-          maxHeight: messageMaxHeight,
-        })
-      )
+      // Message history (includes banner as first item)
+      React.createElement(MessageHistory, {
+        messages,
+        streaming,
+        processing,
+        showThinking,
+        maxHeight: messageMaxHeight,
+        banner,
+      })
     ),
     // Fixed input box at bottom
     React.createElement(InputBox, {

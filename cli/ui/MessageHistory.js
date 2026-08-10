@@ -1,6 +1,7 @@
 /**
  * MessageHistory component - renders conversation messages
  * Implements virtual scrolling to keep input fixed at bottom
+ * Banner is treated as first scrollable item
  */
 
 import React, { useState, useEffect } from 'react';
@@ -30,7 +31,7 @@ const estimateMessageHeight = (msg) => {
   return 3;
 };
 
-const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, maxHeight = 20 }) => {
+const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, maxHeight = 20, banner = null }) => {
   const theme = getTheme();
   const [frame, setFrame] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -47,9 +48,9 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     setScrollOffset(0); // Reset to show latest
   }, [messages.length]);
 
-  if (messages.length === 0) {
-    return null;
-  }
+  // Calculate banner height (14 lines)
+  const bannerHeight = banner ? 14 : 0;
+  const availableForMessages = maxHeight - bannerHeight;
 
   // Calculate which messages to render (virtual scrolling)
   let totalHeight = 0;
@@ -59,7 +60,7 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
   // Start from the end (most recent) and work backwards
   for (let i = messages.length - 1; i >= 0; i--) {
     const msgHeight = estimateMessageHeight(messages[i]);
-    if (totalHeight + msgHeight > maxHeight && visibleMessages.length > 0) {
+    if (totalHeight + msgHeight > availableForMessages && visibleMessages.length > 0) {
       hiddenCount = i + 1; // Messages above this are hidden
       break;
     }
@@ -68,8 +69,6 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
   }
 
   // Adjust for scroll offset
-  const startIndex = Math.max(0, hiddenCount + scrollOffset);
-  const endIndex = messages.length;
   const renderMessages = visibleMessages.slice(scrollOffset);
 
   const renderMessage = (msg, index) => {
@@ -183,6 +182,12 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
   return React.createElement(
     Box,
     { flexDirection: 'column', paddingX: 1 },
+    // Banner (first scrollable item)
+    banner && React.createElement(
+      Box,
+      { key: 'banner', flexDirection: 'column', marginBottom: 1 },
+      banner
+    ),
     // Scroll indicator
     hiddenCount > 0 && React.createElement(
       Box,
