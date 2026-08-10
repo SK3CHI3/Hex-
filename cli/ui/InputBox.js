@@ -30,28 +30,22 @@ const InputBox = ({
   const inputRef = useRef(value);
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
-  
-  const theme = getTheme();
-  
-  // Keep ref in sync
-  useEffect(() => {
-    inputRef.current = value;
-  }, [value]);
 
-  // Ghost text autocomplete for slash commands
-  useEffect(() => {
-    if (value.startsWith('/') && !reverseSearchActive) {
+  const theme = getTheme();
+
+  // Ghost text calculation function (called directly in input handler)
+  const calculateGhostText = (currentValue, isReverseSearchActive) => {
+    if (currentValue.startsWith('/') && !isReverseSearchActive) {
       const commands = [
         '/help', '/clear', '/history', '/resume', '/tools', '/skills',
         '/skill', '/config', '/provider', '/setup', '/status', '/thinking',
         '/tokens', '/summarize', '/theme', '/fullscreen', '/editor', '/quit'
       ];
-      const match = commands.find(cmd => cmd.startsWith(value) && cmd !== value);
-      setGhostText(match ? match.slice(value.length) : '');
-    } else {
-      setGhostText('');
+      const match = commands.find(cmd => cmd.startsWith(currentValue) && cmd !== currentValue);
+      return match ? match.slice(currentValue.length) : '';
     }
-  }, [value, reverseSearchActive]);
+    return '';
+  };
 
   // Handle keyboard input
   useInput((input, key) => {
@@ -255,24 +249,30 @@ const InputBox = ({
           const placeholder = pasteResult.display;
           const newValue = value.slice(0, cursorPosition) + placeholder + value.slice(cursorPosition);
           setValue(newValue);
+          inputRef.current = newValue;
           setPasteCache(prev => {
             const next = new Map(prev);
             next.set(placeholder, pasteResult.original);
             return next;
           });
           setCursorPosition(cursorPosition + placeholder.length);
+          setGhostText(calculateGhostText(newValue, reverseSearchActive));
         } else {
           // Regular paste — insert text directly
           const displayText = pasteResult.display || pasteResult.original;
           const newValue = value.slice(0, cursorPosition) + displayText + value.slice(cursorPosition);
           setValue(newValue);
+          inputRef.current = newValue;
           setCursorPosition(cursorPosition + displayText.length);
+          setGhostText(calculateGhostText(newValue, reverseSearchActive));
         }
       } else {
         // Single character — normal typing
         const newValue = value.slice(0, cursorPosition) + input + value.slice(cursorPosition);
         setValue(newValue);
+        inputRef.current = newValue;
         setCursorPosition(cursorPosition + 1);
+        setGhostText(calculateGhostText(newValue, reverseSearchActive));
       }
     }
   });
