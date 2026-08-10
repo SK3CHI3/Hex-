@@ -1,6 +1,6 @@
 /**
  * MessageHistory component - renders conversation messages
- * Thinking blocks are collapsed by default, Ctrl+T toggles expansion
+ * Implements virtual scrolling to keep input fixed at bottom
  */
 
 import React, { useState, useEffect } from 'react';
@@ -10,9 +10,30 @@ import ToolOutput from './ToolOutput.js';
 
 const BRAILLE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
-const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false }) => {
+// Estimate lines per message type for virtual scrolling
+const estimateMessageHeight = (msg) => {
+  if (msg.role === 'user') {
+    // User message: ~1-2 lines
+    return Math.ceil((msg.content?.length || 0) / 80) + 1;
+  }
+  if (msg.role === 'assistant') {
+    let lines = 1;
+    if (msg.thinking) lines += Math.ceil(msg.thinking.split('\n').length * 0.5); // Collapsed by default
+    if (msg.content) lines += Math.ceil((msg.content?.length || 0) / 80);
+    if (msg.tool_calls) lines += msg.tool_calls.length * 3; // Tool calls take ~3 lines each
+    return lines;
+  }
+  if (msg.role === 'tool') {
+    // Tool output: variable, estimate 5 lines average
+    return 5;
+  }
+  return 3;
+};
+
+const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, maxHeight = 20 }) => {
   const theme = getTheme();
   const [frame, setFrame] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
   const isActive = streaming || processing;
 
   useEffect(() => {
@@ -21,9 +42,35 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     return () => clearInterval(id);
   }, [isActive]);
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    setScrollOffset(0); // Reset to show latest
+  }, [messages.length]);
+
   if (messages.length === 0) {
     return null;
   }
+
+  // Calculate which messages to render (virtual scrolling)
+  let totalHeight = 0;
+  const visibleMessages = [];
+  let hiddenCount = 0;
+
+  // Start from the end (most recent) and work backwards
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msgHeight = estimateMessageHeight(messages[i]);
+    if (totalHeight + msgHeight > maxHeight && visibleMessages.length > 0) {
+      hiddenCount = i + 1; // Messages above this are hidden
+      break;
+    }
+    totalHeight += msgHeight;
+    visibleMessages.unshift({ msg: messages[i], index: i });
+  }
+
+  // Adjust for scroll offset
+  const startIndex = Math.max(0, hiddenCount + scrollOffset);
+  const endIndex = messages.length;
+  const renderMessages = visibleMessages.slice(scrollOffset);
 
   const renderMessage = (msg, index) => {
     // User message
@@ -136,7 +183,14 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
   return React.createElement(
     Box,
     { flexDirection: 'column', paddingX: 1 },
-    ...messages.map((msg, index) => renderMessage(msg, index)),
+    // Scroll indicator
+    hiddenCount > 0 && React.createElement(
+      Box,
+      { key: 'scroll-indicator', marginTop: 1 },
+      React.createElement(Text, { color: theme.text.muted }, `  ↑ ${hiddenCount} more message${hiddenCount === 1 ? '' : 's'} above`)
+    ),
+    // Visible messages
+    ...renderMessages.map(({ msg, index }) => renderMessage(msg, index)),
     // Streaming/processing indicator
     isActive && React.createElement(
       Box,
