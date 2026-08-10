@@ -25,11 +25,8 @@ const InputBox = ({
   const [ghostText, setGhostText] = useState('');
   const [reverseSearchActive, setReverseSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [vimMode, setVimMode] = useState(false);
-  const [vimInsertMode, setVimInsertMode] = useState(true);
   const [waitingForEditorKey, setWaitingForEditorKey] = useState(false);
   const [pasteCache, setPasteCache] = useState(new Map());
-  const [vimDeletePending, setVimDeletePending] = useState(false);
   const inputRef = useRef(value);
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
@@ -75,85 +72,7 @@ const InputBox = ({
       }
       return;
     }
-    
-    // Vim mode handling
-    if (vimMode) {
-      if (key.escape) {
-        setVimInsertMode(false);
-        return;
-      }
-      
-      if (!vimInsertMode) {
-        // Normal mode commands
-        if (input === 'i') {
-          setVimInsertMode(true);
-          return;
-        }
-        if (input === 'h' && cursorPosition > 0) {
-          setCursorPosition(cursorPosition - 1);
-          return;
-        }
-        if (input === 'l' && cursorPosition < value.length) {
-          setCursorPosition(cursorPosition + 1);
-          return;
-        }
-        if (input === '0') {
-          setCursorPosition(0);
-          return;
-        }
-        if (input === '$') {
-          setCursorPosition(value.length);
-          return;
-        }
-        if (input === 'w') {
-          // Move to next word
-          const rest = value.slice(cursorPosition);
-          const match = rest.match(/\s+\S/);
-          if (match) {
-            setCursorPosition(cursorPosition + match.index + match[0].length);
-          } else {
-            setCursorPosition(value.length);
-          }
-          return;
-        }
-        if (input === 'b') {
-          // Move to previous word
-          const before = value.slice(0, cursorPosition);
-          const match = before.match(/\S+\s*$/);
-          if (match) {
-            setCursorPosition(cursorPosition - match[0].length);
-          } else {
-            setCursorPosition(0);
-          }
-          return;
-        }
-        if (input === 'x' && cursorPosition < value.length) {
-          // Delete character
-          const newValue = value.slice(0, cursorPosition) + value.slice(cursorPosition + 1);
-          setValue(newValue);
-          return;
-        }
-        if (input === 'd') {
-          // Vim dd (delete line) - requires double d press
-          if (vimDeletePending) {
-            setValue('');
-            setCursorPosition(0);
-            setVimDeletePending(false);
-          } else {
-            setVimDeletePending(true);
-            // Reset after timeout if second d not pressed
-            setTimeout(() => setVimDeletePending(false), 1000);
-          }
-          return;
-        }
-        // Reset delete pending on any other key
-        if (vimDeletePending) {
-          setVimDeletePending(false);
-        }
-        return;
-      }
-    }
-    
+
     // Reverse search mode
     if (reverseSearchActive) {
       if (key.escape) {
@@ -179,13 +98,6 @@ const InputBox = ({
           setCursorPosition(match.length);
         }
       }
-      return;
-    }
-    
-    // Toggle vim mode (Ctrl+V)
-    if (key.ctrl && input === 'v') {
-      setVimMode(!vimMode);
-      setVimInsertMode(true);
       return;
     }
 
@@ -457,39 +369,14 @@ const InputBox = ({
     );
   };
 
-  // Render vim mode indicator
-  const renderVimIndicator = () => {
-    if (!vimMode) return null;
-    
-    const mode = vimInsertMode ? 'INSERT' : 'NORMAL';
-    const color = vimInsertMode ? theme.status.success : theme.status.warning;
-    
-    return React.createElement(
-      Text,
-      { color, bold: true },
-      ` [${mode}]`
-    );
-  };
-
   // Render editor waiting indicator
   const renderEditorWaiting = () => {
     if (!waitingForEditorKey) return null;
-    
+
     return React.createElement(
       Text,
       { color: theme.status.info },
       ' (Press Ctrl+E to open editor, any other key to cancel)'
-    );
-  };
-  
-  // Render vim delete pending indicator
-  const renderVimDeletePending = () => {
-    if (!vimDeletePending) return null;
-    
-    return React.createElement(
-      Text,
-      { color: theme.status.warning },
-      ' [d pending]'
     );
   };
 
@@ -528,8 +415,6 @@ const InputBox = ({
         renderPlaceholder(),
         value ? renderHighlightedText() : null,
         renderGhostText(),
-        renderVimIndicator(),
-        renderVimDeletePending(),
         renderEditorWaiting()
       )
     ),
