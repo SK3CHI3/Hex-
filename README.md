@@ -35,6 +35,16 @@ hex
 
 The setup wizard configures your AI provider and execution mode on first run.
 
+### Recommended Local Model
+
+For unrestricted pentesting assistance, we recommend running **llama2-uncensored** locally with Ollama:
+
+```bash
+ollama pull llama2-uncensored
+```
+
+Unlike cloud providers, local models have no content filters — ideal for security research and pentesting workflows where you need complete freedom in tool usage and analysis.
+
 ### Development
 
 ```bash

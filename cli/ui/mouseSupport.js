@@ -1,9 +1,12 @@
 /**
  * Mouse support for terminal UI
  * Enables click-to-position cursor and text selection
+ * 
+ * NOTE: Hook-based mouse support is available but not currently integrated.
+ * Future implementations can use useMouseSupport for click interactions.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 // Enable mouse events in terminal
 export const enableMouseSupport = () => {
@@ -64,7 +67,13 @@ export const parseMouseEvent = (data) => {
   return null;
 };
 
-// Hook for mouse support
+/**
+ * Hook for mouse support
+ * Usage: const mouseRef = useMouseSupport(true, handleClick);
+ * 
+ * @param {boolean} enabled - Whether mouse support is enabled
+ * @param {function} onMouseClick - Callback for mouse click events
+ */
 export const useMouseSupport = (enabled = false, onMouseClick) => {
   useEffect(() => {
     if (!enabled) return;
@@ -78,11 +87,16 @@ export const useMouseSupport = (enabled = false, onMouseClick) => {
       }
     };
     
-    process.stdin.on('data', handleData);
+    // Only attach if stdin is available and in raw mode
+    if (process.stdin.isTTY && process.stdin.isRaw) {
+      process.stdin.on('data', handleData);
+    }
     
     return () => {
-      process.stdin.off('data', handleData);
-      disableMouseSupport();
+      if (process.stdin.isTTY) {
+        process.stdin.off('data', handleData);
+        disableMouseSupport();
+      }
     };
   }, [enabled, onMouseClick]);
 };

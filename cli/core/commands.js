@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { tools } from './tools.js';
 import { isDockerAvailable, isToolAvailable } from './docker.js';
 import { loadConversation, listConversations } from './storage.js';
-import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS } from './config.js';
+import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS, isLocalProvider } from './config.js';
 import { listSkills, getSkill } from './skills.js';
 import { randomUUID } from 'crypto';
 import { getTokenUsage } from './tokens.js';
@@ -109,7 +109,7 @@ ${C.bold('Keyboard Shortcuts:')}
       const config = loadConfig();
       const provider = getProvider();
       const apiKey = getApiKey(config.provider);
-      const hasKey = apiKey || config.provider === 'ollama';
+      const hasKey = apiKey || isLocalProvider(config.provider);
       
       let output = C.bold('\n  Current Configuration:\n');
       output += `  Provider: ${C.tool(provider.name)}\n`;

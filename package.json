@@ -1,6 +1,6 @@
 {
   "name": "hex-ai",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Terminal-native AI pentesting assistant with 42+ tools, multi-provider AI support, autonomous planning, and web search. Install any security tool, run complex assessments, and get intelligent analysis through natural language.",
   "type": "module",
   "bin": {
@@ -19,10 +19,21 @@
     "red-team",
     "ai",
     "cli",
-    "kali-linux"
+    "kali-linux",
+    "osint",
+    "web-search",
+    "vulnerability-scanner"
   ],
   "author": "Hex AI Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SK3CHI3/Hex-.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SK3CHI3/Hex-/issues"
+  },
+  "homepage": "https://github.com/SK3CHI3/Hex-#readme",
   "dependencies": {
     "chalk": "^5.3.0",
     "dotenv": "^16.4.5",

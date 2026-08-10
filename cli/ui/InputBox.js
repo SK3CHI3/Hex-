@@ -29,6 +29,7 @@ const InputBox = ({
   const [vimInsertMode, setVimInsertMode] = useState(true);
   const [waitingForEditorKey, setWaitingForEditorKey] = useState(false);
   const [pasteCache, setPasteCache] = useState(new Map());
+  const [vimDeletePending, setVimDeletePending] = useState(false);
   const inputRef = useRef(value);
   const historyRef = useRef([]);
   const historyIndexRef = useRef(-1);
@@ -62,13 +63,14 @@ const InputBox = ({
     // Handle Ctrl+X Ctrl+E for external editor
     if (waitingForEditorKey) {
       setWaitingForEditorKey(false);
-      if (input === 'e') {
+      if (key.ctrl && input === 'e') {
         // Open external editor
         editInExternalEditor(value).then(editedContent => {
           setValue(editedContent);
           setCursorPosition(editedContent.length);
         }).catch(err => {
-          console.error('Editor error:', err);
+          // Show error to user by adding error state
+          setValue(`[Editor failed: ${err.message}]\n${value}`);
         });
       }
       return;
@@ -132,10 +134,21 @@ const InputBox = ({
           return;
         }
         if (input === 'd') {
-          // Delete line (dd in vim normal mode)
-          setValue('');
-          setCursorPosition(0);
+          // Vim dd (delete line) - requires double d press
+          if (vimDeletePending) {
+            setValue('');
+            setCursorPosition(0);
+            setVimDeletePending(false);
+          } else {
+            setVimDeletePending(true);
+            // Reset after timeout if second d not pressed
+            setTimeout(() => setVimDeletePending(false), 1000);
+          }
           return;
+        }
+        // Reset delete pending on any other key
+        if (vimDeletePending) {
+          setVimDeletePending(false);
         }
         return;
       }
@@ -189,7 +202,7 @@ const InputBox = ({
       return;
     }
     
-    // External editor (Ctrl+X)
+    // External editor (Ctrl+X Ctrl+E)
     if (key.ctrl && input === 'x') {
       setWaitingForEditorKey(true);
       return;
@@ -366,7 +379,7 @@ const InputBox = ({
 
   // Render cursor
   const renderCursor = () => {
-    if (disabled) return null;
+    if (disabled || !value) return null; // Don't show cursor when placeholder is shown
     
     const cursorChar = value[cursorPosition] || ' ';
     return React.createElement(
@@ -387,15 +400,19 @@ const InputBox = ({
     );
   };
 
-  // Render placeholder
+  // Render placeholder with cursor at start
   const renderPlaceholder = () => {
     if (value || disabled) return null;
     
     return React.createElement(
-      Text,
-      { color: theme.text.muted },
-      placeholder[0],
-      React.createElement(Text, { color: theme.text.secondary }, placeholder.slice(1))
+      Box,
+      null,
+      React.createElement(
+        Text,
+        { color: theme.ui.cursor, inverse: true },
+        placeholder[0] // First char with cursor
+      ),
+      React.createElement(Text, { color: theme.text.muted }, placeholder.slice(1))
     );
   };
 
@@ -431,7 +448,18 @@ const InputBox = ({
     return React.createElement(
       Text,
       { color: theme.status.info },
-      ' (Press Ctrl+E to open editor)'
+      ' (Press Ctrl+E to open editor, any other key to cancel)'
+    );
+  };
+  
+  // Render vim delete pending indicator
+  const renderVimDeletePending = () => {
+    if (!vimDeletePending) return null;
+    
+    return React.createElement(
+      Text,
+      { color: theme.status.warning },
+      ' [d pending]'
     );
   };
 
@@ -472,6 +500,7 @@ const InputBox = ({
         renderGhostText(),
         renderCursor(),
         renderVimIndicator(),
+        renderVimDeletePending(),
         renderEditorWaiting()
       )
     ),

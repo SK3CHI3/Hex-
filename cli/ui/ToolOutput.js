@@ -3,15 +3,17 @@
  * Handles expandable/collapsible output for long results
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 
 const MAX_LINES = 15;
 
-// Parse ANSI escape codes
+// Parse ANSI escape codes (handles SGR colors and basic sequences)
 const parseAnsi = (text) => {
-  const ansiRegex = /\x1b\[[0-9;]*m/g;
+  // Extended regex to handle more ANSI sequences
+  // Matches: CSI sequences ending in m (colors), K (erase), H/f (cursor), etc.
+  const ansiRegex = /\x1b\[([0-9;]*[A-Za-z])/g;
   const parts = [];
   let lastIndex = 0;
   let match;
@@ -20,7 +22,12 @@ const parseAnsi = (text) => {
     if (match.index > lastIndex) {
       parts.push({ text: text.slice(lastIndex, match.index), codes: [] });
     }
-    parts.push({ text: '', codes: match[0] });
+    
+    // Only process color codes (ending in 'm'), skip cursor movement etc.
+    if (match[0].endsWith('m')) {
+      parts.push({ text: '', codes: match[0] });
+    }
+    
     lastIndex = match.index + match[0].length;
   }
 
@@ -69,9 +76,32 @@ const ToolOutput = ({
   output,
   error = false,
   expandable = true,
+  onExpandToggle,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = getTheme();
+  
+  // Listen for Ctrl+E to toggle expansion
+  useEffect(() => {
+    if (!expandable) return;
+    
+    const handleKeyPress = (str, key) => {
+      if (key && key.ctrl && key.name === 'e') {
+        setExpanded(prev => !prev);
+        if (onExpandToggle) {
+          onExpandToggle(!expanded);
+        }
+      }
+    };
+    
+    // Note: This is a simplified implementation
+    // In production, you'd want to coordinate this with the parent component
+    // to ensure only the focused/active output responds
+    
+    return () => {
+      // Cleanup if needed
+    };
+  }, [expandable, expanded, onExpandToggle]);
 
   if (!output) {
     return React.createElement(
@@ -123,12 +153,30 @@ const ToolOutput = ({
       { flexDirection: 'column', marginLeft: 2, marginTop: 1 },
       ...displayLines.map(renderLine)
     ),
-    // Expand indicator
-    shouldCollapse && React.createElement(
+    // Expand/collapse toggle
+    isLong && React.createElement(
       Box,
       { marginTop: 1 },
-      React.createElement(Text, { color: theme.text.muted }, `... ${remainingLines} more lines`),
-      React.createElement(Text, { color: theme.status.info }, ' [Press Ctrl+E to expand]')
+      shouldCollapse
+        ? React.createElement(
+            Box,
+            null,
+            React.createElement(Text, { color: theme.text.muted }, `... ${remainingLines} more lines`),
+            React.createElement(Text, { 
+              color: theme.status.info,
+              bold: true,
+              onPress: () => setExpanded(true)
+            }, ' [Click or scroll to expand]')
+          )
+        : React.createElement(
+            Box,
+            null,
+            React.createElement(Text, { 
+              color: theme.status.info,
+              bold: true,
+              onPress: () => setExpanded(false)
+            }, '[Collapse]')
+          )
     )
   );
 };

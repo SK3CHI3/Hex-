@@ -1,4 +1,4 @@
-import { loadConfig, getProvider, getApiKey, getBaseUrl } from './config.js';
+import { loadConfig, getProvider, getApiKey, getBaseUrl, isLocalProvider } from './config.js';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
@@ -9,7 +9,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   const apiKey = getApiKey(config.provider);
   const baseUrl = getBaseUrl(config.provider);
 
-  if (!apiKey && config.provider !== 'ollama') {
+  if (!apiKey && !isLocalProvider(config.provider)) {
     onError(new Error(`API key not set for ${provider.name}. Run /setup or set ${provider.envKey} env var.`));
     return;
   }
@@ -112,7 +112,7 @@ async function makeRequest(baseUrl, payload, provider, apiKey, signal) {
   if (provider === 'anthropic') {
     headers['x-api-key'] = apiKey;
     headers['anthropic-version'] = '2023-06-01';
-  } else if (provider !== 'ollama') {
+  } else if (!isLocalProvider(provider)) {
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
