@@ -118,7 +118,7 @@ export async function executeToolCall(toolCall) {
 
   // Handle web_search specially - it doesn't use buildCommand
   if (name === 'web_search') {
-    const { webSearch, formatSearchResults } = await import('./search.js');
+    const { webSearch, formatSearchResults } = await import('../utils/search.js');
     const result = await webSearch(args.query, args.max_results || 5);
     return { output: formatSearchResults(result) };
   }

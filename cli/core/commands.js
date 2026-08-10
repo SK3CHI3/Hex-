@@ -241,7 +241,7 @@ ${C.bold('Keyboard Shortcuts:')}
     case '/summarize': {
       const config = loadConfig();
       const model = config.model || getProvider().defaultModel;
-      const { summarizeOldMessages } = await import('./summary.js');
+      const { summarizeOldMessages } = await import('../ai/summary.js');
       context.messages = summarizeOldMessages(context.messages, model);
       return { type: 'info', content: C.green('  ✓ Conversation summarized') };
     }
@@ -271,14 +271,14 @@ ${C.bold('Keyboard Shortcuts:')}
     }
 
     case '/fullscreen': {
-      const { fullScreenManager } = await import('./ui/fullScreen.js');
+      const { fullScreenManager } = await import('../ui/fullScreen.js');
       fullScreenManager.toggle();
       const state = fullScreenManager.isActive() ? 'enabled' : 'disabled';
       return { type: 'info', content: C.dim(`  Fullscreen mode ${state}`) };
     }
 
     case '/editor': {
-      const { getEditorInfo } = await import('./ui/externalEditor.js');
+      const { getEditorInfo } = await import('../ui/externalEditor.js');
       const info = getEditorInfo();
       
       let output = C.bold('\n  External Editor:\n');

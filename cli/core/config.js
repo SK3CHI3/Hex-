@@ -209,6 +209,7 @@ export function loadConfig() {
     model,
     executionMode,
     apiKeys: fileConfig.apiKeys || {},
+    customBaseUrl: fileConfig.customBaseUrl || '',
   };
 }
 
@@ -248,6 +249,12 @@ export function getBaseUrl(provider) {
   // Check env var override
   const envBaseUrl = process.env[`${provider.toUpperCase()}_BASE_URL`];
   if (envBaseUrl) return envBaseUrl;
+
+  // Check custom base URL from config
+  const config = loadConfig();
+  if (provider === 'custom' && config.customBaseUrl) {
+    return config.customBaseUrl;
+  }
 
   return providerConfig.baseUrl;
 }
@@ -363,10 +370,8 @@ export async function setupWizard() {
           const retryResult = await testConnection(baseUrl);
           if (retryResult.ok && retryResult.models.length > 0) {
             model = await pickModel(retryResult.models, provConfig.defaultModel, ask);
-          } else if (choice === '2') {
-            rl.close();
-            return setupWizard();
           } else {
+            console.log(chalk.yellow('\n⚠ Still no models found. Enter a model name manually or restart after pulling a model.'));
             model = await ask('Enter model name: ');
           }
         } else if (choice === '2') {
