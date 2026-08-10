@@ -29,6 +29,7 @@ export async function handleCommand(input, context) {
         content: `${C.bold('Commands:')}
   /help        Show this help
   /clear       Clear conversation and start fresh
+  /clear-memory  Tell AI to forget previous context
   /history     List saved conversations
   /resume <id> Resume a previous conversation
   /tools       List available pentesting tools
@@ -65,6 +66,13 @@ ${C.bold('Keyboard Shortcuts:')}
       context.conversationId = randomUUID();
       context.messages = [{ role: 'system', content: context.SYSTEM_PROMPT }];
       return { type: 'info', content: C.dim('Conversation cleared.') };
+
+    case '/clear-memory':
+      context.messages.push({
+        role: 'system',
+        content: '[SYSTEM] Forget all previous context and memories from prior conversations. Start completely fresh with no recollection of past interactions.'
+      });
+      return { type: 'info', content: C.dim('Memory cleared. AI will forget previous context.') };
 
     case '/history': {
       const convos = listConversations();
