@@ -38,8 +38,9 @@ const App = ({
 
   // Calculate input height (border + content + border + status line)
   const inputHeight = 4;
-  // Calculate available height for messages (terminal - input - banner estimate)
-  const bannerHeight = banner ? 8 : 0; // Estimate banner height
+  // Calculate available height for messages (terminal - input - banner)
+  // Banner is 14 lines: 6 ASCII art + subtitle + separator + 3 status lines + separator + padding
+  const bannerHeight = banner ? 14 : 0;
   const messageMaxHeight = terminalHeight - inputHeight - bannerHeight - 2; // -2 for padding
 
   return React.createElement(
