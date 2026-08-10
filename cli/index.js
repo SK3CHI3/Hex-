@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { render, Box, Text } from 'ink';
+import { render, Box, Text, useInput } from 'ink';
 import { chat } from './ai/ai.js';
 import { tools } from './tools/tools.js';
 import { executeToolCall } from './tools/executor.js';
@@ -106,6 +106,20 @@ const preInit = async () => {
   };
 };
 
+// Error screen component with dismiss capability
+const ErrorScreen = ({ error, onDismiss }) => {
+  useInput(() => {
+    onDismiss();
+  });
+
+  return React.createElement(
+    Box,
+    { flexDirection: 'column', padding: 1 },
+    React.createElement(Text, { color: 'red' }, `Error: ${error}`),
+    React.createElement(Text, { color: 'yellow' }, 'Press any key to dismiss or Ctrl+C to exit')
+  );
+};
+
 // Main Hex application component
 const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [conversationId, setConversationId] = useState(randomUUID());
@@ -170,10 +184,15 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     
     // Check if we need to summarize
     if (shouldSummarize(newMessages, initialModel)) {
-      const summarized = summarizeOldMessages(newMessages, initialModel);
-      setMessages(summarized);
-      newMessages.length = 0;
-      newMessages.push(...summarized);
+      try {
+        const summarized = summarizeOldMessages(newMessages, initialModel);
+        setMessages(summarized);
+        newMessages.length = 0;
+        newMessages.push(...summarized);
+      } catch (summaryErr) {
+        // If summarization fails, continue with original messages
+        console.error('Summarization failed:', summaryErr.message);
+      }
     }
     
     const MAX_ROUNDS = 100;
@@ -260,9 +279,17 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
       if (round >= MAX_ROUNDS) {
         console.error('Max rounds reached');
       }
-      
+
       saveConversation(conversationId, workingMessages);
     } catch (err) {
+      // Save any progress made before the error
+      if (workingMessages && workingMessages.length > 1) {
+        try {
+          saveConversation(conversationId, workingMessages);
+        } catch (saveErr) {
+          console.error('Failed to save conversation:', saveErr.message);
+        }
+      }
       setError(err.message);
     } finally {
       setStreaming(false);
@@ -278,17 +305,18 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
       }
       process.exit(0);
     };
-    
+
     process.on('SIGINT', handleExit);
     return () => process.off('SIGINT', handleExit);
   }, []);
+
+  // Dismiss error and continue
+  const dismissError = () => {
+    setError(null);
+  };
   
   if (error) {
-    return React.createElement(
-      Box,
-      { flexDirection: 'column', padding: 1 },
-      React.createElement(Text, { color: 'red' }, `Error: ${error}`)
-    );
+    return React.createElement(ErrorScreen, { error, onDismiss: dismissError });
   }
   
   const tokenCount = countMessagesTokens(messages);

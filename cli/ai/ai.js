@@ -3,6 +3,19 @@ import { loadConfig, getProvider, getApiKey, getBaseUrl, isLocalProvider } from 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
 
+// Quick network connectivity check
+async function checkNetwork() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    await fetch('https://api.github.com', { method: 'HEAD', signal: controller.signal });
+    clearTimeout(timeout);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function chat({ messages, tools, onContent, onToolCall, onThinking, onError, abortSignal, onRetry }) {
   const config = loadConfig();
   const provider = getProvider();
@@ -47,6 +60,13 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
       if (attempt > 0) {
+        // Check network before retrying
+        const online = await checkNetwork();
+        if (!online) {
+          onError(new Error('No network connection. Check your internet and try again.'));
+          return;
+        }
+
         const delay = RETRY_DELAYS[attempt - 1] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
         if (onRetry) {
           onRetry(attempt, delay);
@@ -55,17 +75,17 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
       }
 
       const response = await makeRequest(baseUrl, payload, config.provider, apiKey, controller.signal);
-      
+
       if (!response.ok) {
         const text = await response.text().catch(() => '');
         const error = new Error(`API error ${response.status}: ${text || 'Check your API key and credits.'}`);
-        
+
         // Don't retry on client errors (4xx) except 429 (rate limit)
         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
           onError(error);
           return;
         }
-        
+
         lastError = error;
         continue; // Retry on server errors (5xx) or rate limits (429)
       }
@@ -79,15 +99,20 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
         onError(new Error('Request cancelled by user.'));
         return;
       }
-      
-      lastError = err;
-      
+
+      // Handle network errors specifically
+      if (err.message.includes('fetch') || err.message.includes('network') || err.code === 'ECONNREFUSED') {
+        lastError = new Error(`Connection failed: ${err.message}. Check if the API server is running.`);
+      } else {
+        lastError = err;
+      }
+
       // Don't retry on certain errors
       if (err.message.includes('API key') || err.message.includes('authentication')) {
         onError(err);
         return;
       }
-      
+
       // Continue to next retry attempt
       if (attempt < MAX_RETRIES) {
         continue;
@@ -128,56 +153,69 @@ async function processStream(response, onContent, onToolCall, onThinking, signal
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   const toolCallsMap = new Map();
+  let partialContent = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    if (signal.aborted) {
-      reader.cancel();
-      break;
-    }
+      if (signal.aborted) {
+        reader.cancel();
+        break;
+      }
 
-    const chunk = decoder.decode(value, { stream: true });
+      const chunk = decoder.decode(value, { stream: true });
 
-    for (const line of chunk.split('\n')) {
-      if (!line.startsWith('data: ')) continue;
-      const data = line.slice(6);
-      if (data === '[DONE]') break;
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') break;
 
-      try {
-        const parsed = JSON.parse(data);
-        const delta = parsed.choices?.[0]?.delta;
-        if (!delta) continue;
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta;
+          if (!delta) continue;
 
-        if (delta.content) {
-          onContent(delta.content);
-        }
-
-        // Handle thinking/reasoning content from models that support it
-        if (delta.reasoning_content || delta.thinking) {
-          const thinkingContent = delta.reasoning_content || delta.thinking;
-          if (onThinking) {
-            onThinking(thinkingContent);
+          if (delta.content) {
+            partialContent += delta.content;
+            onContent(delta.content);
           }
-        }
 
-        if (delta.tool_calls) {
-          for (const tc of delta.tool_calls) {
-            const idx = tc.index ?? 0;
-            if (!toolCallsMap.has(idx)) {
-              toolCallsMap.set(idx, { id: '', name: '', arguments: '' });
+          // Handle thinking/reasoning content from models that support it
+          if (delta.reasoning_content || delta.thinking) {
+            const thinkingContent = delta.reasoning_content || delta.thinking;
+            if (onThinking) {
+              onThinking(thinkingContent);
             }
-            const acc = toolCallsMap.get(idx);
-            if (tc.id) acc.id = tc.id;
-            if (tc.function?.name) acc.name = tc.function.name;
-            if (tc.function?.arguments) acc.arguments += tc.function.arguments;
           }
+
+          if (delta.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index ?? 0;
+              if (!toolCallsMap.has(idx)) {
+                toolCallsMap.set(idx, { id: '', name: '', arguments: '' });
+              }
+              const acc = toolCallsMap.get(idx);
+              if (tc.id) acc.id = tc.id;
+              if (tc.function?.name) acc.name = tc.function.name;
+              if (tc.function?.arguments) acc.arguments += tc.function.arguments;
+            }
+          }
+        } catch {
+          // skip unparseable chunks
         }
-      } catch {
-        // skip unparseable chunks
       }
     }
+  } catch (streamErr) {
+    // Connection dropped mid-stream - preserve what we have
+    if (streamErr.name === 'AbortError') {
+      throw streamErr; // Let caller handle cancellation
+    }
+    // For other errors, emit what we have so far
+    console.error('Stream interrupted:', streamErr.message);
+  } finally {
+    reader.releaseLock();
   }
 
   // Emit completed tool calls
@@ -194,6 +232,9 @@ async function processStream(response, onContent, onToolCall, onThinking, signal
       }
     }
   }
+
+  // Return partial content info for caller
+  return { partialContent };
 }
 
 function sleep(ms) {
