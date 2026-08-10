@@ -253,6 +253,25 @@ export const tools = [
   {
     type: 'function',
     function: {
+      name: 'install_tool',
+      description: 'Install a missing tool or package. Use this when a required tool is not available. Supports apt packages, pip packages, npm packages, and Go tools.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tool_name: { type: 'string', description: 'Name of the tool to install (e.g. "nmap", "sqlmap", "metasploit-framework")' },
+          install_method: {
+            type: 'string',
+            enum: ['auto', 'apt', 'pip', 'npm', 'go', 'git'],
+            description: 'Installation method. auto=detect best method, apt=Debian/Kali packages, pip=Python packages, npm=Node packages, go=Go tools, git=clone and build from source',
+          },
+        },
+        required: ['tool_name'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'skill_manage',
       description: 'Create, delete, or list reusable attack workflow skills. Skills are multi-step automation sequences that can be run with /skill command.',
       parameters: {

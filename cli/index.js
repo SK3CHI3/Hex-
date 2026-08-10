@@ -58,6 +58,7 @@ You have direct access to these tools via function calling. Use them by name wit
 
 **Utilities:**
 - web_search(query, max_results) — Search DuckDuckGo for exploits, CVEs, PoCs, documentation
+- install_tool(tool_name, install_method) — Install missing tools (apt, pip, npm, go, git)
 - raw_command(command) — Execute any shell command directly
 - skill_manage(action, name, description, steps) — Create/delete/list reusable attack workflows
 
@@ -130,14 +131,24 @@ Use web_search to find:
 - Vulnerability write-ups
 
 === RAW COMMANDS ===
-When built-in tools don't cover your needs,web search to see what fits and install that tool or use raw_command for:
+When built-in tools don't cover your needs, use raw_command for:
 - Custom Python/Bash/PowerShell scripts
 - Piping commands together
 - One-liners for specific tasks
-- Installing additional tools
 - Any shell operation
 
 Example: raw_command("curl -s http://target.com/robots.txt | grep -i admin")
+
+=== TOOL INSTALLATION ===
+If a required tool is not installed, use install_tool to install it automatically:
+- install_tool({ tool_name: "nmap" }) — installs via apt (Docker) or system package manager (Direct)
+- install_tool({ tool_name: "requests", install_method: "pip" }) — installs Python package
+- install_tool({ tool_name: "lodash", install_method: "npm" }) — installs Node package
+- install_tool({ tool_name: "github.com/user/tool", install_method: "go" }) — installs Go tool
+
+Supported methods: apt, pip, npm, go, git. Use "auto" to detect automatically.
+
+When a tool call fails with "command not found", install it first then retry.
 `;
 
 // Pre-initialization: run setup wizard BEFORE Ink renders

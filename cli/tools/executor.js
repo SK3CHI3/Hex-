@@ -184,6 +184,153 @@ function handleSkillManagement(args) {
   }
 }
 
+// Handle tool installation
+async function handleToolInstallation(args) {
+  const { tool_name, install_method = 'auto' } = args;
+
+  if (!tool_name) {
+    return { error: 'tool_name is required' };
+  }
+
+  const { loadConfig } = await import('../core/config.js');
+  const config = loadConfig();
+  const isDocker = config.executionMode === 'docker';
+
+  let command, cmdArgs;
+
+  // Determine installation method
+  if (install_method === 'auto') {
+    // Try to detect best method based on tool name
+    if (tool_name.includes('git+') || tool_name.startsWith('http')) {
+      command = 'git';
+      cmdArgs = ['clone', tool_name];
+    } else if (tool_name.includes('/') && !tool_name.includes(' ')) {
+      // Looks like a Go package (e.g. github.com/user/tool)
+      command = 'go';
+      cmdArgs = ['install', '-v', tool_name + '@latest'];
+    } else {
+      // Default to apt for Docker, or try apt then pip for direct
+      if (isDocker) {
+        command = 'apt-get';
+        cmdArgs = ['install', '-y', tool_name];
+      } else {
+        // For direct mode, try apt first (works on Linux), fallback message for other OS
+        command = 'apt-get';
+        cmdArgs = ['install', '-y', tool_name];
+      }
+    }
+  } else if (install_method === 'apt') {
+    command = 'apt-get';
+    cmdArgs = ['install', '-y', tool_name];
+  } else if (install_method === 'pip') {
+    command = 'pip3';
+    cmdArgs = ['install', tool_name];
+  } else if (install_method === 'npm') {
+    command = 'npm';
+    cmdArgs = ['install', '-g', tool_name];
+  } else if (install_method === 'go') {
+    command = 'go';
+    cmdArgs = ['install', '-v', tool_name + '@latest'];
+  } else if (install_method === 'git') {
+    command = 'git';
+    cmdArgs = ['clone', tool_name];
+  } else {
+    return { error: `Unknown install method: ${install_method}` };
+  }
+
+  // Execute installation
+  if (isDocker) {
+    // Install in Docker container
+    const { runCommand } = await import('./docker.js');
+
+    // Update package list first if using apt
+    if (command === 'apt-get') {
+      await runCommand('apt-get', ['update', '-qq'], {});
+    }
+
+    const result = await runCommand(command, cmdArgs, {});
+
+    if (result.exitCode === 0) {
+      return {
+        output: `✓ Successfully installed ${tool_name}\n\n${result.stdout || 'Installation completed'}`,
+        exitCode: 0
+      };
+    } else {
+      return {
+        error: `Failed to install ${tool_name}\n\n${result.stderr || result.stdout || 'Unknown error'}`,
+        exitCode: result.exitCode
+      };
+    }
+  } else {
+    // Install on host system
+    const { spawn } = await import('child_process');
+
+    return new Promise((resolve) => {
+      // Update package list first if using apt
+      if (command === 'apt-get') {
+        const update = spawn('sudo', ['apt-get', 'update', '-qq'], { shell: true });
+        update.on('close', () => {
+          const proc = spawn('sudo', [command, ...cmdArgs], { shell: true });
+          let stdout = '';
+          let stderr = '';
+
+          proc.stdout.on('data', (data) => { stdout += data.toString(); });
+          proc.stderr.on('data', (data) => { stderr += data.toString(); });
+
+          proc.on('close', (code) => {
+            if (code === 0) {
+              resolve({
+                output: `✓ Successfully installed ${tool_name}\n\n${stdout || 'Installation completed'}`,
+                exitCode: 0
+              });
+            } else {
+              resolve({
+                error: `Failed to install ${tool_name}\n\n${stderr || stdout || 'Unknown error'}`,
+                exitCode: code
+              });
+            }
+          });
+
+          proc.on('error', (err) => {
+            resolve({
+              error: `Failed to execute installation: ${err.message}`,
+              exitCode: 1
+            });
+          });
+        });
+      } else {
+        const proc = spawn(command, cmdArgs, { shell: true });
+        let stdout = '';
+        let stderr = '';
+
+        proc.stdout.on('data', (data) => { stdout += data.toString(); });
+        proc.stderr.on('data', (data) => { stderr += data.toString(); });
+
+        proc.on('close', (code) => {
+          if (code === 0) {
+            resolve({
+              output: `✓ Successfully installed ${tool_name}\n\n${stdout || 'Installation completed'}`,
+              exitCode: 0
+            });
+          } else {
+            resolve({
+              error: `Failed to install ${tool_name}\n\n${stderr || stdout || 'Unknown error'}`,
+              exitCode: code
+            });
+          }
+        });
+
+        proc.on('error', (err) => {
+          resolve({
+            error: `Failed to execute installation: ${err.message}`,
+            exitCode: 1
+          });
+        });
+      }
+    });
+  }
+}
+
 export async function executeToolCall(toolCall) {
   const { name, arguments: args } = toolCall;
 
@@ -197,6 +344,11 @@ export async function executeToolCall(toolCall) {
   // Handle skill management
   if (name === 'skill_manage') {
     return handleSkillManagement(args);
+  }
+
+  // Handle tool installation
+  if (name === 'install_tool') {
+    return await handleToolInstallation(args);
   }
 
   const built = buildCommand(name, args);
