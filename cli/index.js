@@ -549,12 +549,12 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     onToggleThinking: toggleThinking,
     agentStatus,
     model: activeModel,
+    executionMode: activeConfig.executionMode === 'docker' ? 'Docker' : 'Direct',
     liveResponse,
     tokenCount,
     banner: React.createElement(Banner, {
       provider: activeProvider.name,
       model: activeModel,
-      executionMode: activeConfig.executionMode === 'docker' ? 'Docker' : 'Direct',
       tokenCount,
       tokenLimit,
     }),

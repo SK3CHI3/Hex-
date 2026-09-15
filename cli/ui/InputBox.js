@@ -16,6 +16,7 @@ const InputBox = ({
   disabled = false,
   streaming = false,
   model = '',
+  executionMode = 'Direct',
   tokenCount = 0,
   showThinking = false,
   onToggleThinking = () => {},
@@ -343,13 +344,14 @@ const InputBox = ({
     );
   };
 
+  const footer = ` | ${executionMode}`;
   const statusText = reverseSearchActive
     ? `(reverse-i-search)\`${searchQuery}': ${value.replace(/\n/g, ' ↵ ')}`
     : streaming
-      ? `${formatAgentStatus(agentStatus)} (Esc to cancel)`
+      ? `${formatAgentStatus(agentStatus)} (Esc to cancel)${footer}`
       : agentStatus.phase === 'complete'
-        ? '✓ Response complete'
-        : `${model} | ${tokenCount.toLocaleString()} tokens`;
+        ? `✓ Response complete${footer}`
+        : `${model} | ${tokenCount.toLocaleString()} tokens${footer}`;
   const statusColor = reverseSearchActive ? theme.status.info
     : streaming ? theme.status.thinking
       : agentStatus.phase === 'complete' ? (theme.status.success || theme.status.info)
