@@ -13,6 +13,7 @@ const BRAILLE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', 
 
 // Estimate lines per message type for virtual scrolling
 const estimateMessageHeight = (msg) => {
+  if (!msg || typeof msg !== 'object') return 0;
   if (msg.role === 'user') {
     // User message: ~1-2 lines
     return Math.ceil((msg.content?.length || 0) / 80) + 1;
@@ -73,15 +74,19 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
 
   // Start from the selected position and work backwards. scrollOffset is the
   // number of newest messages skipped while browsing history.
-  const startIndex = Math.max(0, messages.length - 1 - scrollOffset);
+  // An empty conversation has no valid index. Clamping to zero caused the
+  // initial render to measure messages[0] (undefined) and crash Hex.
+  const startIndex = messages.length - 1 - scrollOffset;
   for (let i = startIndex; i >= 0; i--) {
-    const msgHeight = estimateMessageHeight(messages[i]);
+    const message = messages[i];
+    if (!message || typeof message !== 'object') continue;
+    const msgHeight = estimateMessageHeight(message);
     if (totalHeight + msgHeight > availableForMessages && visibleMessages.length > 0) {
       hiddenCount = i + 1; // Messages above this are hidden
       break;
     }
     totalHeight += msgHeight;
-    visibleMessages.unshift({ msg: messages[i], index: i });
+    visibleMessages.unshift({ msg: message, index: i });
   }
 
   const renderMessages = visibleMessages;
