@@ -31,7 +31,7 @@ const estimateMessageHeight = (msg) => {
   return 3;
 };
 
-const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, maxHeight = 20, banner = null }) => {
+const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, showToolOutput = false, agentStatus = { phase: 'idle' }, maxHeight = 20, banner = null }) => {
   const theme = getTheme();
   const [frame, setFrame] = useState(0);
   const [scrollOffset, setScrollOffset] = useState(0);
@@ -169,6 +169,8 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
               key: `tool-${tcIndex}`,
               toolName: tc.function.name,
               output: tc.function.arguments,
+              label: 'Planned tool call',
+              expanded: showToolOutput,
             })
           );
         });
@@ -188,6 +190,8 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
         toolName: msg.name || 'tool',
         output: msg.content,
         error: msg.isError,
+        label: msg.isError ? 'Tool failed' : 'Tool result',
+        expanded: showToolOutput,
       });
     }
 
@@ -215,9 +219,17 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     isActive && React.createElement(
       Box,
       { key: 'streaming', marginTop: 1, marginLeft: 2 },
-      React.createElement(Text, { color: theme.status.thinking }, `${BRAILLE_FRAMES[frame]} ${processing && !streaming ? 'Processing...' : 'AI is thinking...'}`)
+      React.createElement(Text, { color: theme.status.thinking }, `${BRAILLE_FRAMES[frame]} ${processing && !streaming ? 'Processing command...' : formatAgentStatus(agentStatus)}`)
     )
   );
+};
+
+const formatAgentStatus = ({ phase, toolName } = {}) => {
+  if (phase === 'planning') return 'Planning response...';
+  if (phase === 'thinking') return 'Reasoning...';
+  if (phase === 'running') return `Running tool: ${toolName || 'tool'}...`;
+  if (phase === 'continuing') return 'Reviewing tool results...';
+  return 'Working...';
 };
 
 export default MessageHistory;

@@ -3,9 +3,8 @@
  * Fixed input at bottom, scrolling content above
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Text, useStdout, useApp } from 'ink';
-import { getTheme } from './themes.js';
+import React, { useState, useEffect } from 'react';
+import { Box, useStdout } from 'ink';
 import InputBox from './InputBox.js';
 import MessageHistory from './MessageHistory.js';
 
@@ -17,12 +16,13 @@ const App = ({
   banner = null,
   model = '',
   tokenCount = 0,
+  showThinking = false,
+  onToggleThinking = () => {},
+  agentStatus = { phase: 'idle', toolName: null },
 }) => {
-  const theme = getTheme();
-  const [showThinking, setShowThinking] = useState(false);
+  const [showToolOutput, setShowToolOutput] = useState(false);
   const { stdout } = useStdout();
   const [terminalHeight, setTerminalHeight] = useState(stdout?.rows || 24);
-  const scrollContainerRef = useRef(null);
 
   // Track terminal resize
   useEffect(() => {
@@ -59,6 +59,8 @@ const App = ({
         streaming,
         processing,
         showThinking,
+        showToolOutput,
+        agentStatus,
         maxHeight: messageMaxHeight,
         banner,
       })
@@ -72,7 +74,9 @@ const App = ({
       model,
       tokenCount,
       showThinking,
-      onToggleThinking: () => setShowThinking(!showThinking),
+      onToggleThinking,
+      onToggleToolOutput: () => setShowToolOutput(value => !value),
+      agentStatus,
     })
   );
 };

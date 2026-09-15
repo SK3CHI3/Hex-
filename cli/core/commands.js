@@ -51,6 +51,7 @@ ${C.bold('Keyboard Shortcuts:')}
   Tab          Autocomplete commands
   Ctrl+R       Search history
   Ctrl+T       Toggle thinking display
+  Ctrl+O       Toggle all tool output
   Up/Down      Navigate history
   Shift+Enter  New line
   Ctrl+C       Cancel input
@@ -196,7 +197,10 @@ ${C.bold('Keyboard Shortcuts:')}
     }
 
     case '/thinking':
-      context.showThinking = !context.showThinking;
+      if (typeof context.toggleThinking !== 'function') {
+        return { type: 'error', content: C.error('Thinking display is unavailable in this interface.') };
+      }
+      context.showThinking = context.toggleThinking();
       return { type: 'info', content: C.dim(`  Thinking display: ${context.showThinking ? 'expanded' : 'collapsed'}`) };
 
     case '/skills': {

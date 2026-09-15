@@ -19,6 +19,8 @@ const InputBox = ({
   tokenCount = 0,
   showThinking = false,
   onToggleThinking = () => {},
+  onToggleToolOutput = () => {},
+  agentStatus = { phase: 'idle', toolName: null },
 }) => {
   const [value, setValue] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -49,6 +51,20 @@ const InputBox = ({
 
   // Handle keyboard input
   useInput((input, key) => {
+    // Display controls must remain available while the agent is active.
+    // They only change local rendering and cannot submit another request.
+    if (key.ctrl && input === 't') {
+      onToggleThinking();
+      return;
+    }
+
+    // Ctrl+O avoids Ctrl+E, which is already the conventional "move to end"
+    // shortcut and part of Ctrl+X Ctrl+E.
+    if (key.ctrl && input === 'o') {
+      onToggleToolOutput();
+      return;
+    }
+
     if (disabled) return;
     
     // Handle Ctrl+X Ctrl+E for external editor
@@ -92,12 +108,6 @@ const InputBox = ({
           setCursorPosition(match.length);
         }
       }
-      return;
-    }
-
-    // Toggle thinking display (Ctrl+T)
-    if (key.ctrl && input === 't') {
-      onToggleThinking();
       return;
     }
 
@@ -427,15 +437,28 @@ const InputBox = ({
     streaming && React.createElement(
       Box,
       { marginTop: 0 },
-      React.createElement(Text, { color: theme.status.thinking }, 'AI is thinking... (Ctrl+C to cancel)')
+      React.createElement(Text, { color: theme.status.thinking }, `${formatAgentStatus(agentStatus)} (Ctrl+C to cancel)`)
     ),
     // Help hint
-    !streaming && React.createElement(
+    !streaming && agentStatus.phase === 'complete' && React.createElement(
+      Box,
+      { marginTop: 0 },
+      React.createElement(Text, { color: theme.status.success || theme.status.info }, '✓ Response complete')
+    ),
+    !streaming && agentStatus.phase !== 'complete' && React.createElement(
       Box,
       { marginTop: 0 },
       React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens`)
     )
   );
+};
+
+const formatAgentStatus = ({ phase, toolName } = {}) => {
+  if (phase === 'planning') return 'AI is planning...';
+  if (phase === 'thinking') return 'AI is reasoning...';
+  if (phase === 'running') return `Running tool: ${toolName || 'tool'}...`;
+  if (phase === 'continuing') return 'Reviewing tool results...';
+  return 'AI is working...';
 };
 
 export default InputBox;

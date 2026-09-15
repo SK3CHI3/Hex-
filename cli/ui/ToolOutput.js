@@ -3,7 +3,7 @@
  * Handles expandable/collapsible output for long results
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 
@@ -76,32 +76,10 @@ const ToolOutput = ({
   output,
   error = false,
   expandable = true,
-  onExpandToggle,
+  expanded = false,
+  label = 'Tool result',
 }) => {
-  const [expanded, setExpanded] = useState(false);
   const theme = getTheme();
-  
-  // Listen for Ctrl+E to toggle expansion
-  useEffect(() => {
-    if (!expandable) return;
-    
-    const handleKeyPress = (str, key) => {
-      if (key && key.ctrl && key.name === 'e') {
-        setExpanded(prev => !prev);
-        if (onExpandToggle) {
-          onExpandToggle(!expanded);
-        }
-      }
-    };
-    
-    // Note: This is a simplified implementation
-    // In production, you'd want to coordinate this with the parent component
-    // to ensure only the focused/active output responds
-    
-    return () => {
-      // Cleanup if needed
-    };
-  }, [expandable, expanded, onExpandToggle]);
 
   if (!output) {
     return React.createElement(
@@ -144,8 +122,8 @@ const ToolOutput = ({
     React.createElement(
       Box,
       null,
-      React.createElement(Text, { color: theme.status.tool }, '⚡ '),
-      React.createElement(Text, { color: theme.status.tool, bold: true }, toolName)
+       React.createElement(Text, { color: theme.status.tool }, '⚡ '),
+       React.createElement(Text, { color: theme.status.tool, bold: true }, `${label}: ${toolName}`)
     ),
     // Output content
     React.createElement(
@@ -162,20 +140,12 @@ const ToolOutput = ({
             Box,
             null,
             React.createElement(Text, { color: theme.text.muted }, `... ${remainingLines} more lines`),
-            React.createElement(Text, { 
-              color: theme.status.info,
-              bold: true,
-              onPress: () => setExpanded(true)
-            }, ' [Click or scroll to expand]')
+            React.createElement(Text, { color: theme.status.info, bold: true }, ' [Ctrl+O to expand all tool output]')
           )
         : React.createElement(
             Box,
             null,
-            React.createElement(Text, { 
-              color: theme.status.info,
-              bold: true,
-              onPress: () => setExpanded(false)
-            }, '[Collapse]')
+            React.createElement(Text, { color: theme.status.info, bold: true }, '[Ctrl+O to collapse all tool output]')
           )
     )
   );

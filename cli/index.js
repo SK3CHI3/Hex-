@@ -194,10 +194,20 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [streaming, setStreaming] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [showThinking, setShowThinking] = useState(false);
+  const [agentStatus, setAgentStatus] = useState({ phase: 'idle', toolName: null });
   const abortControllerRef = useRef(null);
   const requestInFlightRef = useRef(false);
   const messagesRef = useRef(messages);
+  const showThinkingRef = useRef(false);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+
+  const toggleThinking = useCallback(() => {
+    const next = !showThinkingRef.current;
+    showThinkingRef.current = next;
+    setShowThinking(next);
+    return next;
+  }, []);
   
   // Execute a skill with variable substitution
   const executeSkill = useCallback(async (skill, vars) => {
@@ -259,7 +269,8 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
           conversationId,
           messages: [...currentMessages],
           SYSTEM_PROMPT,
-          showThinking: false,
+          showThinking: showThinkingRef.current,
+          toggleThinking,
           prompt: async () => '',
           executeSkill,
         };
@@ -289,7 +300,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     
     // Send to AI
     await sendAndReceive(userMessage);
-  }, [conversationId]);
+  }, [conversationId, executeSkill, toggleThinking]);
   
   // Send message and receive response
   const sendAndReceive = async (userMessage) => {
@@ -303,6 +314,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     const newMessages = [...currentMessages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
     setStreaming(true);
+    setAgentStatus({ phase: 'planning', toolName: null });
     
     // Check if we need to summarize
     if (shouldSummarize(newMessages, initialModel)) {
@@ -319,6 +331,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     
     const MAX_ROUNDS = 100;
     let round = 0;
+    let completed = false;
     let workingMessages = [...newMessages];
     
     abortControllerRef.current = new AbortController();
@@ -326,6 +339,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     try {
       while (round < MAX_ROUNDS) {
         round++;
+        setAgentStatus({ phase: 'planning', toolName: null });
         let assistantContent = '';
         let thinkingContent = '';
         const toolCalls = [];
@@ -337,6 +351,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
           abortSignal: abortControllerRef.current.signal,
           onThinking: (chunk) => {
             thinkingContent += chunk;
+            setAgentStatus({ phase: 'thinking', toolName: null });
           },
           onContent: (chunk) => {
             assistantContent += chunk;
@@ -351,6 +366,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         
         if (chatError) {
           if (chatError.message === 'Request cancelled by user.') {
+            setAgentStatus({ phase: 'cancelled', toolName: null });
             break;
           }
           throw chatError;
@@ -381,11 +397,14 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         
         // If no tool calls, we're done
         if (toolCalls.length === 0) {
+          completed = true;
+          setAgentStatus({ phase: 'complete', toolName: null });
           break;
         }
         
         // Execute tool calls
         for (const tc of toolCalls) {
+          setAgentStatus({ phase: 'running', toolName: tc.name });
           const result = await executeToolCall(tc);
           
           const toolMsg = {
@@ -398,11 +417,13 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
           
           workingMessages = [...workingMessages, toolMsg];
           setMessages(workingMessages);
+          setAgentStatus({ phase: 'continuing', toolName: tc.name });
         }
       }
       
-      if (round >= MAX_ROUNDS) {
+      if (round >= MAX_ROUNDS && !completed) {
         console.error('Max rounds reached');
+        setAgentStatus({ phase: 'limit', toolName: null });
       }
 
       saveConversation(conversationId, workingMessages);
@@ -416,6 +437,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         }
       }
       setError(err.message);
+      setAgentStatus({ phase: 'error', toolName: null });
     } finally {
       setStreaming(false);
       abortControllerRef.current = null;
@@ -453,6 +475,9 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     onSendMessage: handleSendMessage,
     streaming,
     processing,
+    showThinking,
+    onToggleThinking: toggleThinking,
+    agentStatus,
     model: initialModel,
     tokenCount,
     banner: React.createElement(Banner, {
