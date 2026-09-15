@@ -1,8 +1,17 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
 const SKILLS_DIR = join(homedir(), '.hex', 'skills');
+
+const VALID_SKILL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function getSkillPath(name) {
+  if (typeof name !== 'string' || !VALID_SKILL_NAME.test(name)) {
+    return null;
+  }
+  return join(SKILLS_DIR, `${name}.json`);
+}
 
 // Ensure skills directory exists
 if (!existsSync(SKILLS_DIR)) {
@@ -24,7 +33,8 @@ export function listSkills() {
 }
 
 export function getSkill(name) {
-  const path = join(SKILLS_DIR, `${name}.json`);
+  const path = getSkillPath(name);
+  if (!path) return null;
   if (!existsSync(path)) return null;
   
   try {
@@ -36,16 +46,17 @@ export function getSkill(name) {
 }
 
 export function saveSkill(skill) {
-  const path = join(SKILLS_DIR, `${skill.name}.json`);
+  const path = getSkillPath(skill?.name);
+  if (!path) return false;
   writeFileSync(path, JSON.stringify(skill, null, 2));
   return true;
 }
 
 export function deleteSkill(name) {
-  const path = join(SKILLS_DIR, `${name}.json`);
+  const path = getSkillPath(name);
+  if (!path) return false;
   if (!existsSync(path)) return false;
   
-  const { unlinkSync } = require('fs');
   unlinkSync(path);
   return true;
 }

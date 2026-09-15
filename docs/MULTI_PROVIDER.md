@@ -238,7 +238,7 @@ hex
 - [x] Provider switching works
 - [x] API calls use correct credentials
 - [x] Tool execution works in both modes
-- [x] All 14 providers are available
+- [x] All 13 providers are available
 - [x] Local provider model discovery works
 - [x] Connection testing works
 - [x] Network resilience works

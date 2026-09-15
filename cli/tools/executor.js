@@ -25,16 +25,22 @@ export function buildCommand(toolName, args) {
     case 'whois_lookup':  return { command: 'whois', args: [args.domain] };
     case 'dns_lookup':    return { command: 'dig', args: [args.domain, args.record_type || 'A'] };
     case 'sslscan':       return { command: 'sslscan', args: args.port ? [`${args.target}:${args.port}`] : [args.target] };
-    case 'enum4linux':    return { command: 'enum4linux', args: [args.target] };
+    case 'enum4linux': {
+      const modes = { users: '-U', shares: '-S', groups: '-G', 'password-policy': '-P', all: '-a' };
+      const a = [];
+      if (args.enumerate) a.push(modes[args.enumerate] || '-a');
+      a.push(args.target);
+      return { command: 'enum4linux', args: a };
+    }
     case 'smbmap': {
       const a = ['-H', args.target];
       if (args.username) a.push('-u', args.username);
       if (args.password) a.push('-p', args.password);
+      if (args.domain) a.push('-d', args.domain);
       return { command: 'smbmap', args: a };
     }
     case 'raw_command': {
-      const parts = args.command.trim().split(/\s+/);
-      return { command: parts[0] || '', args: parts.slice(1) };
+      return { command: args.command.trim(), args: [], shell: true };
     }
     default:
       return null;
@@ -98,7 +104,8 @@ function buildHydra(a) {
 
 function buildHashcat(a) {
   const hashTypes = { md5: '0', sha1: '100', sha256: '1400', sha512: '1700', ntlm: '1000', bcrypt: '3200' };
-  const cmd = ['-m', hashTypes[a.hash_type] || '0', a.hash];
+  const attackModes = { dictionary: '0', combinator: '1', 'brute-force': '3', hybrid: '6' };
+  const cmd = ['-m', hashTypes[a.hash_type] || '0', '-a', attackModes[a.attack_mode] || '0', a.hash];
   if (a.wordlist) cmd.push(WORDLIST_MAP[a.wordlist] || WORDLIST_MAP.common);
   return { command: 'hashcat', args: cmd };
 }
@@ -245,10 +252,10 @@ async function handleToolInstallation(args) {
 
     // Update package list first if using apt
     if (command === 'apt-get') {
-      await runCommand('apt-get', ['update', '-qq'], {});
+      await runCommand('apt-get', ['update', '-qq'], { user: 'root' });
     }
 
-    const result = await runCommand(command, cmdArgs, {});
+    const result = await runCommand(command, cmdArgs, { user: command === 'apt-get' ? 'root' : undefined });
 
     if (result.exitCode === 0) {
       return {
@@ -268,9 +275,9 @@ async function handleToolInstallation(args) {
     return new Promise((resolve) => {
       // Update package list first if using apt
       if (command === 'apt-get') {
-        const update = spawn('sudo', ['apt-get', 'update', '-qq'], { shell: true });
+        const update = spawn('sudo', ['apt-get', 'update', '-qq']);
         update.on('close', () => {
-          const proc = spawn('sudo', [command, ...cmdArgs], { shell: true });
+          const proc = spawn('sudo', [command, ...cmdArgs]);
           let stdout = '';
           let stderr = '';
 
@@ -299,7 +306,7 @@ async function handleToolInstallation(args) {
           });
         });
       } else {
-        const proc = spawn(command, cmdArgs, { shell: true });
+        const proc = spawn(command, cmdArgs);
         let stdout = '';
         let stderr = '';
 
@@ -362,7 +369,7 @@ export async function executeToolCall(toolCall) {
   // to stdout bypasses Ink's renderer, corrupts its frame, and then causes the
   // same output to appear again once MessageHistory renders the tool result.
   // Let runCommand collect the output and return it for the single Ink render.
-  const result = await runCommand(built.command, built.args);
+  const result = await runCommand(built.command, built.args, { shell: built.shell === true });
 
   if (result.timedOut) {
     return { error: 'Command timed out' };

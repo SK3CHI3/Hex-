@@ -135,6 +135,21 @@ ${C.bold('Keyboard Shortcuts:')}
 
     case '/provider': {
       const providerKeys = Object.keys(PROVIDERS);
+      const requestedProvider = parts[1]?.toLowerCase();
+
+      if (requestedProvider) {
+        const numericIndex = Number.parseInt(requestedProvider, 10) - 1;
+        const newProvider = providerKeys[numericIndex] || providerKeys.find(key => key === requestedProvider);
+        if (!newProvider) {
+          return { type: 'error', content: C.error(`Unknown provider '${requestedProvider}'. Use /provider to list choices.`) };
+        }
+        const config = loadConfig();
+        config.provider = newProvider;
+        config.model = PROVIDERS[newProvider].defaultModel;
+        saveConfig(config);
+        return { type: 'info', content: C.green(`  ✓ Switched to ${PROVIDERS[newProvider].name}. Restart Hex or run /setup to configure it.`) };
+      }
+
       let output = C.bold('\n  Available providers:\n');
       providerKeys.forEach((key, i) => {
         const envKey = PROVIDERS[key].envKey;
@@ -143,23 +158,8 @@ ${C.bold('Keyboard Shortcuts:')}
         output += `  ${i + 1}. ${PROVIDERS[key].name}${marker}\n`;
       });
       
-      return { 
-        type: 'prompt', 
-        content: output,
-        handler: async (choice) => {
-          const idx = parseInt(choice.trim()) - 1;
-          const newProvider = providerKeys[idx];
-
-          if (newProvider && PROVIDERS[newProvider]) {
-            const config = loadConfig();
-            config.provider = newProvider;
-            config.model = PROVIDERS[newProvider].defaultModel;
-            saveConfig(config);
-            return { type: 'info', content: C.green(`\n  ✓ Switched to ${PROVIDERS[newProvider].name}\n`) + C.dim('Restart Hex or run /setup to configure API key.') };
-          }
-          return { type: 'error', content: C.error('  Invalid selection.') };
-        }
-      };
+      output += C.dim('\n  Usage: /provider <number|name>');
+      return { type: 'info', content: output };
     }
 
     case '/setup':

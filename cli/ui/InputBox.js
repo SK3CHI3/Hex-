@@ -114,6 +114,14 @@ const InputBox = ({
       return;
     }
     
+    // Newline (Shift+Enter or Ctrl+J)
+    if ((key.return && key.shift) || (key.ctrl && input === 'j')) {
+      const newValue = value.slice(0, cursorPosition) + '\n' + value.slice(cursorPosition);
+      setValue(newValue);
+      setCursorPosition(cursorPosition + 1);
+      return;
+    }
+
     // Submit
     if (key.return) {
       if (value.trim()) {
@@ -130,14 +138,9 @@ const InputBox = ({
       }
       return;
     }
-    
-    // Newline (Shift+Enter or Ctrl+J)
-    if ((key.return && key.shift) || (key.ctrl && input === 'j')) {
-      const newValue = value.slice(0, cursorPosition) + '\n' + value.slice(cursorPosition);
-      setValue(newValue);
-      setCursorPosition(cursorPosition + 1);
-      return;
-    }
+
+    // MessageHistory owns modified navigation keys for its viewport.
+    if (key.shift && (key.upArrow || key.downArrow)) return;
     
     // Clear input (Ctrl+C or Ctrl+U)
     if ((key.ctrl && input === 'c') || (key.ctrl && input === 'u')) {

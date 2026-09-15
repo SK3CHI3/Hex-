@@ -159,13 +159,17 @@ const preInit = async () => {
   if (!apiKey && !isLocalProvider(cfg.provider)) {
     await setupWizard();
   }
+
+  // setupWizard persists its selection. Reload so the initial header, token
+  // limits, and provider state match the selection made during first run.
+  const activeConfig = loadConfig();
   
   initBuiltinSkills();
   
   return {
-    config: cfg,
+    config: activeConfig,
     provider: getProvider(),
-    model: cfg.model || getProvider().defaultModel,
+    model: activeConfig.model || getProvider().defaultModel,
   };
 };
 
@@ -353,7 +357,10 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         }
         
         // Add assistant message
-        if (assistantContent || thinkingContent) {
+        // Tool-result messages must always follow the assistant tool-call
+        // message. Providers reject a dangling tool result, which is what
+        // happened when a model emitted function calls without text.
+        if (assistantContent || thinkingContent || toolCalls.length > 0) {
           const assistantMsg = {
             role: 'assistant',
             content: assistantContent || null,

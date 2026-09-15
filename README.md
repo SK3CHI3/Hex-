@@ -22,7 +22,7 @@
 
 ## About
 
-Hex is a terminal-native AI pentesting assistant built with React + Ink. Chat with AI, execute security tools through natural language, create reusable attack workflows with skills, and automatically install missing tools — all without leaving your terminal. Supports 14 AI providers (5 local + 9 cloud) and optional Docker isolation with Kali Linux.
+Hex is a terminal-native AI pentesting assistant built with React + Ink. Chat with AI, execute security tools through natural language, create reusable attack workflows with skills, and automatically install missing tools — all without leaving your terminal. Supports 13 AI providers (5 local, 7 cloud, and 1 custom endpoint) and optional Docker isolation with Kali Linux.
 
 ---
 
@@ -77,7 +77,7 @@ Complete guides and references:
 
 - **Runtime:** Node.js 18+ with React + Ink for terminal UI
 - **UI:** Component-based architecture with semantic color themes
-- **AI:** 14 providers — OpenAI, Anthropic, Google, DeepSeek, Ollama, LM Studio, and more
+- **AI:** 13 providers — OpenAI, Anthropic, Google, DeepSeek, Ollama, LM Studio, and more
 - **Execution:** Direct (default) or Docker + Kali Linux
 - **Storage:** Local JSON in `~/.hex/`
 - **Skills:** Reusable multi-step attack workflows
@@ -91,7 +91,7 @@ Complete guides and references:
 - **Skills System** — Create reusable attack workflows with `/skill` command
 - **Agentic Loop** — Multi-step task execution with automatic tool chaining (up to 100 rounds)
 - **Web Search** — DuckDuckGo integration for OSINT, CVE research, and documentation
-- **Multi-Provider AI** — Switch between 14 providers with `/provider` command
+- **Multi-Provider AI** — Switch between 13 providers with `/provider` command
 - **React + Ink UI** — Fixed input at bottom, scrolling output, syntax highlighting
 - **Thinking Models** — Support for models with reasoning capabilities
 - **Conversation Management** — Persistent history with `/resume` and `/history`

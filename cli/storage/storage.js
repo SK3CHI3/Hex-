@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
@@ -41,7 +41,6 @@ export function listConversations() {
 export function deleteConversation(id) {
   const file = join(CONVERSATIONS_DIR, `${id}.json`);
   if (existsSync(file)) {
-    const { unlinkSync } = require('fs');
     unlinkSync(file);
     return true;
   }

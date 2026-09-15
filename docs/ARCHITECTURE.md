@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hex is a terminal-native AI pentesting assistant built with React + Ink. You type commands in your terminal, the AI talks to your chosen provider (14 options including OpenAI, Anthropic, Ollama), and executes tools either directly on your machine or in an optional Docker container.
+Hex is a terminal-native AI pentesting assistant built with React + Ink. You type commands in your terminal, the AI talks to your chosen provider (13 options including OpenAI, Anthropic, Ollama), and executes tools either directly on your machine or in an optional Docker container.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -18,7 +18,7 @@ Hex is a terminal-native AI pentesting assistant built with React + Ink. You typ
 │  │    ├── themes.js     — Semantic color system           │  │
 │  │    └── keyBindings.js — Centralized shortcuts          │  │
 │  │  cli/core/           — Core logic                      │  │
-│  │    ├── config.js     — 14 providers + setup wizard     │  │
+│  │    ├── config.js     — 13 providers + setup wizard     │  │
 │  │    └── commands.js   — Slash command handlers          │  │
 │  │  cli/ai/             — AI integration                  │  │
 │  │    ├── ai.js         — Multi-provider API client       │  │

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import { getTheme } from './themes.js';
 import ToolOutput from './ToolOutput.js';
 
@@ -48,8 +48,22 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     setScrollOffset(0); // Reset to show latest
   }, [messages.length]);
 
+  // Qwen-style in-app history navigation. The terminal scrollback remains
+  // untouched while the input stays anchored at the bottom.
+  useInput((input, key) => {
+    if (messages.length === 0) return;
+    const pageSize = Math.max(1, Math.floor(maxHeight / 2));
+    if (key.ctrl && key.home) setScrollOffset(Math.max(0, messages.length - 1));
+    else if (key.ctrl && key.end) setScrollOffset(0);
+    else if (key.pageUp) setScrollOffset(offset => Math.min(messages.length - 1, offset + pageSize));
+    else if (key.pageDown) setScrollOffset(offset => Math.max(0, offset - pageSize));
+    else if (key.shift && key.upArrow) setScrollOffset(offset => Math.min(messages.length - 1, offset + 1));
+    else if (key.shift && key.downArrow) setScrollOffset(offset => Math.max(0, offset - 1));
+  });
+
   // Calculate banner height (14 lines)
-  const bannerHeight = banner ? 14 : 0;
+  const showBanner = banner && scrollOffset === 0;
+  const bannerHeight = showBanner ? 14 : 0;
   const availableForMessages = maxHeight - bannerHeight;
 
   // Calculate which messages to render (virtual scrolling)
@@ -57,8 +71,10 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
   const visibleMessages = [];
   let hiddenCount = 0;
 
-  // Start from the end (most recent) and work backwards
-  for (let i = messages.length - 1; i >= 0; i--) {
+  // Start from the selected position and work backwards. scrollOffset is the
+  // number of newest messages skipped while browsing history.
+  const startIndex = Math.max(0, messages.length - 1 - scrollOffset);
+  for (let i = startIndex; i >= 0; i--) {
     const msgHeight = estimateMessageHeight(messages[i]);
     if (totalHeight + msgHeight > availableForMessages && visibleMessages.length > 0) {
       hiddenCount = i + 1; // Messages above this are hidden
@@ -68,8 +84,7 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     visibleMessages.unshift({ msg: messages[i], index: i });
   }
 
-  // Adjust for scroll offset
-  const renderMessages = visibleMessages.slice(scrollOffset);
+  const renderMessages = visibleMessages;
 
   const renderMessage = (msg, index) => {
     // User message
@@ -183,7 +198,7 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     Box,
     { flexDirection: 'column', paddingX: 1 },
     // Banner (first scrollable item)
-    banner && React.createElement(
+    showBanner && React.createElement(
       Box,
       { key: 'banner', flexDirection: 'column', marginBottom: 1 },
       banner

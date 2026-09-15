@@ -91,7 +91,11 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
       }
 
       // Success - process the stream
-      await processStream(response, onContent, onToolCall, onThinking, controller.signal);
+      if (provider.apiFormat === 'anthropic') {
+        await processAnthropicStream(response, onContent, onToolCall, onThinking, controller.signal);
+      } else {
+        await processStream(response, onContent, onToolCall, onThinking, controller.signal);
+      }
       return; // Exit retry loop on success
 
     } catch (err) {
@@ -129,15 +133,25 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
 }
 
 async function makeRequest(baseUrl, payload, provider, apiKey, signal) {
+  if (provider === 'anthropic') {
+    return fetch(`${baseUrl}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(toAnthropicPayload(payload)),
+      signal,
+    });
+  }
+
   const headers = {
     'Content-Type': 'application/json',
   };
 
   // Provider-specific auth
-  if (provider === 'anthropic') {
-    headers['x-api-key'] = apiKey;
-    headers['anthropic-version'] = '2023-06-01';
-  } else if (!isLocalProvider(provider)) {
+  if (!isLocalProvider(provider)) {
     headers['Authorization'] = `Bearer ${apiKey}`;
   }
 
@@ -149,11 +163,57 @@ async function makeRequest(baseUrl, payload, provider, apiKey, signal) {
   });
 }
 
+function toAnthropicPayload(payload) {
+  const system = payload.messages
+    .filter(message => message.role === 'system' && message.content)
+    .map(message => message.content)
+    .join('\n\n');
+  const messages = [];
+
+  for (const message of payload.messages) {
+    if (message.role === 'system') continue;
+
+    if (message.role === 'tool') {
+      const previous = messages[messages.length - 1];
+      const result = { type: 'tool_result', tool_use_id: message.tool_call_id, content: message.content || '' };
+      if (previous?.role === 'user' && Array.isArray(previous.content)) previous.content.push(result);
+      else messages.push({ role: 'user', content: [result] });
+      continue;
+    }
+
+    if (message.role === 'assistant' && message.tool_calls) {
+      const content = [];
+      if (message.content) content.push({ type: 'text', text: message.content });
+      for (const toolCall of message.tool_calls) {
+        let input = {};
+        try { input = JSON.parse(toolCall.function.arguments || '{}'); } catch {}
+        content.push({ type: 'tool_use', id: toolCall.id, name: toolCall.function.name, input });
+      }
+      messages.push({ role: 'assistant', content });
+      continue;
+    }
+
+    messages.push({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content || '' });
+  }
+
+  const result = { model: payload.model, max_tokens: payload.max_tokens, stream: true, messages };
+  if (system) result.system = system;
+  if (payload.tools?.length) {
+    result.tools = payload.tools.map(tool => ({
+      name: tool.function.name,
+      description: tool.function.description,
+      input_schema: tool.function.parameters,
+    }));
+  }
+  return result;
+}
+
 async function processStream(response, onContent, onToolCall, onThinking, signal) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   const toolCallsMap = new Map();
   let partialContent = '';
+  let buffer = '';
 
   try {
     while (true) {
@@ -165,9 +225,11 @@ async function processStream(response, onContent, onToolCall, onThinking, signal
         break;
       }
 
-      const chunk = decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
 
-      for (const line of chunk.split('\n')) {
+      for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6);
         if (data === '[DONE]') break;
@@ -235,6 +297,52 @@ async function processStream(response, onContent, onToolCall, onThinking, signal
 
   // Return partial content info for caller
   return { partialContent };
+}
+
+async function processAnthropicStream(response, onContent, onToolCall, onThinking, signal) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const toolCalls = new Map();
+  let buffer = '';
+
+  const processEvent = (line) => {
+    if (!line.startsWith('data: ')) return;
+    try {
+      const event = JSON.parse(line.slice(6));
+      if (event.type === 'content_block_start' && event.content_block?.type === 'tool_use') {
+        toolCalls.set(event.index, { id: event.content_block.id, name: event.content_block.name, arguments: '' });
+      } else if (event.type === 'content_block_delta') {
+        if (event.delta?.type === 'text_delta') onContent(event.delta.text || '');
+        if (event.delta?.type === 'thinking_delta') onThinking?.(event.delta.thinking || '');
+        if (event.delta?.type === 'input_json_delta') {
+          const tool = toolCalls.get(event.index);
+          if (tool) tool.arguments += event.delta.partial_json || '';
+        }
+      }
+    } catch {
+      // Ignore malformed streaming events; a complete event is handled once buffered.
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (signal.aborted) { await reader.cancel(); break; }
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      lines.forEach(processEvent);
+    }
+    if (buffer) processEvent(buffer);
+  } finally {
+    reader.releaseLock();
+  }
+
+  for (const tool of toolCalls.values()) {
+    if (!tool.name) continue;
+    try { onToolCall({ id: tool.id, name: tool.name, arguments: JSON.parse(tool.arguments || '{}') }); } catch {}
+  }
 }
 
 function sleep(ms) {

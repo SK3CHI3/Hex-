@@ -3,20 +3,30 @@ import { loadConfig } from '../core/config.js';
 
 const CONTAINER = 'hex-kali-tools';
 const USER = 'hexagent';
+const DEFAULT_TIMEOUT_MS = 300000;
 
-export async function runCommand(command, args = [], { onStdout, onStderr } = {}) {
+export async function runCommand(command, args = [], { onStdout, onStderr, user, shell = false, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   const config = loadConfig();
 
   if (config.executionMode === 'docker') {
-    return runInDocker(command, args, { onStdout, onStderr });
+    // Docker exec does not invoke a shell. Preserve raw_command semantics only
+    // for that explicitly requested tool; built-in tools remain argument-safe.
+    const dockerCommand = shell ? 'sh' : command;
+    const dockerArgs = shell ? ['-lc', command] : args;
+    return runInDocker(dockerCommand, dockerArgs, { onStdout, onStderr, user, timeoutMs });
   } else {
-    return runDirect(command, args, { onStdout, onStderr });
+    return runDirect(command, args, { onStdout, onStderr, shell, timeoutMs });
   }
 }
 
-async function runDirect(command, args, { onStdout, onStderr }) {
+async function runDirect(command, args, { onStdout, onStderr, shell, timeoutMs }) {
   return new Promise((resolve) => {
-    const proc = spawn(command, args, { shell: true });
+    const proc = spawn(command, args, { shell });
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      proc.kill();
+    }, timeoutMs);
 
     let stdout = '';
     let stderr = '';
@@ -34,21 +44,28 @@ async function runDirect(command, args, { onStdout, onStderr }) {
     });
 
     proc.on('close', (code) => {
-      resolve({ stdout, stderr, exitCode: code, timedOut: false });
+      clearTimeout(timeout);
+      resolve({ stdout, stderr, exitCode: code, timedOut });
     });
 
     proc.on('error', (err) => {
-      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut: false });
+      clearTimeout(timeout);
+      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut });
     });
   });
 }
 
-async function runInDocker(command, args, { onStdout, onStderr }) {
+async function runInDocker(command, args, { onStdout, onStderr, user = USER, timeoutMs }) {
   return new Promise((resolve) => {
     const proc = spawn('docker', [
-      'exec', '-u', USER, CONTAINER,
+      'exec', '-u', user, CONTAINER,
       command, ...args,
     ]);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      proc.kill();
+    }, timeoutMs);
 
     let stdout = '';
     let stderr = '';
@@ -66,11 +83,13 @@ async function runInDocker(command, args, { onStdout, onStderr }) {
     });
 
     proc.on('close', (code) => {
-      resolve({ stdout, stderr, exitCode: code, timedOut: false });
+      clearTimeout(timeout);
+      resolve({ stdout, stderr, exitCode: code, timedOut });
     });
 
     proc.on('error', (err) => {
-      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut: false });
+      clearTimeout(timeout);
+      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut });
     });
   });
 }
