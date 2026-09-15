@@ -192,6 +192,7 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
         error: msg.isError,
         label: msg.isError ? 'Tool failed' : 'Tool result',
         expanded: showToolOutput,
+        fullOutputId: msg.fullOutputId,
       });
     }
 

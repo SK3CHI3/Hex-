@@ -40,6 +40,7 @@ export async function webSearch(query, maxResults = 5, options = {}) {
     filterDomain = null,
     excludeDomain = null,
     minSnippetLength = 0,
+    abortSignal = null,
   } = options;
   
   // Check cache first
@@ -51,6 +52,9 @@ export async function webSearch(query, maxResults = 5, options = {}) {
   // Setup timeout
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds
+  const abort = () => controller.abort();
+  if (abortSignal?.aborted) abort();
+  else abortSignal?.addEventListener('abort', abort, { once: true });
   
   try {
     const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`;
@@ -63,6 +67,7 @@ export async function webSearch(query, maxResults = 5, options = {}) {
     });
     
     clearTimeout(timeoutId);
+    abortSignal?.removeEventListener('abort', abort);
 
     if (!response.ok) {
       return { 
@@ -188,7 +193,11 @@ export async function webSearch(query, maxResults = 5, options = {}) {
     return searchResult;
     
   } catch (err) {
+    abortSignal?.removeEventListener('abort', abort);
     clearTimeout(timeoutId);
+    if (abortSignal?.aborted) {
+      return { query, results: [], error: 'Search cancelled' };
+    }
     
     if (err.name === 'AbortError') {
       return { 

@@ -78,6 +78,7 @@ const ToolOutput = ({
   expandable = true,
   expanded = false,
   label = 'Tool result',
+  fullOutputId = null,
 }) => {
   const theme = getTheme();
 
@@ -130,6 +131,11 @@ const ToolOutput = ({
       Box,
       { flexDirection: 'column', marginLeft: 2, marginTop: 1 },
       ...displayLines.map(renderLine)
+    ),
+    fullOutputId && React.createElement(
+      Text,
+      { color: theme.status.info, marginTop: 1 },
+      `Full output saved. Run /output ${fullOutputId}`
     ),
     // Expand/collapse toggle
     isLong && React.createElement(

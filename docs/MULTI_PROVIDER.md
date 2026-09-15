@@ -1,9 +1,9 @@
 # Multi-Provider AI System
 
 ## Overview
-Hex supports 14 AI providers with a unified interface. Users can switch between providers, use environment variables for API keys, and configure execution modes.
+Hex supports 13 AI providers with a unified interface. Users can switch between providers, use environment variables for API keys, and configure execution modes.
 
-## Supported Providers (14)
+## Supported Providers (13)
 
 ### Cloud Providers (9)
 

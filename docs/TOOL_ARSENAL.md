@@ -343,7 +343,7 @@ The AI sees these definitions and knows exactly how to call each tool.
 
 - All tools run in **isolated Docker container** (if using Docker mode)
 - **Non-root user** (`hexagent`) for security in Docker
-- **No timeout** — tools can run as long as needed
+- **Five-minute timeout** — long-running tools are stopped after five minutes
 - **Ethical use only** — for authorized testing
 - **Local execution** in Direct mode (tools run on your machine)
 

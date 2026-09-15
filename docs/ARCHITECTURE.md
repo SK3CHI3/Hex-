@@ -55,7 +55,7 @@ Hex is a terminal-native AI pentesting assistant built with React + Ink. You typ
 3. CLI sends it to the configured AI provider with 17 tool definitions
 4. AI responds with text and/or tool calls (streaming)
 5. If tool calls: CLI builds the command, runs it via the execution layer
-6. Output streams back to terminal in real-time
+6. Tool output is collected, rendered once by Ink, and sent back to the AI
 7. Tool results are sent back to the AI for analysis
 8. Agentic loop continues (up to 100 rounds) until task complete
 9. AI gives a final response with findings
@@ -146,7 +146,7 @@ Switch themes with `/theme dark` or `/theme light`.
 
 ## Multi-Provider Support
 
-Hex supports 14 AI providers through a unified interface:
+Hex supports 13 AI providers through a unified interface:
 
 ### Provider Configuration
 
@@ -206,7 +206,7 @@ Tools execute directly on your machine using your installed tools.
 **How it works:**
 - Commands spawn directly via Node.js `child_process`
 - Tools must be installed on your system (or use `install_tool`)
-- Output streams in real-time to terminal
+- Output is collected and rendered by the terminal UI after command completion
 
 ### Docker Mode
 
@@ -220,7 +220,7 @@ Tools execute in an isolated Kali Linux container.
 **How it works:**
 - Commands run via `docker exec hex-kali-tools <command>`
 - Container runs as non-root user (`hexagent`)
-- No timeout (tools can run as long as needed)
+- Commands have a five-minute timeout and can be cancelled with Ctrl+C
 
 ## Agentic Loop
 
@@ -389,7 +389,7 @@ Hex supports graceful cancellation of operations:
 - **Ctrl+C** during AI thinking: Aborts the fetch request
 - **Ctrl+C** during tool execution: Stops the current tool
 - **AbortController** passed to `chat()` function
-- SIGINT handler manages cancellation gracefully
+- Ink input handles Ctrl+C without exiting the application
 - Conversation history preserved after cancellation
 
 ## Token Management
@@ -466,7 +466,7 @@ No database required. All data stored as JSON files:
 ### Docker Mode
 - Commands run in an isolated Docker container
 - Non-root user (`hexagent`) inside the container
-- No timeout (tools can run as long as needed)
+- Commands have a five-minute timeout and can be cancelled with Ctrl+C
 - API key stored locally in `~/.hex/config.json`
 
 ### AI Provider Security

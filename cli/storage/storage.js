@@ -4,6 +4,7 @@ import { homedir } from 'os';
 
 const HEX_DIR = join(homedir(), '.hex');
 const CONVERSATIONS_DIR = join(HEX_DIR, 'conversations');
+const VALID_CONVERSATION_ID = /^[a-zA-Z0-9_-]+$/;
 
 function ensureDirs() {
   if (!existsSync(HEX_DIR)) mkdirSync(HEX_DIR, { recursive: true });
@@ -11,15 +12,22 @@ function ensureDirs() {
 }
 
 export function saveConversation(id, messages) {
+  if (!VALID_CONVERSATION_ID.test(id)) return false;
   ensureDirs();
   const file = join(CONVERSATIONS_DIR, `${id}.json`);
   writeFileSync(file, JSON.stringify({ id, messages, updatedAt: new Date().toISOString() }, null, 2));
+  return true;
 }
 
 export function loadConversation(id) {
+  if (!VALID_CONVERSATION_ID.test(id)) return null;
   const file = join(CONVERSATIONS_DIR, `${id}.json`);
   if (!existsSync(file)) return null;
-  return JSON.parse(readFileSync(file, 'utf-8'));
+  try {
+    return JSON.parse(readFileSync(file, 'utf-8'));
+  } catch {
+    return null;
+  }
 }
 
 export function listConversations() {
@@ -39,6 +47,7 @@ export function listConversations() {
 }
 
 export function deleteConversation(id) {
+  if (!VALID_CONVERSATION_ID.test(id)) return false;
   const file = join(CONVERSATIONS_DIR, `${id}.json`);
   if (existsSync(file)) {
     unlinkSync(file);

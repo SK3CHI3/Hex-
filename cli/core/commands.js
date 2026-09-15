@@ -4,6 +4,7 @@ import { isDockerAvailable, isToolAvailable } from '../tools/docker.js';
 import { loadConversation, listConversations } from '../storage/storage.js';
 import { loadConfig, saveConfig, setupWizard, getProvider, getApiKey, PROVIDERS, isLocalProvider } from './config.js';
 import { listSkills, getSkill } from '../storage/skills.js';
+import { loadToolOutput } from '../storage/toolOutput.js';
 import { randomUUID } from 'crypto';
 import { getTokenUsage } from '../ai/tokens.js';
 import { themeManager } from '../ui/themes.js';
@@ -40,6 +41,7 @@ export async function handleCommand(input, context) {
   /setup       Run setup wizard to change provider/model
   /status      Check execution environment status
   /thinking    Toggle thinking display (collapsed/expanded)
+  /output <id> Show complete output saved for a truncated tool result
   /tokens      Show token usage
   /summarize   Manually summarize conversation
   /theme       Switch color theme (dark/light)
@@ -202,6 +204,18 @@ ${C.bold('Keyboard Shortcuts:')}
       }
       context.showThinking = context.toggleThinking();
       return { type: 'info', content: C.dim(`  Thinking display: ${context.showThinking ? 'expanded' : 'collapsed'}`) };
+
+    case '/output': {
+      const outputId = parts[1];
+      if (!outputId) {
+        return { type: 'error', content: C.error('Usage: /output <tool-call-id>') };
+      }
+      const output = (context.loadToolOutput || loadToolOutput)(outputId);
+      if (output === null) {
+        return { type: 'error', content: C.error('Saved tool output was not found.') };
+      }
+      return { type: 'info', content: output || C.dim('[No output]') };
+    }
 
     case '/skills': {
       const skills = listSkills();

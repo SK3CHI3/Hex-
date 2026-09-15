@@ -208,12 +208,46 @@ function toAnthropicPayload(payload) {
   return result;
 }
 
-async function processStream(response, onContent, onToolCall, onThinking, signal) {
+export async function processStream(response, onContent, onToolCall, onThinking, signal) {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   const toolCallsMap = new Map();
   let partialContent = '';
   let buffer = '';
+
+  const processLine = (line) => {
+    if (!line.startsWith('data: ')) return;
+    const data = line.slice(6);
+    if (data === '[DONE]') return;
+
+    try {
+      const parsed = JSON.parse(data);
+      const delta = parsed.choices?.[0]?.delta;
+      if (!delta) return;
+
+      if (delta.content) {
+        partialContent += delta.content;
+        onContent(delta.content);
+      }
+
+      if (delta.reasoning_content || delta.thinking) {
+        onThinking?.(delta.reasoning_content || delta.thinking);
+      }
+
+      for (const tc of delta.tool_calls || []) {
+        const idx = tc.index ?? 0;
+        if (!toolCallsMap.has(idx)) {
+          toolCallsMap.set(idx, { id: '', name: '', arguments: '' });
+        }
+        const acc = toolCallsMap.get(idx);
+        if (tc.id) acc.id = tc.id;
+        if (tc.function?.name) acc.name = tc.function.name;
+        if (tc.function?.arguments) acc.arguments += tc.function.arguments;
+      }
+    } catch {
+      // Ignore malformed events. A future complete event may still arrive.
+    }
+  };
 
   try {
     while (true) {
@@ -229,46 +263,10 @@ async function processStream(response, onContent, onToolCall, onThinking, signal
       const lines = buffer.split('\n');
       buffer = lines.pop();
 
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') break;
-
-        try {
-          const parsed = JSON.parse(data);
-          const delta = parsed.choices?.[0]?.delta;
-          if (!delta) continue;
-
-          if (delta.content) {
-            partialContent += delta.content;
-            onContent(delta.content);
-          }
-
-          // Handle thinking/reasoning content from models that support it
-          if (delta.reasoning_content || delta.thinking) {
-            const thinkingContent = delta.reasoning_content || delta.thinking;
-            if (onThinking) {
-              onThinking(thinkingContent);
-            }
-          }
-
-          if (delta.tool_calls) {
-            for (const tc of delta.tool_calls) {
-              const idx = tc.index ?? 0;
-              if (!toolCallsMap.has(idx)) {
-                toolCallsMap.set(idx, { id: '', name: '', arguments: '' });
-              }
-              const acc = toolCallsMap.get(idx);
-              if (tc.id) acc.id = tc.id;
-              if (tc.function?.name) acc.name = tc.function.name;
-              if (tc.function?.arguments) acc.arguments += tc.function.arguments;
-            }
-          }
-        } catch {
-          // skip unparseable chunks
-        }
-      }
+      lines.forEach(processLine);
     }
+    // Some providers omit the final newline. Process that buffered event too.
+    if (buffer) processLine(buffer);
   } catch (streamErr) {
     // Connection dropped mid-stream - preserve what we have
     if (streamErr.name === 'AbortError') {

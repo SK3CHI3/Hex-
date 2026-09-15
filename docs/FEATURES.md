@@ -3,7 +3,7 @@
 ## Core Capabilities
 
 ### Multi-Provider AI Support
-- **14 AI Providers**: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, ModelScope, xAI, Ollama, LM Studio, llama.cpp, vLLM, Jan.ai, Custom
+- **13 AI Providers**: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter, ModelScope, xAI, Ollama, LM Studio, llama.cpp, vLLM, Jan.ai, Custom
 - **Interactive Setup**: First-run wizard guides you through provider selection with connection testing
 - **Runtime Switching**: Change providers with `/provider` command without restarting
 - **Environment Variables**: Override config with `HEX_PROVIDER`, `HEX_MODEL`, etc.

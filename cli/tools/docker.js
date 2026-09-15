@@ -5,7 +5,7 @@ const CONTAINER = 'hex-kali-tools';
 const USER = 'hexagent';
 const DEFAULT_TIMEOUT_MS = 300000;
 
-export async function runCommand(command, args = [], { onStdout, onStderr, user, shell = false, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+export async function runCommand(command, args = [], { onStdout, onStderr, user, shell = false, timeoutMs = DEFAULT_TIMEOUT_MS, abortSignal } = {}) {
   const config = loadConfig();
 
   if (config.executionMode === 'docker') {
@@ -13,16 +13,23 @@ export async function runCommand(command, args = [], { onStdout, onStderr, user,
     // for that explicitly requested tool; built-in tools remain argument-safe.
     const dockerCommand = shell ? 'sh' : command;
     const dockerArgs = shell ? ['-lc', command] : args;
-    return runInDocker(dockerCommand, dockerArgs, { onStdout, onStderr, user, timeoutMs });
+    return runInDocker(dockerCommand, dockerArgs, { onStdout, onStderr, user, timeoutMs, abortSignal });
   } else {
-    return runDirect(command, args, { onStdout, onStderr, shell, timeoutMs });
+    return runDirect(command, args, { onStdout, onStderr, shell, timeoutMs, abortSignal });
   }
 }
 
-async function runDirect(command, args, { onStdout, onStderr, shell, timeoutMs }) {
+async function runDirect(command, args, { onStdout, onStderr, shell, timeoutMs, abortSignal }) {
   return new Promise((resolve) => {
     const proc = spawn(command, args, { shell });
     let timedOut = false;
+    let aborted = false;
+    const abort = () => {
+      aborted = true;
+      proc.kill();
+    };
+    if (abortSignal?.aborted) abort();
+    else abortSignal?.addEventListener('abort', abort, { once: true });
     const timeout = setTimeout(() => {
       timedOut = true;
       proc.kill();
@@ -45,23 +52,32 @@ async function runDirect(command, args, { onStdout, onStderr, shell, timeoutMs }
 
     proc.on('close', (code) => {
       clearTimeout(timeout);
-      resolve({ stdout, stderr, exitCode: code, timedOut });
+      abortSignal?.removeEventListener('abort', abort);
+      resolve({ stdout, stderr, exitCode: code, timedOut, aborted });
     });
 
     proc.on('error', (err) => {
       clearTimeout(timeout);
-      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut });
+      abortSignal?.removeEventListener('abort', abort);
+      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut, aborted });
     });
   });
 }
 
-async function runInDocker(command, args, { onStdout, onStderr, user = USER, timeoutMs }) {
+async function runInDocker(command, args, { onStdout, onStderr, user = USER, timeoutMs, abortSignal }) {
   return new Promise((resolve) => {
     const proc = spawn('docker', [
       'exec', '-u', user, CONTAINER,
       command, ...args,
     ]);
     let timedOut = false;
+    let aborted = false;
+    const abort = () => {
+      aborted = true;
+      proc.kill();
+    };
+    if (abortSignal?.aborted) abort();
+    else abortSignal?.addEventListener('abort', abort, { once: true });
     const timeout = setTimeout(() => {
       timedOut = true;
       proc.kill();
@@ -84,12 +100,14 @@ async function runInDocker(command, args, { onStdout, onStderr, user = USER, tim
 
     proc.on('close', (code) => {
       clearTimeout(timeout);
-      resolve({ stdout, stderr, exitCode: code, timedOut });
+      abortSignal?.removeEventListener('abort', abort);
+      resolve({ stdout, stderr, exitCode: code, timedOut, aborted });
     });
 
     proc.on('error', (err) => {
       clearTimeout(timeout);
-      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut });
+      abortSignal?.removeEventListener('abort', abort);
+      resolve({ stdout, stderr: stderr + err.message, exitCode: 1, timedOut, aborted });
     });
   });
 }

@@ -3,6 +3,7 @@
  */
 
 import { listSkills, getSkill, saveSkill, deleteSkill } from '../storage/skills.js';
+import { saveToolOutput } from '../storage/toolOutput.js';
 
 const WORDLIST_MAP = {
   common: '/usr/share/wordlists/common.txt',
@@ -192,7 +193,7 @@ function handleSkillManagement(args) {
 }
 
 // Handle tool installation
-async function handleToolInstallation(args) {
+async function handleToolInstallation(args, { abortSignal } = {}) {
   const { tool_name, install_method = 'auto' } = args;
 
   if (!tool_name) {
@@ -252,10 +253,14 @@ async function handleToolInstallation(args) {
 
     // Update package list first if using apt
     if (command === 'apt-get') {
-      await runCommand('apt-get', ['update', '-qq'], { user: 'root' });
+      const update = await runCommand('apt-get', ['update', '-qq'], { user: 'root', abortSignal });
+      if (update.aborted) return { error: 'Tool installation cancelled.' };
+      if (update.exitCode !== 0) return { error: `Failed to update package lists\n\n${update.stderr || update.stdout || 'Unknown error'}` };
     }
 
-    const result = await runCommand(command, cmdArgs, { user: command === 'apt-get' ? 'root' : undefined });
+    const result = await runCommand(command, cmdArgs, { user: command === 'apt-get' ? 'root' : undefined, abortSignal });
+
+    if (result.aborted) return { error: 'Tool installation cancelled.' };
 
     if (result.exitCode === 0) {
       return {
@@ -269,82 +274,34 @@ async function handleToolInstallation(args) {
       };
     }
   } else {
-    // Install on host system
-    const { spawn } = await import('child_process');
+    // Use the same abortable command runner as normal tools. Apt needs sudo
+    // on supported Unix hosts; other package managers run as the current user.
+    const { runCommand } = await import('./docker.js');
+    if (command === 'apt-get') {
+      const update = await runCommand('sudo', ['apt-get', 'update', '-qq'], { abortSignal });
+      if (update.aborted) return { error: 'Tool installation cancelled.' };
+      if (update.exitCode !== 0) return { error: `Failed to update package lists\n\n${update.stderr || update.stdout || 'Unknown error'}` };
+    }
+    const result = command === 'apt-get'
+      ? await runCommand('sudo', [command, ...cmdArgs], { abortSignal })
+      : await runCommand(command, cmdArgs, { abortSignal });
 
-    return new Promise((resolve) => {
-      // Update package list first if using apt
-      if (command === 'apt-get') {
-        const update = spawn('sudo', ['apt-get', 'update', '-qq']);
-        update.on('close', () => {
-          const proc = spawn('sudo', [command, ...cmdArgs]);
-          let stdout = '';
-          let stderr = '';
-
-          proc.stdout.on('data', (data) => { stdout += data.toString(); });
-          proc.stderr.on('data', (data) => { stderr += data.toString(); });
-
-          proc.on('close', (code) => {
-            if (code === 0) {
-              resolve({
-                output: `✓ Successfully installed ${tool_name}\n\n${stdout || 'Installation completed'}`,
-                exitCode: 0
-              });
-            } else {
-              resolve({
-                error: `Failed to install ${tool_name}\n\n${stderr || stdout || 'Unknown error'}`,
-                exitCode: code
-              });
-            }
-          });
-
-          proc.on('error', (err) => {
-            resolve({
-              error: `Failed to execute installation: ${err.message}`,
-              exitCode: 1
-            });
-          });
-        });
-      } else {
-        const proc = spawn(command, cmdArgs);
-        let stdout = '';
-        let stderr = '';
-
-        proc.stdout.on('data', (data) => { stdout += data.toString(); });
-        proc.stderr.on('data', (data) => { stderr += data.toString(); });
-
-        proc.on('close', (code) => {
-          if (code === 0) {
-            resolve({
-              output: `✓ Successfully installed ${tool_name}\n\n${stdout || 'Installation completed'}`,
-              exitCode: 0
-            });
-          } else {
-            resolve({
-              error: `Failed to install ${tool_name}\n\n${stderr || stdout || 'Unknown error'}`,
-              exitCode: code
-            });
-          }
-        });
-
-        proc.on('error', (err) => {
-          resolve({
-            error: `Failed to execute installation: ${err.message}`,
-            exitCode: 1
-          });
-        });
-      }
-    });
+    if (result.aborted) return { error: 'Tool installation cancelled.' };
+    if (result.exitCode === 0) {
+      return { output: `✓ Successfully installed ${tool_name}\n\n${result.stdout || 'Installation completed'}`, exitCode: 0 };
+    }
+    return { error: `Failed to install ${tool_name}\n\n${result.stderr || result.stdout || 'Unknown error'}`, exitCode: result.exitCode };
   }
 }
 
-export async function executeToolCall(toolCall) {
+export async function executeToolCall(toolCall, { abortSignal } = {}) {
   const { name, arguments: args } = toolCall;
 
   // Handle web_search specially - it doesn't use buildCommand
   if (name === 'web_search') {
     const { webSearch, formatSearchResults } = await import('../utils/search.js');
-    const result = await webSearch(args.query, args.max_results || 5);
+    const result = await webSearch(args.query, args.max_results || 5, { abortSignal });
+    if (abortSignal?.aborted) return { error: 'Tool execution cancelled.' };
     return { output: formatSearchResults(result) };
   }
 
@@ -355,7 +312,7 @@ export async function executeToolCall(toolCall) {
 
   // Handle tool installation
   if (name === 'install_tool') {
-    return await handleToolInstallation(args);
+    return await handleToolInstallation(args, { abortSignal });
   }
 
   const built = buildCommand(name, args);
@@ -369,8 +326,11 @@ export async function executeToolCall(toolCall) {
   // to stdout bypasses Ink's renderer, corrupts its frame, and then causes the
   // same output to appear again once MessageHistory renders the tool result.
   // Let runCommand collect the output and return it for the single Ink render.
-  const result = await runCommand(built.command, built.args, { shell: built.shell === true });
+  const result = await runCommand(built.command, built.args, { shell: built.shell === true, abortSignal });
 
+  if (result.aborted) {
+    return { error: 'Tool execution cancelled.' };
+  }
   if (result.timedOut) {
     return { error: 'Command timed out' };
   }
@@ -385,11 +345,23 @@ export async function executeToolCall(toolCall) {
     wasTruncated = true;
   }
 
+  const fullOutputId = wasTruncated && toolCall.id ? toolCall.id : null;
+  if (fullOutputId) saveToolOutput(fullOutputId, output);
+
+  if (result.exitCode !== 0) {
+    return {
+      error: `Command failed with exit code ${result.exitCode ?? 'unknown'}:\n${truncated}`,
+      exitCode: result.exitCode,
+      fullOutputId,
+      wasTruncated,
+    };
+  }
+
   return {
     output: truncated,
     exitCode: result.exitCode,
     fullLength: output.length,
     wasTruncated,
-    expandHint: wasTruncated ? `\n\n[Output truncated. Full output: ${output.length} chars. Use 'show full' to see complete output.]` : null
+    fullOutputId,
   };
 }

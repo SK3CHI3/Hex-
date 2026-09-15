@@ -65,7 +65,7 @@ Complete guides and references:
 | **[Features](docs/FEATURES.md)** | Complete feature overview |
 | **[Setup Guide](docs/SETUP_GUIDE.md)** | Installation, configuration, and first run |
 | **[Quick Start](docs/QUICK_START.md)** | CLI commands and usage examples |
-| **[Multi-Provider AI](docs/MULTI_PROVIDER.md)** | Configure 14 AI providers (OpenAI, Anthropic, Ollama, etc.) |
+| **[Multi-Provider AI](docs/MULTI_PROVIDER.md)** | Configure 13 AI providers (OpenAI, Anthropic, Ollama, etc.) |
 | **[Tool Arsenal](docs/TOOL_ARSENAL.md)** | 17 built-in tools + automatic tool installation |
 | **[Custom Tools](docs/CUSTOM_TOOLS.md)** | Install and use additional tools beyond the built-in set |
 | **[Architecture](docs/ARCHITECTURE.md)** | How Hex works under the hood |

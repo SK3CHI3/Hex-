@@ -183,7 +183,7 @@ const ErrorScreen = ({ error, onDismiss }) => {
     Box,
     { flexDirection: 'column', padding: 1 },
     React.createElement(Text, { color: 'red' }, `Error: ${error}`),
-    React.createElement(Text, { color: 'yellow' }, 'Press any key to dismiss or Ctrl+C to exit')
+    React.createElement(Text, { color: 'yellow' }, 'Press any key to dismiss. Use /quit to exit.')
   );
 };
 
@@ -210,8 +210,9 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   }, []);
   
   // Execute a skill with variable substitution
-  const executeSkill = useCallback(async (skill, vars) => {
-    if (!skill || !skill.steps) return;
+  const executeSkill = useCallback(async (skill, vars, initialMessages = messagesRef.current) => {
+    if (!skill || !skill.steps) return initialMessages;
+    let skillMessages = [...initialMessages];
 
     // Substitute variables in steps
     const substituteVars = (obj) => {
@@ -240,10 +241,11 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         content: null,
         tool_calls: [toolCall],
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      skillMessages = [...skillMessages, assistantMsg];
+      setMessages(skillMessages);
 
       // Execute the tool
-      const result = await executeToolCall(toolCall);
+      const result = await executeToolCall(toolCall, { abortSignal: abortControllerRef.current?.signal });
 
       // Add result to messages
       const toolMsg = {
@@ -252,10 +254,23 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         content: result.error || result.output || 'No output',
         name: step.tool,
         isError: !!result.error,
+        fullOutputId: result.fullOutputId,
       };
-      setMessages(prev => [...prev, toolMsg]);
+      skillMessages = [...skillMessages, toolMsg];
+      setMessages(skillMessages);
+      if (abortControllerRef.current?.signal.aborted) break;
     }
+    return skillMessages;
   }, []);
+
+  // Ctrl+C cancels the current model request or tool. It intentionally does
+  // not exit the application; /quit remains the explicit exit action.
+  useInput((input, key) => {
+    if (key.ctrl && input === 'c' && abortControllerRef.current) {
+      setAgentStatus({ phase: 'cancelling', toolName: null });
+      abortControllerRef.current.abort();
+    }
+  });
 
   // Handle sending a message
   const handleSendMessage = useCallback(async (userMessage) => {
@@ -264,37 +279,31 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     // Handle slash commands
     if (userMessage.startsWith('/')) {
       setProcessing(true);
-      setMessages(currentMessages => {
-        const context = {
-          conversationId,
-          messages: [...currentMessages],
-          SYSTEM_PROMPT,
-          showThinking: showThinkingRef.current,
-          toggleThinking,
-          prompt: async () => '',
-          executeSkill,
-        };
-
-        handleCommand(userMessage, context).then(result => {
-          setConversationId(context.conversationId);
-          setMessages(context.messages);
-
-          // If command returned a result, add it to messages
-          if (result && result.content) {
-            const resultMsg = {
-              role: 'assistant',
-              content: result.content,
-              isCommandResult: true,
-            };
-            setMessages(prev => [...prev, resultMsg]);
-          }
-          setProcessing(false);
-        }).catch(() => {
-          setProcessing(false);
-        });
-
-        return currentMessages;
-      });
+      abortControllerRef.current = new AbortController();
+      const context = {
+        conversationId,
+        messages: [...messagesRef.current],
+        SYSTEM_PROMPT,
+        showThinking: showThinkingRef.current,
+        toggleThinking,
+        prompt: async () => '',
+        executeSkill: async (skill, vars) => {
+          context.messages = await executeSkill(skill, vars, context.messages);
+        },
+      };
+      try {
+        const result = await handleCommand(userMessage, context);
+        setConversationId(context.conversationId);
+        const nextMessages = result?.content
+          ? [...context.messages, { role: 'assistant', content: result.content, isCommandResult: true }]
+          : context.messages;
+        setMessages(nextMessages);
+      } catch (err) {
+        setError(err.message || 'Command failed.');
+      } finally {
+        setProcessing(false);
+        abortControllerRef.current = null;
+      }
       return;
     }
     
@@ -405,7 +414,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         // Execute tool calls
         for (const tc of toolCalls) {
           setAgentStatus({ phase: 'running', toolName: tc.name });
-          const result = await executeToolCall(tc);
+          const result = await executeToolCall(tc, { abortSignal: abortControllerRef.current.signal });
           
           const toolMsg = {
             role: 'tool',
@@ -413,6 +422,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
             content: result.error || result.output || 'No output',
             name: tc.name,
             isError: !!result.error,
+            fullOutputId: result.fullOutputId,
           };
           
           workingMessages = [...workingMessages, toolMsg];
@@ -445,19 +455,6 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     }
   };
   
-  // Handle exit
-  useEffect(() => {
-    const handleExit = () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      process.exit(0);
-    };
-
-    process.on('SIGINT', handleExit);
-    return () => process.off('SIGINT', handleExit);
-  }, []);
-
   // Dismiss error and continue
   const dismissError = () => {
     setError(null);
@@ -502,7 +499,7 @@ const main = async () => {
       initialProvider: provider,
       initialModel: model,
     }), {
-      exitOnCtrlC: true,
+      exitOnCtrlC: false,
     });
   } catch (err) {
     console.error('Fatal error:', err.message);
