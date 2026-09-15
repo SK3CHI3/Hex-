@@ -40,12 +40,16 @@ const App = ({
   // border, and status row. Reserving only four made the full-screen layout
   // overflow by one row, so Ink could not erase the previous frame cleanly.
   const inputHeight = 5;
+  // Ink 4 clears the entire terminal whenever a frame is at least as tall as
+  // stdout.rows. Keep one row free so interactive updates use its cursor-based
+  // renderer instead of repeatedly clearing and repainting the banner.
+  const appHeight = Math.max(1, terminalHeight - 1);
   // All content (banner + messages) scrolls together, input stays fixed at bottom
-  const messageMaxHeight = terminalHeight - inputHeight - 2; // -2 for padding
+  const messageMaxHeight = Math.max(1, appHeight - inputHeight - 2); // -2 for padding
 
   return React.createElement(
     Box,
-    { flexDirection: 'column', height: terminalHeight },
+    { flexDirection: 'column', height: appHeight },
     // Scrolling content area (banner + messages all scroll together)
     React.createElement(
       Box,
@@ -53,7 +57,7 @@ const App = ({
         key: 'content',
         flexDirection: 'column',
         flexGrow: 1,
-        height: terminalHeight - inputHeight,
+        height: Math.max(1, appHeight - inputHeight),
       },
       // Message history (includes banner as first item)
       React.createElement(MessageHistory, {
