@@ -191,6 +191,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const abortControllerRef = useRef(null);
+  const requestInFlightRef = useRef(false);
   const messagesRef = useRef(messages);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
   
@@ -288,6 +289,12 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   
   // Send message and receive response
   const sendAndReceive = async (userMessage) => {
+    // State-driven disabling reaches InputBox on the next render. Keep a
+    // synchronous guard here so repeated Enter events cannot create duplicate
+    // user messages or concurrent AI requests in that gap.
+    if (requestInFlightRef.current) return;
+    requestInFlightRef.current = true;
+
     const currentMessages = messagesRef.current;
     const newMessages = [...currentMessages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
@@ -405,6 +412,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     } finally {
       setStreaming(false);
       abortControllerRef.current = null;
+      requestInFlightRef.current = false;
     }
   };
   

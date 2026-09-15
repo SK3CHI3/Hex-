@@ -358,10 +358,11 @@ export async function executeToolCall(toolCall) {
   }
 
   const { runCommand } = await import('./docker.js');
-  const result = await runCommand(built.command, built.args, {
-    onStdout: (text) => process.stdout.write(text),
-    onStderr: (text) => process.stdout.write(text),
-  });
+  // Ink owns the terminal while Hex is running. Writing tool output directly
+  // to stdout bypasses Ink's renderer, corrupts its frame, and then causes the
+  // same output to appear again once MessageHistory renders the tool result.
+  // Let runCommand collect the output and return it for the single Ink render.
+  const result = await runCommand(built.command, built.args);
 
   if (result.timedOut) {
     return { error: 'Command timed out' };
