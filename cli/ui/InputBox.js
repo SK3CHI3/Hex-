@@ -290,58 +290,16 @@ const InputBox = ({
     }
   });
 
-  // Syntax highlighting for input
+  // The prompt is intentionally a single visual row. Keeping it bounded means
+  // the live Ink frame never grows into the transcript above it. Newlines stay
+  // in the submitted value, but are represented by a visible return marker.
   const renderHighlightedText = () => {
     if (!value) return null;
-
-    // Split text at cursor position for proper cursor rendering
-    const beforeCursor = value.slice(0, cursorPosition);
-    const cursorChar = value[cursorPosition] || ' ';
-    const afterCursor = value.slice(cursorPosition + 1);
-
-    const renderSegment = (text) => {
-      if (!text) return null;
-
-      // Detect slash commands
-      if (text.startsWith('/')) {
-        const parts = text.split(' ');
-        const command = parts[0];
-        const rest = parts.slice(1).join(' ');
-
-        return React.createElement(
-          Box,
-          { key: 'hl' },
-          React.createElement(Text, { color: theme.syntax.command }, command),
-          rest && React.createElement(Text, { color: theme.text.primary }, ' ' + rest)
-        );
-      }
-
-      // Detect @file paths
-      if (text.includes('@')) {
-        const parts = text.split(/(@[^\s]+)/);
-        return React.createElement(
-          Box,
-          { key: 'hl' },
-          ...parts.map((part, i) => {
-            if (part.startsWith('@')) {
-              return React.createElement(Text, { key: i, color: theme.syntax.path }, part);
-            }
-            return React.createElement(Text, { key: i, color: theme.text.primary }, part);
-          })
-        );
-      }
-
-      // Default: plain text
-      return React.createElement(Text, { key: 'hl', color: theme.text.primary }, text);
-    };
-
-    return React.createElement(
-      Box,
-      null,
-      renderSegment(beforeCursor),
-      React.createElement(Text, { color: theme.ui.cursor, inverse: true }, cursorChar),
-      renderSegment(afterCursor)
-    );
+    const beforeCursor = value.slice(0, cursorPosition).replace(/\n/g, ' ↵ ');
+    const cursorChar = (value[cursorPosition] || ' ').replace(/\n/g, '↵');
+    const afterCursor = value.slice(cursorPosition + 1).replace(/\n/g, ' ↵ ');
+    return React.createElement(Text, { color: value.startsWith('/') ? theme.syntax.command : theme.text.primary, wrap: 'truncate' },
+      `${beforeCursor}${cursorChar}${afterCursor}`);
   };
 
   // Render ghost text
@@ -360,25 +318,14 @@ const InputBox = ({
     if (value || disabled) return null;
     
     return React.createElement(
-      Box,
-      null,
+      Text,
+      { wrap: 'truncate' },
       React.createElement(
         Text,
         { color: theme.ui.cursor, inverse: true },
         placeholder[0] // First char with cursor
       ),
       React.createElement(Text, { color: theme.text.muted }, placeholder.slice(1))
-    );
-  };
-
-  // Render reverse search prompt
-  const renderReverseSearch = () => {
-    if (!reverseSearchActive) return null;
-    
-    return React.createElement(
-      Box,
-      { marginTop: 1 },
-      React.createElement(Text, { color: theme.status.info }, `(reverse-i-search)\`${searchQuery}': ${value}`)
     );
   };
 
@@ -393,23 +340,21 @@ const InputBox = ({
     );
   };
 
-  const borderColor = theme.text.muted;
-  const terminalWidth = process.stdout.columns || 80;
-  const borderWidth = terminalWidth - 2;
+  const statusText = reverseSearchActive
+    ? `(reverse-i-search)\`${searchQuery}': ${value.replace(/\n/g, ' ↵ ')}`
+    : streaming
+      ? `${formatAgentStatus(agentStatus)} (Ctrl+C to cancel)`
+      : agentStatus.phase === 'complete'
+        ? '✓ Response complete'
+        : `${model} | ${tokenCount.toLocaleString()} tokens`;
+  const statusColor = reverseSearchActive ? theme.status.info
+    : streaming ? theme.status.thinking
+      : agentStatus.phase === 'complete' ? (theme.status.success || theme.status.info)
+        : theme.text.muted;
 
   return React.createElement(
     Box,
     { flexDirection: 'column', marginTop: 1 },
-    // Top border (no label)
-    React.createElement(
-      Box,
-      null,
-      React.createElement(
-        Text,
-        { color: borderColor },
-        '─'.repeat(borderWidth)
-      )
-    ),
     // Input area
     React.createElement(
       Box,
@@ -419,7 +364,7 @@ const InputBox = ({
         borderBottom: true,
         borderLeft: false,
         borderRight: false,
-        borderColor: borderColor,
+        borderColor: theme.text.muted,
       },
       React.createElement(Text, { color: theme.ui.prompt }, '❯ '),
       React.createElement(
@@ -431,25 +376,8 @@ const InputBox = ({
         renderEditorWaiting()
       )
     ),
-    // Reverse search display
-    renderReverseSearch(),
-    // Status hint
-    streaming && React.createElement(
-      Box,
-      { marginTop: 0 },
-      React.createElement(Text, { color: theme.status.thinking }, `${formatAgentStatus(agentStatus)} (Ctrl+C to cancel)`)
-    ),
-    // Help hint
-    !streaming && agentStatus.phase === 'complete' && React.createElement(
-      Box,
-      { marginTop: 0 },
-      React.createElement(Text, { color: theme.status.success || theme.status.info }, '✓ Response complete')
-    ),
-    !streaming && agentStatus.phase !== 'complete' && React.createElement(
-      Box,
-      { marginTop: 0 },
-      React.createElement(Text, { color: theme.text.muted }, `${model} | ${tokenCount.toLocaleString()} tokens`)
-    )
+    // Exactly one status row, regardless of mode.
+    React.createElement(Text, { color: statusColor, wrap: 'truncate' }, statusText)
   );
 };
 
