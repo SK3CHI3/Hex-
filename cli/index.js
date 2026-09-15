@@ -328,11 +328,6 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         executeSkill: async (skill, vars) => {
           context.messages = await executeSkill(skill, vars, context.messages);
         },
-        setAgentMode: (agentMode) => setActiveConfig(config => {
-          const next = { ...config, agentMode };
-          activeConfigRef.current = next;
-          return next;
-        }),
       };
       try {
         const result = await handleCommand(userMessage, context);
@@ -404,7 +399,7 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         
         await chat({
           messages: workingMessages,
-          tools: runConfig.agentMode === 'plan' ? [] : tools,
+          tools,
           abortSignal: run.controller.signal,
           onThinking: (chunk) => {
             thinkingContent += chunk;
@@ -469,10 +464,21 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         }
         
         // Execute tool calls
-        for (const tc of toolCalls) {
+        for (const [toolIndex, tc] of toolCalls.entries()) {
           if (run.controller.signal.aborted || !isCurrentRun(run)) break;
-          setAgentStatus({ phase: 'running', toolName: tc.name });
-          const result = await executeToolCall(tc, { abortSignal: run.controller.signal });
+          const toolTotal = toolCalls.length;
+          setAgentStatus({ phase: 'running', toolName: tc.name, toolIndex: toolIndex + 1, toolTotal });
+          const result = await executeToolCall(tc, {
+            abortSignal: run.controller.signal,
+            onProgress: ({ skillName, stepIndex, stepTotal, toolName }) => {
+              if (isCurrentRun(run)) {
+                setAgentStatus({
+                  phase: 'running', toolName: tc.name, toolIndex: toolIndex + 1, toolTotal,
+                  detail: `${skillName} step ${stepIndex}/${stepTotal}: ${toolName}`,
+                });
+              }
+            },
+          });
           
           const toolMsg = {
             role: 'tool',
@@ -549,7 +555,6 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
       provider: activeProvider.name,
       model: activeModel,
       executionMode: activeConfig.executionMode === 'docker' ? 'Docker' : 'Direct',
-      agentMode: activeConfig.agentMode,
       tokenCount,
       tokenLimit,
     }),

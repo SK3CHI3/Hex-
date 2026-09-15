@@ -38,7 +38,6 @@ export async function handleCommand(input, context) {
   /skill <name> [vars]  Run a skill with optional variables
   /config      Show current configuration
   /provider    Switch AI provider
-  /mode <auto|plan>  Choose autonomous execution or plan-only replies
   /setup       Run setup wizard to change provider/model
   /status      Check execution environment status
   /thinking    Toggle thinking display (collapsed/expanded)
@@ -162,17 +161,6 @@ ${C.bold('Keyboard Shortcuts:')}
       
       output += C.dim('\n  Usage: /provider <number|name>');
       return { type: 'info', content: output };
-    }
-
-    case '/mode': {
-      const mode = parts[1]?.toLowerCase();
-      if (!mode || !['auto', 'plan'].includes(mode)) {
-        return { type: 'info', content: C.dim('Usage: /mode <auto|plan>. Plan mode never executes tools.') };
-      }
-      const config = loadConfig();
-      saveConfig({ ...config, agentMode: mode });
-      context.setAgentMode?.(mode);
-      return { type: 'info', content: C.green(`  ✓ Agent mode: ${mode === 'plan' ? 'plan only' : 'autonomous execution'}`) };
     }
 
     case '/setup':

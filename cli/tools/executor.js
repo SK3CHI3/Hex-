@@ -192,7 +192,7 @@ function handleSkillManagement(args) {
   }
 }
 
-async function handleSkillRun(args, { abortSignal } = {}) {
+async function handleSkillRun(args, { abortSignal, onProgress } = {}) {
   const skill = getSkill(args?.name);
   if (!skill) return { error: `Skill '${args?.name || ''}' was not found.` };
   const variables = args?.variables && typeof args.variables === 'object' ? args.variables : {};
@@ -205,6 +205,7 @@ async function handleSkillRun(args, { abortSignal } = {}) {
     if (!step?.tool || !step?.args || step.tool === 'run_skill') {
       return { error: `Skill '${skill.name}' has an invalid step ${index + 1}.` };
     }
+    onProgress?.({ skillName: skill.name, stepIndex: index + 1, stepTotal: skill.steps.length, toolName: step.tool });
     const result = await executeToolCall({
       id: `skill_${skill.name}_${index}`,
       name: step.tool,
@@ -319,7 +320,7 @@ async function handleToolInstallation(args, { abortSignal } = {}) {
   }
 }
 
-export async function executeToolCall(toolCall, { abortSignal } = {}) {
+export async function executeToolCall(toolCall, { abortSignal, onProgress } = {}) {
   const { name, arguments: args } = toolCall;
 
   // Handle web_search specially - it doesn't use buildCommand
@@ -336,7 +337,7 @@ export async function executeToolCall(toolCall, { abortSignal } = {}) {
   }
 
   if (name === 'run_skill') {
-    return handleSkillRun(args, { abortSignal });
+    return handleSkillRun(args, { abortSignal, onProgress });
   }
 
   // Handle tool installation

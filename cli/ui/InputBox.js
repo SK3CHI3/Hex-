@@ -41,7 +41,7 @@ const InputBox = ({
       const commands = [
         '/help', '/clear', '/clear-memory', '/history', '/resume', '/tools', '/skills',
         '/skill', '/config', '/provider', '/setup', '/status', '/thinking',
-        '/tokens', '/summarize', '/theme', '/fullscreen', '/editor', '/mode', '/quit'
+        '/tokens', '/summarize', '/theme', '/fullscreen', '/editor', '/quit'
       ];
       const match = commands.find(cmd => cmd.startsWith(currentValue) && cmd !== currentValue);
       return match ? match.slice(currentValue.length) : '';
@@ -384,10 +384,13 @@ const InputBox = ({
   );
 };
 
-const formatAgentStatus = ({ phase, toolName } = {}) => {
+const formatAgentStatus = ({ phase, toolName, toolIndex, toolTotal, detail } = {}) => {
   if (phase === 'planning') return 'AI is planning...';
   if (phase === 'thinking') return 'AI is reasoning...';
-  if (phase === 'running') return `Running tool: ${toolName || 'tool'}...`;
+  if (phase === 'running') {
+    const position = toolTotal ? ` ${toolIndex || 1}/${toolTotal}` : '';
+    return `Running${position}: ${detail || toolName || 'tool'}...`;
+  }
   if (phase === 'continuing') return 'Reviewing tool results...';
   return 'AI is working...';
 };

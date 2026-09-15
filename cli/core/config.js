@@ -16,7 +16,6 @@ const DEFAULT_CONFIG = {
   provider: 'openai',
   model: '',
   executionMode: 'direct',
-  agentMode: 'auto',
 };
 
 const PROVIDERS = {
@@ -206,13 +205,11 @@ export function loadConfig() {
   const provider = process.env.HEX_PROVIDER || fileConfig.provider;
   const model = process.env.HEX_MODEL || fileConfig.model;
   const executionMode = process.env.HEX_EXECUTION_MODE || fileConfig.executionMode;
-  const agentMode = process.env.HEX_AGENT_MODE || fileConfig.agentMode;
 
   return {
     provider,
     model,
     executionMode,
-    agentMode: agentMode === 'plan' ? 'plan' : 'auto',
     apiKeys: fileConfig.apiKeys || {},
     customBaseUrl: fileConfig.customBaseUrl || '',
   };

@@ -11,10 +11,13 @@ import ToolOutput from './ToolOutput.js';
 
 const BRAILLE_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
-const formatAgentStatus = ({ phase, toolName } = {}) => {
+const formatAgentStatus = ({ phase, toolName, toolIndex, toolTotal, detail } = {}) => {
   if (phase === 'planning') return 'Planning response...';
   if (phase === 'thinking') return 'Reasoning...';
-  if (phase === 'running') return `Running tool: ${toolName || 'tool'}...`;
+  if (phase === 'running') {
+    const position = toolTotal ? ` ${toolIndex || 1}/${toolTotal}` : '';
+    return `Running${position}: ${detail || toolName || 'tool'}...`;
+  }
   if (phase === 'continuing') return 'Reviewing tool results...';
   return 'Working...';
 };
@@ -41,8 +44,9 @@ const renderMessage = (msg, index, theme, showThinking, showToolOutput) => {
     }
     if (msg.content) children.push(React.createElement(Box, { key: 'content', marginLeft: 2, flexDirection: 'column' },
       React.createElement(Text, { color: theme.text.primary }, msg.content)));
+    const totalToolCalls = msg.tool_calls?.length || 0;
     for (const [toolIndex, toolCall] of (msg.tool_calls || []).entries()) {
-      children.push(React.createElement(ToolOutput, { key: `tool-${toolIndex}`, toolName: toolCall.function?.name || 'tool', output: toolCall.function?.arguments || '', label: 'Planned tool call', expanded: showToolOutput }));
+      children.push(React.createElement(ToolOutput, { key: `tool-${toolIndex}`, toolName: toolCall.function?.name || 'tool', output: toolCall.function?.arguments || '', label: `Queued tool ${toolIndex + 1}/${totalToolCalls}`, expanded: showToolOutput }));
     }
     return React.createElement(Box, { key: `assistant-${index}`, flexDirection: 'column', marginTop: 1, paddingX: 1 }, ...children);
   }
