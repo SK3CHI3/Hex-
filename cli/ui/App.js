@@ -36,8 +36,10 @@ const App = ({
     return () => stdout.off('resize', handleResize);
   }, [stdout]);
 
-  // Calculate input height (border + content + border + status line)
-  const inputHeight = 4;
+  // InputBox occupies five rows: its top margin, divider, input/bottom
+  // border, and status row. Reserving only four made the full-screen layout
+  // overflow by one row, so Ink could not erase the previous frame cleanly.
+  const inputHeight = 5;
   // All content (banner + messages) scrolls together, input stays fixed at bottom
   const messageMaxHeight = terminalHeight - inputHeight - 2; // -2 for padding
 
