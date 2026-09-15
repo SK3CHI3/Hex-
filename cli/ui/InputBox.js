@@ -41,7 +41,7 @@ const InputBox = ({
       const commands = [
         '/help', '/clear', '/clear-memory', '/history', '/resume', '/tools', '/skills',
         '/skill', '/config', '/provider', '/setup', '/status', '/thinking',
-        '/tokens', '/summarize', '/theme', '/fullscreen', '/editor', '/quit'
+        '/tokens', '/summarize', '/theme', '/fullscreen', '/editor', '/mode', '/quit'
       ];
       const match = commands.find(cmd => cmd.startsWith(currentValue) && cmd !== currentValue);
       return match ? match.slice(currentValue.length) : '';
@@ -298,8 +298,11 @@ const InputBox = ({
     const beforeCursor = value.slice(0, cursorPosition).replace(/\n/g, ' ↵ ');
     const cursorChar = (value[cursorPosition] || ' ').replace(/\n/g, '↵');
     const afterCursor = value.slice(cursorPosition + 1).replace(/\n/g, ' ↵ ');
-    return React.createElement(Text, { color: value.startsWith('/') ? theme.syntax.command : theme.text.primary, wrap: 'truncate' },
-      `${beforeCursor}${cursorChar}${afterCursor}`);
+    const color = value.startsWith('/') ? theme.syntax.command : theme.text.primary;
+    return React.createElement(Text, { color, wrap: 'truncate' },
+      beforeCursor,
+      React.createElement(Text, { color: theme.ui.cursor, inverse: true }, cursorChar),
+      afterCursor);
   };
 
   // Render ghost text
@@ -315,7 +318,7 @@ const InputBox = ({
 
   // Render placeholder with cursor at start
   const renderPlaceholder = () => {
-    if (value || disabled) return null;
+    if (value) return null;
     
     return React.createElement(
       Text,
@@ -343,7 +346,7 @@ const InputBox = ({
   const statusText = reverseSearchActive
     ? `(reverse-i-search)\`${searchQuery}': ${value.replace(/\n/g, ' ↵ ')}`
     : streaming
-      ? `${formatAgentStatus(agentStatus)} (Ctrl+C to cancel)`
+      ? `${formatAgentStatus(agentStatus)} (Esc to cancel)`
       : agentStatus.phase === 'complete'
         ? '✓ Response complete'
         : `${model} | ${tokenCount.toLocaleString()} tokens`;

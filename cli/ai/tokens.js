@@ -28,6 +28,11 @@ export function countMessagesTokens(messages) {
     if (msg.role) total += countTokens(msg.role);
     if (msg.content) total += countTokens(msg.content);
     if (msg.name) total += countTokens(msg.name);
+    if (msg.thinking) total += countTokens(msg.thinking);
+    for (const toolCall of msg.tool_calls || []) {
+      total += countTokens(toolCall.function?.name || '');
+      total += countTokens(toolCall.function?.arguments || '');
+    }
   }
   // Add 2 tokens for message priming
   total += 2;

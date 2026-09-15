@@ -272,6 +272,21 @@ export const tools = [
   {
     type: 'function',
     function: {
+      name: 'run_skill',
+      description: 'Run a saved reusable workflow. Prefer this when a listed skill matches the requested task.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Saved skill name, for example web-recon or network-scan.' },
+          variables: { type: 'object', description: 'Values for the skill placeholders, for example {"target":"example.com"}.' },
+        },
+        required: ['name'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'skill_manage',
       description: 'Create, delete, or list reusable attack workflow skills. Skills are multi-step automation sequences that can be run with /skill command.',
       parameters: {

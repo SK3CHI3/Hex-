@@ -46,12 +46,13 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   }
 
   const controller = new AbortController();
+  const abort = () => controller.abort();
+  const detachAbort = () => abortSignal?.removeEventListener('abort', abort);
 
   // Listen for external abort signal (Ctrl+C or Escape)
   if (abortSignal) {
-    abortSignal.addEventListener('abort', () => {
-      controller.abort();
-    });
+    if (abortSignal.aborted) abort();
+    else abortSignal.addEventListener('abort', abort, { once: true });
   }
 
   let lastError = null;
@@ -64,6 +65,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
         const online = await checkNetwork();
         if (!online) {
           onError(new Error('No network connection. Check your internet and try again.'));
+          detachAbort();
           return;
         }
 
@@ -71,7 +73,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
         if (onRetry) {
           onRetry(attempt, delay);
         }
-        await sleep(delay);
+        await sleep(delay, controller.signal);
       }
 
       const response = await makeRequest(baseUrl, payload, config.provider, apiKey, controller.signal);
@@ -83,6 +85,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
         // Don't retry on client errors (4xx) except 429 (rate limit)
         if (response.status >= 400 && response.status < 500 && response.status !== 429) {
           onError(error);
+          detachAbort();
           return;
         }
 
@@ -96,11 +99,13 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
       } else {
         await processStream(response, onContent, onToolCall, onThinking, controller.signal);
       }
+      detachAbort();
       return; // Exit retry loop on success
 
     } catch (err) {
-      if (err.name === 'AbortError') {
+      if (err.name === 'AbortError' || controller.signal.aborted) {
         onError(new Error('Request cancelled by user.'));
+        detachAbort();
         return;
       }
 
@@ -114,6 +119,7 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
       // Don't retry on certain errors
       if (err.message.includes('API key') || err.message.includes('authentication')) {
         onError(err);
+        detachAbort();
         return;
       }
 
@@ -125,11 +131,9 @@ export async function chat({ messages, tools, onContent, onToolCall, onThinking,
   }
 
   // All retries exhausted
-  if (lastError) {
-    onError(lastError);
-  } else {
-    onError(new Error('Request failed after multiple retries.'));
-  }
+  if (lastError) onError(lastError);
+  else onError(new Error('Request failed after multiple retries.'));
+  detachAbort();
 }
 
 async function makeRequest(baseUrl, payload, provider, apiKey, signal) {
@@ -272,8 +276,7 @@ export async function processStream(response, onContent, onToolCall, onThinking,
     if (streamErr.name === 'AbortError') {
       throw streamErr; // Let caller handle cancellation
     }
-    // For other errors, emit what we have so far
-    console.error('Stream interrupted:', streamErr.message);
+    throw streamErr;
   } finally {
     reader.releaseLock();
   }
@@ -343,6 +346,15 @@ async function processAnthropicStream(response, onContent, onToolCall, onThinkin
   }
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(done, ms);
+    const abort = () => { clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError')); };
+    function done() {
+      signal?.removeEventListener('abort', abort);
+      resolve();
+    }
+    if (signal?.aborted) abort();
+    else signal?.addEventListener('abort', abort, { once: true });
+  });
 }

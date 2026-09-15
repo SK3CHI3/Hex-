@@ -6,7 +6,7 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 
-const Banner = ({ provider, model, executionMode, tokenCount, tokenLimit }) => {
+const Banner = ({ provider, model, executionMode, agentMode = 'auto', tokenCount, tokenLimit }) => {
   const theme = getTheme();
   const percentage = tokenLimit > 0 ? Math.round((tokenCount / tokenLimit) * 100) : 0;
 
@@ -50,8 +50,10 @@ const Banner = ({ provider, model, executionMode, tokenCount, tokenLimit }) => {
       React.createElement(
         Text,
         { color: theme.text.secondary },
-        '  Mode: ',
+        '  Execution: ',
         React.createElement(Text, { color: theme.text.accent }, executionMode),
+        ' | Agent: ',
+        React.createElement(Text, { color: theme.text.accent }, agentMode === 'plan' ? 'Plan only' : 'Auto'),
         ' | Type /help for commands'
       ),
       React.createElement(

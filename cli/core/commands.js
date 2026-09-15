@@ -38,6 +38,7 @@ export async function handleCommand(input, context) {
   /skill <name> [vars]  Run a skill with optional variables
   /config      Show current configuration
   /provider    Switch AI provider
+  /mode <auto|plan>  Choose autonomous execution or plan-only replies
   /setup       Run setup wizard to change provider/model
   /status      Check execution environment status
   /thinking    Toggle thinking display (collapsed/expanded)
@@ -71,11 +72,9 @@ ${C.bold('Keyboard Shortcuts:')}
       return { type: 'info', content: C.dim('Conversation cleared.') };
 
     case '/clear-memory':
-      context.messages.push({
-        role: 'system',
-        content: '[SYSTEM] Forget all previous context and memories from prior conversations. Start completely fresh with no recollection of past interactions.'
-      });
-      return { type: 'info', content: C.dim('Memory cleared. AI will forget previous context.') };
+      context.conversationId = randomUUID();
+      context.messages = [{ role: 'system', content: context.SYSTEM_PROMPT }];
+      return { type: 'info', content: C.dim('Memory and conversation context cleared.') };
 
     case '/history': {
       const convos = listConversations();
@@ -163,6 +162,17 @@ ${C.bold('Keyboard Shortcuts:')}
       
       output += C.dim('\n  Usage: /provider <number|name>');
       return { type: 'info', content: output };
+    }
+
+    case '/mode': {
+      const mode = parts[1]?.toLowerCase();
+      if (!mode || !['auto', 'plan'].includes(mode)) {
+        return { type: 'info', content: C.dim('Usage: /mode <auto|plan>. Plan mode never executes tools.') };
+      }
+      const config = loadConfig();
+      saveConfig({ ...config, agentMode: mode });
+      context.setAgentMode?.(mode);
+      return { type: 'info', content: C.green(`  ✓ Agent mode: ${mode === 'plan' ? 'plan only' : 'autonomous execution'}`) };
     }
 
     case '/setup':
@@ -268,7 +278,11 @@ ${C.bold('Keyboard Shortcuts:')}
       const config = loadConfig();
       const model = config.model || getProvider().defaultModel;
       const { summarizeOldMessages } = await import('../ai/summary.js');
-      context.messages = summarizeOldMessages(context.messages, model);
+      const summarized = summarizeOldMessages(context.messages, model);
+      if (summarized === context.messages) {
+        return { type: 'info', content: C.dim('Conversation is below the summarization threshold.') };
+      }
+      context.messages = summarized;
       return { type: 'info', content: C.green('  ✓ Conversation summarized') };
     }
 

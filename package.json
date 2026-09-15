@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node cli/index.js",
+    "test": "node --test",
     "docker:build": "cd server/docker && docker compose build",
     "docker:up": "cd server/docker && docker compose up -d",
     "docker:down": "cd server/docker && docker compose down",

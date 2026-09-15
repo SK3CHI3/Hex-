@@ -55,7 +55,12 @@ const renderMessage = (msg, index, theme, showThinking, showToolOutput) => {
   return null;
 };
 
-const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, showToolOutput = false, agentStatus = { phase: 'idle' }, banner = null }) => {
+const tail = (text, lineLimit = 4) => {
+  const lines = String(text || '').split('\n');
+  return lines.length > lineLimit ? `…\n${lines.slice(-lineLimit).join('\n')}` : lines.join('\n');
+};
+
+const MessageHistory = ({ messages = [], streaming = false, processing = false, showThinking = false, showToolOutput = false, agentStatus = { phase: 'idle' }, banner = null, liveResponse = null }) => {
   const theme = getTheme();
   const [frame, setFrame] = useState(0);
   const [epoch, setEpoch] = useState(0);
@@ -82,6 +87,11 @@ const MessageHistory = ({ messages = [], streaming = false, processing = false, 
     React.createElement(Static, { key: `transcript-${epoch}`, items }, item => item.kind === 'banner'
       ? React.createElement(Box, { key: 'banner', flexDirection: 'column', marginBottom: 1, paddingX: 1 }, item.value)
       : renderMessage(item.value, item.index, theme, showThinking, showToolOutput)),
+    liveResponse?.content && React.createElement(Box, { flexDirection: 'column', marginLeft: 3, paddingX: 1 },
+      React.createElement(Text, { color: theme.text.primary }, tail(liveResponse.content))),
+    showThinking && liveResponse?.thinking && React.createElement(Box, { flexDirection: 'column', marginLeft: 3, paddingX: 1 },
+      React.createElement(Text, { color: theme.status.thinking }, '💭 Thinking:'),
+      React.createElement(Text, { color: theme.text.muted }, tail(liveResponse.thinking, 2))),
     isActive && React.createElement(Box, { marginLeft: 3, paddingX: 1 },
       React.createElement(Text, { color: theme.status.thinking }, `${BRAILLE_FRAMES[frame]} ${processing && !streaming ? 'Processing command...' : formatAgentStatus(agentStatus)}`)));
 };

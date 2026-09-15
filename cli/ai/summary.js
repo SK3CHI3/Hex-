@@ -17,10 +17,15 @@ export function summarizeOldMessages(messages, model, keepRecent = 10) {
     return messages;
   }
 
-  // Keep system message + recent messages
+  // Keep complete recent turns. A tool result cannot be sent without the
+  // assistant tool-call it answers, and a tool-call needs a preceding user
+  // turn. Retaining arbitrary individual messages broke that provider rule.
   const systemMsg = messages.find(m => m.role === 'system');
-  const recentMessages = messages.slice(-keepRecent);
-  const oldMessages = messages.filter(m => m.role !== 'system').slice(0, -keepRecent);
+  const nonSystemMessages = messages.filter(m => m.role !== 'system');
+  let recentStart = Math.max(0, nonSystemMessages.length - keepRecent);
+  while (recentStart > 0 && nonSystemMessages[recentStart]?.role !== 'user') recentStart--;
+  const recentMessages = nonSystemMessages.slice(recentStart);
+  const oldMessages = nonSystemMessages.slice(0, recentStart);
 
   if (oldMessages.length === 0) {
     return messages; // Nothing to summarize

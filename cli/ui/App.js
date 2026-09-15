@@ -19,6 +19,7 @@ const App = ({
   showThinking = false,
   onToggleThinking = () => {},
   agentStatus = { phase: 'idle', toolName: null },
+  liveResponse = null,
 }) => {
   const [showToolOutput, setShowToolOutput] = useState(false);
   return React.createElement(
@@ -27,7 +28,7 @@ const App = ({
     // MessageHistory writes completed items above the live region through
     // Ink's Static component. It deliberately has no constrained height.
     React.createElement(MessageHistory, {
-      messages, streaming, processing, showThinking, showToolOutput, agentStatus, banner,
+      messages, streaming, processing, showThinking, showToolOutput, agentStatus, banner, liveResponse,
     }),
     // Fixed input box at bottom
     React.createElement(InputBox, {

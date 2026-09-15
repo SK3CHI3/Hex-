@@ -125,7 +125,6 @@ export const defaultKeyBindings = {
     { key: '?' },
   ],
   [Command.CANCEL]: [
-    { key: 'c', ctrl: true },
     { key: 'escape' },
   ],
   

@@ -6,8 +6,8 @@ import { chat } from './ai/ai.js';
 import { tools } from './tools/tools.js';
 import { executeToolCall } from './tools/executor.js';
 import { saveConversation } from './storage/storage.js';
-import { loadConfig, setupWizard, getProvider, getApiKey, isLocalProvider } from './core/config.js';
-import { initBuiltinSkills } from './storage/skills.js';
+import { loadConfig, setupWizard, getProvider, getApiKey, isLocalProvider, PROVIDERS } from './core/config.js';
+import { initBuiltinSkills, listSkills } from './storage/skills.js';
 import { handleCommand } from './core/commands.js';
 import { countMessagesTokens, getTokenLimit, shouldSummarize } from './ai/tokens.js';
 import { summarizeOldMessages } from './ai/summary.js';
@@ -97,6 +97,10 @@ Other operations:
 - List: skill_manage({ action: "list" })
 - Delete: skill_manage({ action: "delete", name: "skill-name" })
 
+To execute a reusable skill, call run_skill. Built-in skills include web-recon,
+network-scan, password-audit, and vuln-scan. Prefer a matching skill over
+recreating the same tool sequence.
+
 === RESPONSE FORMAT ===
 - Plain text only, no markdown
 - Use dash lists for multi-item steps
@@ -151,6 +155,13 @@ Supported methods: apt, pip, npm, go, git. Use "auto" to detect automatically.
 When a tool call fails with "command not found", install it first then retry.
 `;
 
+const buildSessionPrompt = () => {
+  const skillCatalog = listSkills()
+    .map(skill => `- ${skill.name}: ${skill.description}`)
+    .join('\n') || '- No saved skills';
+  return `${SYSTEM_PROMPT}\n=== SAVED SKILLS AVAILABLE THIS SESSION ===\n${skillCatalog}\nUse run_skill with the named variables when one matches the task.`;
+};
+
 // Pre-initialization: run setup wizard BEFORE Ink renders
 const preInit = async () => {
   const cfg = loadConfig();
@@ -190,17 +201,26 @@ const ErrorScreen = ({ error, onDismiss }) => {
 // Main Hex application component
 const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
   const [conversationId, setConversationId] = useState(randomUUID());
-  const [messages, setMessages] = useState([{ role: 'system', content: SYSTEM_PROMPT }]);
+  const sessionPromptRef = useRef(null);
+  const [messages, setMessages] = useState(() => {
+    sessionPromptRef.current = buildSessionPrompt();
+    return [{ role: 'system', content: sessionPromptRef.current }];
+  });
   const [streaming, setStreaming] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [showThinking, setShowThinking] = useState(false);
   const [agentStatus, setAgentStatus] = useState({ phase: 'idle', toolName: null });
+  const [activeConfig, setActiveConfig] = useState(initialConfig);
+  const [liveResponse, setLiveResponse] = useState(null);
   const abortControllerRef = useRef(null);
   const requestInFlightRef = useRef(false);
+  const runRef = useRef(null);
+  const activeConfigRef = useRef(initialConfig);
   const messagesRef = useRef(messages);
   const showThinkingRef = useRef(false);
   useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => { activeConfigRef.current = activeConfig; }, [activeConfig]);
 
   const toggleThinking = useCallback(() => {
     const next = !showThinkingRef.current;
@@ -208,6 +228,23 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     setShowThinking(next);
     return next;
   }, []);
+
+  const beginRun = useCallback((kind) => {
+    if (runRef.current) return null;
+    const run = { id: randomUUID(), kind, controller: new AbortController() };
+    runRef.current = run;
+    abortControllerRef.current = run.controller;
+    return run;
+  }, []);
+
+  const isCurrentRun = useCallback((run) => runRef.current?.id === run?.id, []);
+
+  const finishRun = useCallback((run) => {
+    if (!isCurrentRun(run)) return false;
+    runRef.current = null;
+    abortControllerRef.current = null;
+    return true;
+  }, [isCurrentRun]);
   
   // Execute a skill with variable substitution
   const executeSkill = useCallback(async (skill, vars, initialMessages = messagesRef.current) => {
@@ -263,12 +300,12 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     return skillMessages;
   }, []);
 
-  // Ctrl+C cancels the current model request or tool. It intentionally does
-  // not exit the application; /quit remains the explicit exit action.
+  // Escape cancels the current model request or tool. Ctrl+C remains available
+  // for ordinary terminal-style input clearing.
   useInput((input, key) => {
-    if (key.ctrl && input === 'c' && abortControllerRef.current) {
+    if (key.escape && runRef.current) {
       setAgentStatus({ phase: 'cancelling', toolName: null });
-      abortControllerRef.current.abort();
+      runRef.current.controller.abort();
     }
   });
 
@@ -278,57 +315,70 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
 
     // Handle slash commands
     if (userMessage.startsWith('/')) {
+      const run = beginRun('command');
+      if (!run) return;
       setProcessing(true);
-      abortControllerRef.current = new AbortController();
       const context = {
         conversationId,
         messages: [...messagesRef.current],
-        SYSTEM_PROMPT,
+        SYSTEM_PROMPT: sessionPromptRef.current,
         showThinking: showThinkingRef.current,
         toggleThinking,
         prompt: async () => '',
         executeSkill: async (skill, vars) => {
           context.messages = await executeSkill(skill, vars, context.messages);
         },
+        setAgentMode: (agentMode) => setActiveConfig(config => {
+          const next = { ...config, agentMode };
+          activeConfigRef.current = next;
+          return next;
+        }),
       };
       try {
         const result = await handleCommand(userMessage, context);
+        if (!isCurrentRun(run)) return;
         setConversationId(context.conversationId);
         const nextMessages = result?.content
           ? [...context.messages, { role: 'assistant', content: result.content, isCommandResult: true }]
           : context.messages;
         setMessages(nextMessages);
+        const nextConfig = loadConfig();
+        activeConfigRef.current = nextConfig;
+        setActiveConfig(nextConfig);
       } catch (err) {
-        setError(err.message || 'Command failed.');
+        if (isCurrentRun(run)) setError(err.message || 'Command failed.');
       } finally {
-        setProcessing(false);
-        abortControllerRef.current = null;
+        if (finishRun(run)) setProcessing(false);
       }
       return;
     }
     
     // Send to AI
     await sendAndReceive(userMessage);
-  }, [conversationId, executeSkill, toggleThinking]);
+  }, [beginRun, conversationId, executeSkill, finishRun, isCurrentRun, toggleThinking]);
   
   // Send message and receive response
   const sendAndReceive = async (userMessage) => {
     // State-driven disabling reaches InputBox on the next render. Keep a
     // synchronous guard here so repeated Enter events cannot create duplicate
     // user messages or concurrent AI requests in that gap.
-    if (requestInFlightRef.current) return;
+    if (requestInFlightRef.current || runRef.current) return;
+    const run = beginRun('agent');
+    if (!run) return;
+    const runConfig = activeConfigRef.current;
     requestInFlightRef.current = true;
 
     const currentMessages = messagesRef.current;
     const newMessages = [...currentMessages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
     setStreaming(true);
+    setLiveResponse({ content: '', thinking: '' });
     setAgentStatus({ phase: 'planning', toolName: null });
     
     // Check if we need to summarize
-    if (shouldSummarize(newMessages, initialModel)) {
+    if (shouldSummarize(newMessages, runConfig.model || initialModel)) {
       try {
-        const summarized = summarizeOldMessages(newMessages, initialModel);
+        const summarized = summarizeOldMessages(newMessages, runConfig.model || initialModel);
         setMessages(summarized);
         newMessages.length = 0;
         newMessages.push(...summarized);
@@ -343,8 +393,6 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     let completed = false;
     let workingMessages = [...newMessages];
     
-    abortControllerRef.current = new AbortController();
-    
     try {
       while (round < MAX_ROUNDS) {
         round++;
@@ -356,14 +404,18 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         
         await chat({
           messages: workingMessages,
-          tools,
-          abortSignal: abortControllerRef.current.signal,
+          tools: runConfig.agentMode === 'plan' ? [] : tools,
+          abortSignal: run.controller.signal,
           onThinking: (chunk) => {
             thinkingContent += chunk;
-            setAgentStatus({ phase: 'thinking', toolName: null });
+            if (isCurrentRun(run)) {
+              setAgentStatus({ phase: 'thinking', toolName: null });
+              setLiveResponse({ content: assistantContent, thinking: thinkingContent });
+            }
           },
           onContent: (chunk) => {
             assistantContent += chunk;
+            if (isCurrentRun(run)) setLiveResponse({ content: assistantContent, thinking: thinkingContent });
           },
           onToolCall: (tc) => {
             toolCalls.push(tc);
@@ -372,6 +424,11 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
             chatError = err;
           },
         });
+
+        if (run.controller.signal.aborted || !isCurrentRun(run)) {
+          setAgentStatus({ phase: 'cancelled', toolName: null });
+          break;
+        }
         
         if (chatError) {
           if (chatError.message === 'Request cancelled by user.') {
@@ -413,8 +470,9 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         
         // Execute tool calls
         for (const tc of toolCalls) {
+          if (run.controller.signal.aborted || !isCurrentRun(run)) break;
           setAgentStatus({ phase: 'running', toolName: tc.name });
-          const result = await executeToolCall(tc, { abortSignal: abortControllerRef.current.signal });
+          const result = await executeToolCall(tc, { abortSignal: run.controller.signal });
           
           const toolMsg = {
             role: 'tool',
@@ -428,6 +486,10 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
           workingMessages = [...workingMessages, toolMsg];
           setMessages(workingMessages);
           setAgentStatus({ phase: 'continuing', toolName: tc.name });
+        }
+        if (run.controller.signal.aborted) {
+          setAgentStatus({ phase: 'cancelled', toolName: null });
+          break;
         }
       }
       
@@ -449,8 +511,11 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
       setError(err.message);
       setAgentStatus({ phase: 'error', toolName: null });
     } finally {
-      setStreaming(false);
-      abortControllerRef.current = null;
+      if (finishRun(run)) {
+        setStreaming(false);
+        setLiveResponse(null);
+        if (run.controller.signal.aborted) setAgentStatus({ phase: 'cancelled', toolName: null });
+      }
       requestInFlightRef.current = false;
     }
   };
@@ -464,8 +529,10 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     return React.createElement(ErrorScreen, { error, onDismiss: dismissError });
   }
   
+  const activeProvider = PROVIDERS[activeConfig.provider] || initialProvider;
+  const activeModel = activeConfig.model || activeProvider.defaultModel || initialModel;
   const tokenCount = countMessagesTokens(messages);
-  const tokenLimit = getTokenLimit(initialModel);
+  const tokenLimit = getTokenLimit(activeModel);
   
   return React.createElement(App, {
     messages: messages.slice(1), // Skip system message
@@ -475,12 +542,14 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
     showThinking,
     onToggleThinking: toggleThinking,
     agentStatus,
-    model: initialModel,
+    model: activeModel,
+    liveResponse,
     tokenCount,
     banner: React.createElement(Banner, {
-      provider: initialProvider.name,
-      model: initialModel,
-      executionMode: initialConfig.executionMode === 'docker' ? 'Docker' : 'Direct',
+      provider: activeProvider.name,
+      model: activeModel,
+      executionMode: activeConfig.executionMode === 'docker' ? 'Docker' : 'Direct',
+      agentMode: activeConfig.agentMode,
       tokenCount,
       tokenLimit,
     }),

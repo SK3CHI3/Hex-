@@ -192,6 +192,31 @@ function handleSkillManagement(args) {
   }
 }
 
+async function handleSkillRun(args, { abortSignal } = {}) {
+  const skill = getSkill(args?.name);
+  if (!skill) return { error: `Skill '${args?.name || ''}' was not found.` };
+  const variables = args?.variables && typeof args.variables === 'object' ? args.variables : {};
+  const substitute = (value) => JSON.parse(JSON.stringify(value).replace(/\{\{(\w+)\}\}/g, (match, key) =>
+    Object.prototype.hasOwnProperty.call(variables, key) ? String(variables[key]) : match));
+  const results = [];
+
+  for (const [index, step] of skill.steps.entries()) {
+    if (abortSignal?.aborted) return { error: 'Skill execution cancelled.' };
+    if (!step?.tool || !step?.args || step.tool === 'run_skill') {
+      return { error: `Skill '${skill.name}' has an invalid step ${index + 1}.` };
+    }
+    const result = await executeToolCall({
+      id: `skill_${skill.name}_${index}`,
+      name: step.tool,
+      arguments: substitute(step.args),
+    }, { abortSignal });
+    results.push(`Step ${index + 1} (${step.tool}): ${result.error || result.output || 'completed'}`);
+    if (result.error) return { error: results.join('\n\n') };
+  }
+  const output = `Skill '${skill.name}' completed.\n\n${results.join('\n\n')}`;
+  return { output: output.length > 8000 ? `${output.slice(0, 8000)}\n\n[Skill output truncated]` : output };
+}
+
 // Handle tool installation
 async function handleToolInstallation(args, { abortSignal } = {}) {
   const { tool_name, install_method = 'auto' } = args;
@@ -308,6 +333,10 @@ export async function executeToolCall(toolCall, { abortSignal } = {}) {
   // Handle skill management
   if (name === 'skill_manage') {
     return handleSkillManagement(args);
+  }
+
+  if (name === 'run_skill') {
+    return handleSkillRun(args, { abortSignal });
   }
 
   // Handle tool installation
