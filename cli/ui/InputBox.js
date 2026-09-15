@@ -303,18 +303,8 @@ const InputBox = ({
     return React.createElement(Text, { color, wrap: 'truncate' },
       beforeCursor,
       React.createElement(Text, { color: theme.ui.cursor, inverse: true }, cursorChar),
-      afterCursor);
-  };
-
-  // Render ghost text
-  const renderGhostText = () => {
-    if (!ghostText || cursorPosition !== value.length) return null;
-    
-    return React.createElement(
-      Text,
-      { color: theme.text.muted },
-      ghostText
-    );
+      afterCursor,
+      ghostText && cursorPosition === value.length ? React.createElement(Text, { color: theme.text.muted }, ghostText) : null);
   };
 
   // Render placeholder with cursor at start
@@ -335,17 +325,13 @@ const InputBox = ({
 
   // Render editor waiting indicator
   const renderEditorWaiting = () => {
-    if (!waitingForEditorKey) return null;
-
-    return React.createElement(
-      Text,
-      { color: theme.status.info },
-      ' (Press Ctrl+E to open editor, any other key to cancel)'
-    );
+    return null;
   };
 
   const footer = ` | ${executionMode}`;
-  const statusText = reverseSearchActive
+  const statusText = waitingForEditorKey
+    ? `Press Ctrl+E to open editor, any other key to cancel${footer}`
+    : reverseSearchActive
     ? `(reverse-i-search)\`${searchQuery}': ${value.replace(/\n/g, ' ↵ ')}`
     : streaming
       ? `${formatAgentStatus(agentStatus)} (Esc to cancel)${footer}`
@@ -359,25 +345,25 @@ const InputBox = ({
 
   return React.createElement(
     Box,
-    { flexDirection: 'column', marginTop: 1 },
+    { flexDirection: 'column', height: 4 },
     // Input area
     React.createElement(
       Box,
       {
         borderStyle: 'single',
-        borderTop: false,
+        borderTop: true,
         borderBottom: true,
         borderLeft: false,
         borderRight: false,
         borderColor: theme.text.muted,
+        height: 3,
       },
       React.createElement(Text, { color: theme.ui.prompt }, '❯ '),
       React.createElement(
         Box,
-        { flexGrow: 1 },
+        { flexGrow: 1, overflow: 'hidden' },
         renderPlaceholder(),
         value ? renderHighlightedText() : null,
-        renderGhostText(),
         renderEditorWaiting()
       )
     ),

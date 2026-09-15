@@ -79,6 +79,7 @@ const ToolOutput = ({
   expanded = false,
   label = 'Tool result',
   fullOutputId = null,
+  maxLines = MAX_LINES,
 }) => {
   const theme = getTheme();
 
@@ -91,10 +92,10 @@ const ToolOutput = ({
   }
 
   const lines = output.split('\n');
-  const isLong = lines.length > MAX_LINES;
+  const isLong = lines.length > maxLines;
   const shouldCollapse = isLong && !expanded && expandable;
-  const displayLines = shouldCollapse ? lines.slice(0, MAX_LINES) : lines;
-  const remainingLines = lines.length - MAX_LINES;
+  const displayLines = shouldCollapse ? lines.slice(0, maxLines) : lines;
+  const remainingLines = lines.length - maxLines;
 
   // Render line with ANSI support
   const renderLine = (line, i) => {
