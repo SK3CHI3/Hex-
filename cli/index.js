@@ -467,13 +467,13 @@ const HexApp = ({ initialConfig, initialProvider, initialModel }) => {
         for (const [toolIndex, tc] of toolCalls.entries()) {
           if (run.controller.signal.aborted || !isCurrentRun(run)) break;
           const toolTotal = toolCalls.length;
-          setAgentStatus({ phase: 'running', toolName: tc.name, toolIndex: toolIndex + 1, toolTotal });
+          setAgentStatus({ phase: 'running', toolName: tc.name, toolCallId: tc.id, toolIndex: toolIndex + 1, toolTotal });
           const result = await executeToolCall(tc, {
             abortSignal: run.controller.signal,
             onProgress: ({ skillName, stepIndex, stepTotal, toolName }) => {
               if (isCurrentRun(run)) {
                 setAgentStatus({
-                  phase: 'running', toolName: tc.name, toolIndex: toolIndex + 1, toolTotal,
+                  phase: 'running', toolName: tc.name, toolCallId: tc.id, toolIndex: toolIndex + 1, toolTotal,
                   detail: `${skillName} step ${stepIndex}/${stepTotal}: ${toolName}`,
                 });
               }

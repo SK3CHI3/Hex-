@@ -3,11 +3,37 @@
  * Handles expandable/collapsible output for long results
  */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Text } from 'ink';
 import { getTheme } from './themes.js';
 
 const MAX_LINES = 15;
+
+const getPosition = (node) => {
+  let x = 0;
+  let y = 0;
+  let yogaNode = node?.yogaNode;
+  while (yogaNode) {
+    x += yogaNode.getComputedLeft?.() || 0;
+    y += yogaNode.getComputedTop?.() || 0;
+    yogaNode = yogaNode.getParent?.();
+  }
+  return { x, y };
+};
+
+const ClickableHeader = ({ id, onToggle, onOpenDetail, onRegisterHitTarget, detail, children }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!id || !onToggle || !onRegisterHitTarget || !ref.current) return undefined;
+    const { x, y } = getPosition(ref.current);
+    onRegisterHitTarget(id, {
+      x, y, width: ref.current.yogaNode?.getComputedWidth?.() || 1, height: 1,
+      onClick: () => onOpenDetail ? onOpenDetail(detail) : onToggle(id),
+    });
+    return () => onRegisterHitTarget(id, null);
+  });
+  return React.createElement(Box, { ref }, children);
+};
 
 // Parse ANSI escape codes (handles SGR colors and basic sequences)
 const parseAnsi = (text) => {
@@ -80,6 +106,10 @@ const ToolOutput = ({
   label = 'Tool result',
   fullOutputId = null,
   maxLines = MAX_LINES,
+  sectionId = null,
+  onToggle = null,
+  onOpenDetail = null,
+  onRegisterHitTarget = null,
 }) => {
   const theme = getTheme();
 
@@ -122,10 +152,10 @@ const ToolOutput = ({
     { flexDirection: 'column', marginLeft: 2, marginTop: 1 },
     // Tool name header
     React.createElement(
-      Box,
-      null,
-       React.createElement(Text, { color: theme.status.tool }, '⚡ '),
-       React.createElement(Text, { color: theme.status.tool, bold: true }, `${label}: ${toolName}`)
+      ClickableHeader,
+      { id: sectionId, onToggle, onOpenDetail, onRegisterHitTarget, detail: { id: sectionId, title: `${label}: ${toolName}`, content: output } },
+      React.createElement(Text, { color: theme.status.tool }, '⚡ '),
+       React.createElement(Text, { color: theme.status.tool, bold: true }, `${label}: ${toolName}${sectionId ? '  [click to view]' : ''}`)
     ),
     // Output content
     React.createElement(

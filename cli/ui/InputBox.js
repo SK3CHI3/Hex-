@@ -9,6 +9,7 @@ import { getTheme } from './themes.js';
 import { keyMatchers, Command } from './keyBindings.js';
 import { editInExternalEditor } from './externalEditor.js';
 import { handlePaste, expandPastePlaceholders } from './pasteHandler.js';
+import { isMouseSequence } from './mouse.js';
 
 const InputBox = ({
   onSubmit,
@@ -52,6 +53,10 @@ const InputBox = ({
 
   // Handle keyboard input
   useInput((input, key) => {
+    // SGR mouse reports arrive on the same input stream as keys. They are
+    // handled by App's mouse hook and must never become draft text.
+    if (isMouseSequence(input)) return;
+
     // Display controls must remain available while the agent is active.
     // They only change local rendering and cannot submit another request.
     if (key.ctrl && input === 't') {
